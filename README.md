@@ -2,7 +2,6 @@
 
 Softare Engineering project group 304
 
-Team Roles:
 
 ## 👥 Team
 

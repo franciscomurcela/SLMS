@@ -1,0 +1,11 @@
+instalar npm e nodejs:
+- apt install npm
+- apt install nodejs
+
+instalar componentes:
+npm install @mui/x-charts @mui/material @emotion/react @emotion/styled react-router-dom@latest react-pro-sidebar
+
+para correr (na pasta frontend):
+- npm run dev 
+
+

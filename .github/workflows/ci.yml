@@ -57,7 +57,10 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: npm ci
+        run: 
+          |
+          npm install
+          npm ci
       - name: Lint
         run: npm run lint || echo "Lint warnings"
       - name: Build
@@ -67,7 +70,7 @@ jobs:
 
   validate-sql:
     name: Validate SQL Scripts
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

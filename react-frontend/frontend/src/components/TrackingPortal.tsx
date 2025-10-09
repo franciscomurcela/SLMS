@@ -1,11 +1,12 @@
 import Header from "./Header";
+import Paths from "./UtilsPaths";
 
 const role: string = "Tracking Portal";
 
 function TrackingPortal() {
   return (
     <>
-      <Header role={role} />
+      <Header role={role} href={Paths.PATH_TRACKING_PORTAL} />
       <h4>Insira o código da sua encomenda</h4>
       <div className="input-group mb-3">
         <span className="input-group-text" id="basic-addon1">

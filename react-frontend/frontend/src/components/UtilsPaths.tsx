@@ -1,8 +1,8 @@
 const Paths = {
   PATH_LOGIN: "/",
-  PATH_CARRIER: "/carrier",
-  PATH_CARRIER_CARGO_MANIFEST: "/carrier/manifest",
-  PATH_CARRIER_PROOF_OF_DELIVERY: "/carrier/pod",
+  PATH_DRIVER: "/driver",
+  PATH_DRIVER_CARGO_MANIFEST: "/driver/manifest",
+  PATH_DRIVER_PROOF_OF_DELIVERY: "/driver/pod",
   PATH_LOGISTICS_MANAGER: "/logisticsmanager",
   PATH_WAREHOUSE: "/warehouse",
   PATH_CUSTOMER_SERVICE_REP: "/customerservicerep",

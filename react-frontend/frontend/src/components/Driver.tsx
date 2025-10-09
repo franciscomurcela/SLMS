@@ -1,52 +1,38 @@
 import Header from "./Header";
 import qr_code from "../assets/qr_code.svg";
 import map from "../assets/map.svg";
-import { Navigate } from "react-router-dom";
-import { useState } from "react";
-import Roles from "./UtilsRoles";
+import { useNavigate } from "react-router-dom";
 import Paths from "./UtilsPaths";
 
-const role: string = Roles.ROLE_CARRIER;
-const href: string = Paths.PATH_CARRIER;
+const role: string = "Driver";
 
-function Carrier() {
-  const [goToCargoManifest, setGoToCargoManifest] = useState(false);
-  const [goToTrackingPortal, setGoToTrackingPortal] = useState(false);
-  const [goToProfile, setGoToProfile] = useState(false);
+function Driver() {
+  const navigate = useNavigate();
 
-  if (goToCargoManifest) {
-    return <Navigate to={Paths.PATH_CARRIER_CARGO_MANIFEST} />;
-  }
-  if (goToTrackingPortal) {
-    return <Navigate to={Paths.PATH_TRACKING_PORTAL} />;
-  }
-  if (goToProfile) {
-    return <Navigate to={Paths.PATH_PROFILE} />;
-  }
+  const handleManifestClick = () => {
+    navigate("/driver/manifest");
+  };
 
   return (
     <>
-      <Header role={role} href={href} />
+      <Header role={role} href={Paths.PATH_DRIVER} />
 
       <div className="container text-center">
         <div className="row">
           <div className="col">
             <div className="d-grid gap-2 col-6 mx-auto">
-              <button
-                className="btn btn-primary"
+              <button 
+                className="btn btn-primary" 
                 type="button"
-                onClick={() => {
-                  setGoToCargoManifest(true);
-                }}
+                onClick={handleManifestClick}
+                style={{backgroundColor: "#007bff", borderColor: "#007bff"}}
               >
                 Manifesto de Carga
               </button>
-              <button
-                className="btn btn-primary"
+              <button 
+                className="btn btn-primary" 
                 type="button"
-                onClick={() => {
-                  setGoToTrackingPortal(true);
-                }}
+                style={{backgroundColor: "#007bff", borderColor: "#007bff"}}
               >
                 Scan QR code
                 <figure className="figure">
@@ -61,16 +47,18 @@ function Carrier() {
           </div>
           <div className="col">
             <div className="d-grid gap-2 col-6 mx-auto">
-              <button
-                className="btn btn-primary"
+              <button 
+                className="btn btn-primary" 
                 type="button"
-                onClick={() => {
-                  setGoToProfile(true);
-                }}
+                style={{backgroundColor: "#007bff", borderColor: "#007bff"}}
               >
                 Profile
               </button>
-              <button className="btn btn-primary" type="button">
+              <button 
+                className="btn btn-primary" 
+                type="button"
+                style={{backgroundColor: "#007bff", borderColor: "#007bff"}}
+              >
                 Mapa Rota
                 <figure className="figure">
                   <img
@@ -88,4 +76,4 @@ function Carrier() {
   );
 }
 
-export default Carrier;
+export default Driver;

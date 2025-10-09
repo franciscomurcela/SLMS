@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Header from "./Header";
 import map from "../assets/map.svg";
+import Paths from "./UtilsPaths";
 
-const role: string = "Carrier";
+const role: string = "Driver";
 
 interface Package {
   id: string;
@@ -63,7 +64,7 @@ const mockPackages: Package[] = [
   }
 ];
 
-function CarrierCargoManifest() {
+function DriverCargoManifest() {
   const [filter, setFilter] = useState<"Pendente" | "Entregue" | "Todas">("Todas");
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [sortBy, setSortBy] = useState<"orderDate" | "distanceKm">("orderDate");
@@ -126,7 +127,7 @@ function CarrierCargoManifest() {
 
   return (
     <>
-      <Header role={role} />
+      <Header role={role} href={Paths.PATH_DRIVER_CARGO_MANIFEST} />
       
       <div className="container mt-4">
         <div className="row">
@@ -365,4 +366,4 @@ function CarrierCargoManifest() {
   );
 }
 
-export default CarrierCargoManifest;
+export default DriverCargoManifest;

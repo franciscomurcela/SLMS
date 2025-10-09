@@ -5,7 +5,7 @@ import Paths from "./UtilsPaths";
 
 function Header({ role, href }: { role: string; href: string }) {
   const [goToProfile, setGoToProfile] = useState(false);
-  const [goToCarrier, setGoToCarrier] = useState(false);
+  const [goToDriver, setGoToDriver] = useState(false);
   const [goToTrackingPortal, setGoToTrackingPortal] = useState(false);
   const [goToWarehouse, setGoToWarehouse] = useState(false);
   const [goToCustomerServiceRep, setGoToCustomerServiceRep] = useState(false);
@@ -14,8 +14,8 @@ function Header({ role, href }: { role: string; href: string }) {
   if (goToProfile && href != Paths.PATH_PROFILE) {
     return <Navigate to={Paths.PATH_PROFILE} />;
   }
-  if (goToCarrier && href != Paths.PATH_CARRIER) {
-    return <Navigate to={Paths.PATH_CARRIER} />;
+  if (goToDriver && href != Paths.PATH_DRIVER) {
+    return <Navigate to={Paths.PATH_DRIVER} />;
   }
   if (goToTrackingPortal && href != Paths.PATH_TRACKING_PORTAL) {
     return <Navigate to={Paths.PATH_TRACKING_PORTAL} />;
@@ -53,10 +53,10 @@ function Header({ role, href }: { role: string; href: string }) {
           type="button"
           className="btn btn-success"
           onClick={() => {
-            setGoToCarrier(true);
+            setGoToDriver(true);
           }}
         >
-          {Roles.ROLE_CARRIER}
+          {Roles.ROLE_DRIVER}
         </button>
         <button
           type="button"

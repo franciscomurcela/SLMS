@@ -1,11 +1,12 @@
 import Header from "./Header";
+import Paths from "./UtilsPaths";
 
-const role: string = "P";
+const role: string = "Driver";
 
-function CarrierProofOfDelivery() {
+function DriverProofOfDelivery() {
   return (
     <>
-      <Header role={role} />
+      <Header role={role} href={Paths.PATH_DRIVER_PROOF_OF_DELIVERY} />
       <h4>Insira o código da sua encomenda</h4>
       <div className="input-group mb-3">
         <span className="input-group-text" id="basic-addon1">
@@ -29,4 +30,4 @@ function CarrierProofOfDelivery() {
   );
 }
 
-export default CarrierProofOfDelivery;
+export default DriverProofOfDelivery;

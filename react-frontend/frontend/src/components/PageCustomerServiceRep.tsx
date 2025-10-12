@@ -1,7 +1,7 @@
 import Header from "./Header";
 import BiaxialLineChart from "./BiaaxialChart";
 import SimpleCharts from "./SimpleCharts";
-import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
+import { Sidebar } from "react-pro-sidebar";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 

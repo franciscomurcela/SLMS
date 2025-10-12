@@ -1,6 +1,5 @@
 import Header from "./Header";
-import { Sidebar, Menu, MenuItem } from "react-pro-sidebar";
-import { useState } from "react";
+import { Sidebar } from "react-pro-sidebar";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import WarehouseCard from "./WarehouseCard";

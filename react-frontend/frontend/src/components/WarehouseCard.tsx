@@ -1,4 +1,3 @@
-import { use, useState } from "react";
 
 function WarehouseCard({ requestID }: { requestID: string }) {
   return (

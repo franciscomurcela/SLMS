@@ -1,0 +1,58 @@
+/* Estilos adicionais para a página de confirmação de entrega */
+
+.signature-container {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.signature-container canvas {
+  touch-action: none; /* Para melhor suporte em dispositivos móveis */
+}
+
+/* Melhora a aparência dos cards */
+.card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* Estilo para a área de upload */
+.upload-area {
+  border: 2px dashed #dee2e6;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  background-color: #f8f9fa;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.upload-area:hover {
+  border-color: #007bff;
+}
+
+/* Responsividade para o canvas */
+@media (max-width: 768px) {
+  .signature-container canvas {
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+/* Animação para elementos carregados */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

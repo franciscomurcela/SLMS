@@ -80,7 +80,10 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     if (canvas) {
       const dataURL = canvas.toDataURL();
       console.log("Assinatura salva:", dataURL);
-      alert("Assinatura gravada com sucesso!");
+      const signatureSavedMessage = document.getElementById("signature-saved-message");
+      if (signatureSavedMessage) {
+        signatureSavedMessage.style.display = "block";
+      }
     }
   };
 
@@ -158,100 +161,134 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
               </div>
             </div>
 
-            {/* Área de Upload de Foto */}
+            {/* Bloco de Prova de Entrega */}
             <div className="card mb-4 shadow-sm">
-              <div className="card-header bg-info text-white">
+              <div className="card-header bg-secondary text-white">
                 <h5 className="mb-0">
-                  <i className="bi bi-camera-fill me-2"></i>
-                  Prova Fotográfica da Entrega
+                  <i className="bi bi-clipboard-check me-2"></i>
+                  Prova de Entrega
                 </h5>
               </div>
-              <div className="card-body text-center">
-                <div className="mb-3">
-                  <label htmlFor="imageUpload" className="form-label">
-                    Carregar foto da entrega:
-                  </label>
-                  <input
-                    type="file"
-                    className="form-control"
-                    id="imageUpload"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                </div>
-                
-                {uploadedImage ? (
-                  <div className="mt-3">
-                    <div className="alert alert-success" role="alert">
-                      <i className="bi bi-check-circle-fill me-2"></i>
-                      <strong>Prova carregada</strong>
-                    </div>
-                    <img
-                      src={uploadedImage}
-                      alt="Prova de entrega"
-                      className="img-thumbnail"
-                      style={{ maxWidth: "300px", maxHeight: "200px" }}
-                    />
-                  </div>
-                ) : (
-                  <div className="border border-2 border-dashed rounded p-4 bg-light">
-                    <i className="bi bi-cloud-upload display-4 text-muted"></i>
-                    <p className="text-muted mt-2">
-                      Nenhuma imagem carregada
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Área de Assinatura */}
-            <div className="card mb-4 shadow-sm">
-              <div className="card-header bg-warning text-dark">
-                <h5 className="mb-0">
-                  <i className="bi bi-pencil-fill me-2"></i>
-                  Assinatura do Destinatário
-                </h5>
-              </div>
-              <div className="card-body text-center">
-                <p className="text-muted mb-3">
-                  Solicite ao destinatário que assine na área abaixo:
+              <div className="card-body">
+                <p className="text-muted text-center mb-4">
+                  Carregar uma foto ou assinatura do destinatário.
                 </p>
-                
-                <div className="signature-container mb-3">
-                  <canvas
-                    ref={canvasRef}
-                    width={500}
-                    height={200}
-                    className="border border-2 rounded bg-white"
-                    style={{ 
-                      cursor: "crosshair",
-                      maxWidth: "100%",
-                      height: "auto"
-                    }}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                  />
-                </div>
-                
-                <div className="d-flex gap-2 justify-content-center">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={clearSignature}
-                  >
-                    <i className="bi bi-eraser-fill me-1"></i>
-                    Limpar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-warning"
-                    onClick={saveSignature}
-                  >
-                    <i className="bi bi-save-fill me-1"></i>
-                    Gravar Assinatura
-                  </button>
+
+                <div className="row">
+                  {/* Área de Upload de Foto */}
+                  <div className="col-md-6">
+                    <div className="card mb-4 shadow-sm">
+                      <div className="card-header bg-info text-white">
+                        <h5 className="mb-0">
+                          <i className="bi bi-camera-fill me-2"></i>
+                          Prova Fotográfica da Entrega
+                        </h5>
+                      </div>
+                      <div className="card-body text-center">
+                        <div className="mb-3">
+                          <label htmlFor="imageUpload" className="form-label">
+                            Carregar foto da entrega:
+                          </label>
+                          <input
+                            type="file"
+                            className="form-control"
+                            id="imageUpload"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                          />
+                        </div>
+                        
+                        {uploadedImage ? (
+                          <div className="mt-3">
+                            <div className="alert alert-success" role="alert">
+                              <i className="bi bi-check-circle-fill me-2"></i>
+                              <strong>Prova carregada</strong>
+                            </div>
+                            <img
+                              src={uploadedImage}
+                              alt="Prova de entrega"
+                              className="img-thumbnail"
+                              style={{ maxWidth: "300px", maxHeight: "200px" }}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="border border-2 border-dashed rounded p-4 bg-light"
+                            onClick={() => document.getElementById("imageUpload")?.click()}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <i className="bi bi-cloud-upload display-4 text-muted"></i>
+                            <p className="text-muted mt-2">
+                              Clique aqui para carregar uma imagem
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Área de Assinatura */}
+                  <div className="col-md-6">
+                    <div className="card mb-4 shadow-sm">
+                      <div className="card-header bg-warning text-dark">
+                        <h5 className="mb-0">
+                          <i className="bi bi-pencil-fill me-2"></i>
+                          Assinatura do Destinatário
+                        </h5>
+                      </div>
+                      <div className="card-body text-center">
+                        <p className="text-muted mb-3">
+                          Solicite ao destinatário que assine na área abaixo:
+                        </p>
+                        
+                        <div className="signature-container mb-3">
+                          <canvas
+                            ref={canvasRef}
+                            width={500}
+                            height={200}
+                            className="border border-2 rounded bg-white"
+                            style={{ 
+                              cursor: "crosshair",
+                              maxWidth: "100%",
+                              height: "auto"
+                            }}
+                            onMouseDown={startDrawing}
+                            onMouseMove={draw}
+                            onMouseUp={stopDrawing}
+                            onMouseLeave={stopDrawing}
+                          />
+                        </div>
+                        
+                        <div className="d-flex gap-2 justify-content-center">
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={clearSignature}
+                          >
+                            <i className="bi bi-eraser-fill me-1"></i>
+                            Limpar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-warning"
+                            onClick={saveSignature}
+                          >
+                            <i className="bi bi-save-fill me-1"></i>
+                            Gravar Assinatura
+                          </button>
+                        </div>
+
+                        <div
+                          id="signature-saved-message"
+                          className="alert alert-success mt-3"
+                          style={{ display: "none" }}
+                        >
+                          <i className="bi bi-check-circle-fill me-2"></i>
+                          <strong>Assinatura gravada</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

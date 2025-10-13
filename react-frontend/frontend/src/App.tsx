@@ -3,6 +3,7 @@ import LogisticsManager from "./components/PageLogisticsManager";
 import Driver from "./components/Driver";
 import DriverProofOfDelivery from "./components/DriverProofOfDelivery";
 import DriverCargoManifest from "./components/DriverCargoManifest";
+import ConfirmDelivery from "./components/ConfirmDelivery";
 import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
@@ -24,6 +25,10 @@ function App() {
           <Route
             path={Paths.PATH_DRIVER_CARGO_MANIFEST}
             element={<DriverCargoManifest />}
+          />
+          <Route
+            path="/confirm-delivery"
+            element={<ConfirmDelivery />}
           />
           <Route
             path={Paths.PATH_LOGISTICS_MANAGER}

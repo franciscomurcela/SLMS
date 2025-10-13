@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import map from "../assets/map.svg";
 import Paths from "./UtilsPaths";
@@ -65,6 +66,7 @@ const mockPackages: Package[] = [
 ];
 
 function DriverCargoManifest() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<"Pendente" | "Entregue" | "Todas">("Todas");
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [sortBy, setSortBy] = useState<"orderDate" | "distanceKm">("orderDate");
@@ -106,8 +108,8 @@ function DriverCargoManifest() {
   };
 
   const handleMarkAsDelivered = (pkg: Package) => {
-    // Aqui você pode implementar a marcação como entregue
-    alert(`Marcando ${pkg.id} como entregue`);
+    // Redirecionar para a página de confirmação de entrega
+    navigate(`/confirm-delivery?orderId=${pkg.id}`);
     closeModal();
   };
 
@@ -354,7 +356,7 @@ function DriverCargoManifest() {
                     className="btn btn-success"
                     onClick={() => handleMarkAsDelivered(selectedPackage)}
                   >
-                    Marcar como Entregue
+                    Confirmar Entrega
                   </button>
                 )}
               </div>

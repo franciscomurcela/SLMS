@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 const role: string = "Logistics Manager";
 
-type Row = Record<string, any>;
+type Row = Record<string, unknown>;
 
 function LogisticsManager() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -131,11 +131,18 @@ function LogisticsManager() {
   const columns = columnsOrdered.length ? columnsOrdered : rows.length ? Object.keys(rows[0]) : [];
 
   // helper to render rating as stars when appropriate
-  function renderCell(key: string, value: any) {
+  function renderCell(key: string, value: unknown) {
     if (value == null) return "";
 
-  if (/rating|score/i.test(key)) {
-      const n = Number(value);
+    // helper to extract a numeric value safely from unknown
+    const toNumber = (v: unknown): number => {
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v))) return Number(v);
+      return NaN;
+    };
+
+    if (/rating|score/i.test(key)) {
+      const n = toNumber(value);
       if (Number.isFinite(n)) {
         // normalize to 0-5 scale: if value > 5 assume 0-100 percentage
         const stars =
@@ -148,7 +155,7 @@ function LogisticsManager() {
 
     // currency formatting for cost columns
     if (/cost|avg_cost/i.test(key)) {
-      const n = Number(value);
+      const n = toNumber(value);
       if (Number.isFinite(n)) {
         return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
       }
@@ -156,7 +163,7 @@ function LogisticsManager() {
 
     // percentage formatting for rates
     if (/rate|success/i.test(key)) {
-      const n = Number(value);
+      const n = toNumber(value);
       if (Number.isFinite(n)) {
         // if value looks like 0-1, convert to percent
         const pct = n <= 1 ? n * 100 : n;
@@ -176,7 +183,8 @@ function LogisticsManager() {
       return `${value.slice(0, 8)}...`;
     }
 
-    // default stringify
+    // default stringify (handle objects/arrays safely)
+    if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
   }
 

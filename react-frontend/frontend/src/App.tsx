@@ -7,6 +7,7 @@ import ConfirmDelivery from "./components/ConfirmDelivery";
 import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
+import OrderDetails from "./components/OrderDetails";
 import CustomerServiceRep from "./components/PageCustomerServiceRep";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Paths from "./components/UtilsPaths";
@@ -40,6 +41,7 @@ function App() {
           />
           <Route path={Paths.PATH_PROFILE} element={<Profile />} />
           <Route path={Paths.PATH_WAREHOUSE} element={<Warehouse />} />
+          <Route path="/warehouse/order/:orderId" element={<OrderDetails />} />
           <Route
             path={Paths.PATH_CUSTOMER_SERVICE_REP}
             element={<CustomerServiceRep />}

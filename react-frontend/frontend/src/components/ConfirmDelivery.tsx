@@ -170,43 +170,32 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
               </div>
             </div>
 
-            {/* Informações do destinatário e endereço */}
-            <div className="row mb-4">
-              <div className="col-md-6">
-                <div className="card h-100 shadow-sm">
-                  <div className="card-header bg-primary text-white">
-                    <h5 className="mb-0">
-                      <i className="bi bi-person-fill me-2"></i>
-                      Informações do Destinatário
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    <p className="mb-2">
+            {/* Informações do destinatário e endereço combinadas */}
+            <div className="card mb-4 shadow-sm">
+              <div className="card-header bg-primary text-white">
+                <h5 className="mb-0" style={{ fontSize: "1.5rem" }}>
+                  <i className="bi bi-info-circle-fill me-2"></i>
+                  Informações do Destinatário e Entrega
+                </h5>
+              </div>
+              <div className="card-body">
+                <div className="row">
+                  <div className="col-md-6">
+                    <p className="mb-2" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
                       <i className="bi bi-person-badge me-2 text-primary"></i>
                       <strong>Nome:</strong> {recipientData.name}
                     </p>
-                    <p className="mb-0">
+                    <p className="mb-2" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
                       <i className="bi bi-telephone-fill me-2 text-primary"></i>
                       <strong>Telefone:</strong> {recipientData.phone}
                     </p>
                   </div>
-                </div>
-              </div>
-              
-              <div className="col-md-6">
-                <div className="card h-100 shadow-sm">
-                  <div className="card-header bg-success text-white">
-                    <h5 className="mb-0">
-                      <i className="bi bi-geo-alt-fill me-2"></i>
-                      Endereço de Entrega
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    <p className="mb-2">
+                  <div className="col-md-6">
+                    <p className="mb-2" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
                       <i className="bi bi-house-fill me-2 text-success"></i>
                       <strong>Rua:</strong> {recipientData.street}
                     </p>
-                    <p className="mb-0">
+                    <p className="mb-0" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
                       <i className="bi bi-mailbox me-2 text-success"></i>
                       <strong>Código Postal:</strong> {recipientData.postalCode}
                     </p>

@@ -1,0 +1,68 @@
+package com.shipping.orderservice.model;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+// Map to exact case-sensitive table name created in Supabase
+@Table(name = "\"Orders\"")
+public class Order {
+
+    @Id
+    @GeneratedValue
+    @Column(name = "order_id")
+    private UUID orderId;
+
+    // Note: the Supabase table uses the column name "costumer_id" (typo). Map to it explicitly.
+    @Column(name = "costumer_id", nullable = false)
+    private UUID customerId;
+
+    @Column(name = "carrier_id")
+    private UUID carrierId;
+
+    @Column(name = "origin_address")
+    private String originAddress;
+
+    @Column(name = "destination_address")
+    private String destinationAddress;
+
+    @Column(name = "weight")
+    private float weight;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "order_date", nullable = false)
+    private LocalDateTime orderDate = LocalDateTime.now();
+
+    // Getters e Setters
+    public UUID getOrderId() { return orderId; }
+    public void setOrderId(UUID orderId) { this.orderId = orderId; }
+
+    public UUID getCustomerId() { return customerId; }
+    public void setCustomerId(UUID customerId) { this.customerId = customerId; }
+
+    public UUID getCarrierId() { return carrierId; }
+    public void setCarrierId(UUID carrierId) { this.carrierId = carrierId; }
+
+    public String getOriginAddress() { return originAddress; }
+    public void setOriginAddress(String originAddress) { this.originAddress = originAddress; }
+
+    public String getDestinationAddress() { return destinationAddress; }
+    public void setDestinationAddress(String destinationAddress) { this.destinationAddress = destinationAddress; }
+
+    public float getWeight() { return weight; }
+    public void setWeight(float weight) { this.weight = weight; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public LocalDateTime getOrderDate() { return orderDate; }
+    public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
+}

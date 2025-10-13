@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    image: notification-service:latest
+    ports:
+      - '8084:8080'
+    env_file:
+      - ../.env
+    environment:
+      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL}"
+      SPRING_CONFIG_ADDITIONAL_LOCATION: "/shared-config/application-db.yml"
+    volumes:
+      - ../config/application-db.yml:/shared-config/application-db.yml:ro

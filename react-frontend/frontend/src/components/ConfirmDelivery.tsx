@@ -15,6 +15,22 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Estados para anomalias
+  const [showAnomalyModal, setShowAnomalyModal] = useState(false);
+  const [selectedAnomaly, setSelectedAnomaly] = useState<string>("");
+  const [anomalyDescription, setAnomalyDescription] = useState<string>("");
+
+  // Opções de anomalias
+  const anomalyOptions = [
+    "Destinatário ausente",
+    "Indisponibilidade horária",
+    "Endereço incorreto",
+    "Produto danificado",
+    "Acesso negado ao local",
+    "Problemas de segurança",
+    "Outras (especificar)"
+  ];
+
   // Dados mock do destinatário - em produção viriam do backend
   const recipientData = {
     name: "João Silva",
@@ -93,6 +109,27 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     navigate("/driver/manifest");
   };
 
+  const handleReportAnomaly = () => {
+    setShowAnomalyModal(true);
+  };
+
+  const handleAnomalySubmit = () => {
+    if (selectedAnomaly) {
+      // Aqui seria implementada a lógica para registrar a anomalia
+      console.log("Anomalia registrada:", selectedAnomaly, anomalyDescription);
+      alert(`Anomalia registrada: ${selectedAnomaly}`);
+      navigate("/driver/manifest");
+    } else {
+      alert("Por favor, selecione um tipo de anomalia.");
+    }
+  };
+
+  const handleCloseAnomalyModal = () => {
+    setShowAnomalyModal(false);
+    setSelectedAnomaly("");
+    setAnomalyDescription("");
+  };
+
   useEffect(() => {
     // Configurar o canvas para desenho
     const canvas = canvasRef.current;
@@ -112,12 +149,25 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
       <div className="container mt-4 mb-5">
         <div className="row justify-content-center">
           <div className="col-12 col-lg-10">
-            {/* Título */}
-            <div className="text-center mb-4">
-              <h2 className="display-6 fw-bold text-primary">
-                Confirmar Entrega
-              </h2>
-              <h4 className="text-muted">ID: {orderId}</h4>
+            {/* Título e Botão de Anomalias */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div className="text-center flex-grow-1">
+                <h2 className="display-6 fw-bold text-primary">
+                  Confirmar Entrega
+                </h2>
+                <h4 className="text-muted">ID: {orderId}</h4>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-warning btn-lg px-4 py-3"
+                  onClick={handleReportAnomaly}
+                  style={{ fontSize: "1.1rem", fontWeight: "bold" }}
+                >
+                  <i className="bi bi-exclamation-triangle-fill me-2" style={{ fontSize: "1.3rem" }}></i>
+                  Registrar Anomalia
+                </button>
+              </div>
             </div>
 
             {/* Informações do destinatário e endereço */}
@@ -132,9 +182,11 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                   </div>
                   <div className="card-body">
                     <p className="mb-2">
+                      <i className="bi bi-person-badge me-2 text-primary"></i>
                       <strong>Nome:</strong> {recipientData.name}
                     </p>
                     <p className="mb-0">
+                      <i className="bi bi-telephone-fill me-2 text-primary"></i>
                       <strong>Telefone:</strong> {recipientData.phone}
                     </p>
                   </div>
@@ -151,9 +203,11 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                   </div>
                   <div className="card-body">
                     <p className="mb-2">
+                      <i className="bi bi-house-fill me-2 text-success"></i>
                       <strong>Rua:</strong> {recipientData.street}
                     </p>
                     <p className="mb-0">
+                      <i className="bi bi-mailbox me-2 text-success"></i>
                       <strong>Código Postal:</strong> {recipientData.postalCode}
                     </p>
                   </div>
@@ -187,6 +241,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                       <div className="card-body text-center">
                         <div className="mb-3">
                           <label htmlFor="imageUpload" className="form-label">
+                            <i className="bi bi-image me-2 text-info"></i>
                             Carregar foto da entrega:
                           </label>
                           <input
@@ -217,8 +272,9 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                             onClick={() => document.getElementById("imageUpload")?.click()}
                             style={{ cursor: "pointer" }}
                           >
-                            <i className="bi bi-cloud-upload display-4 text-muted"></i>
+                            <i className="bi bi-cloud-upload display-4 text-info"></i>
                             <p className="text-muted mt-2">
+                              <i className="bi bi-hand-index me-1"></i>
                               Clique aqui para carregar uma imagem
                             </p>
                           </div>
@@ -238,6 +294,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                       </div>
                       <div className="card-body text-center">
                         <p className="text-muted mb-3">
+                          <i className="bi bi-person-check me-2 text-warning"></i>
                           Solicite ao destinatário que assine na área abaixo:
                         </p>
                         
@@ -273,7 +330,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                             className="btn btn-warning"
                             onClick={saveSignature}
                           >
-                            <i className="bi bi-save-fill me-1"></i>
+                            <i className="bi bi-check-square-fill me-1"></i>
                             Gravar Assinatura
                           </button>
                         </div>
@@ -307,6 +364,85 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Anomalias */}
+      {showAnomalyModal && (
+        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header bg-warning text-dark">
+                <h5 className="modal-title">
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                  Registrar Anomalia
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={handleCloseAnomalyModal}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label htmlFor="anomalySelect" className="form-label">
+                    Tipo de Anomalia:
+                  </label>
+                  <select
+                    className="form-select"
+                    id="anomalySelect"
+                    value={selectedAnomaly}
+                    onChange={(e) => setSelectedAnomaly(e.target.value)}
+                  >
+                    <option value="">Selecione uma anomalia...</option>
+                    {anomalyOptions.map((option, index) => (
+                      <option key={index} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {selectedAnomaly === "Outras (especificar)" && (
+                  <div className="mb-3">
+                    <label htmlFor="anomalyDescription" className="form-label">
+                      Descrição da Anomalia:
+                    </label>
+                    <textarea
+                      className="form-control"
+                      id="anomalyDescription"
+                      rows={3}
+                      value={anomalyDescription}
+                      onChange={(e) => setAnomalyDescription(e.target.value)}
+                      placeholder="Descreva a anomalia encontrada..."
+                    />
+                  </div>
+                )}
+                
+                <div className="alert alert-info">
+                  <i className="bi bi-info-circle-fill me-2"></i>
+                  <strong>Nota:</strong> Ao registrar uma anomalia, a entrega não será confirmada e você retornará ao manifesto de carga.
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCloseAnomalyModal}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  onClick={handleAnomalySubmit}
+                >
+                  <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                  Registrar Anomalia
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -69,21 +69,21 @@ const carriers: Carrier[] = [
   {
     id: "ups",
     name: "UPS",
-    logo: "https://logos-world.net/wp-content/uploads/2020/09/UPS-Logo.png",
+    logo: "",
     estimatedDays: "1-2 dias úteis",
     price: 12.50
   },
   {
     id: "dhl",
     name: "DHL",
-    logo: "https://logos-world.net/wp-content/uploads/2020/05/DHL-Logo.png",
+    logo: "",
     estimatedDays: "1-3 dias úteis",
     price: 15.75
   },
   {
     id: "ctt",
     name: "CTT",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/CTT_logo.svg/1200px-CTT_logo.svg.png",
+    logo: "",
     estimatedDays: "2-4 dias úteis",
     price: 8.90
   }
@@ -94,7 +94,6 @@ function OrderDetails() {
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
   const [selectedCarrier, setSelectedCarrier] = useState<string>("");
-  const [showDocumentsMenu, setShowDocumentsMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -122,17 +121,6 @@ function OrderDetails() {
     const carrier = carriers.find(c => c.id === selectedCarrier);
     alert(`Pedido ${orderId} despachado com sucesso via ${carrier?.name}!`);
     navigate("/warehouse");
-  };
-
-  const handleDocumentGeneration = (documentType: "shipping_note" | "shipping_label") => {
-    if (!selectedCarrier) {
-      alert("Por favor, selecione uma transportadora antes de gerar documentos.");
-      return;
-    }
-    
-    const docName = documentType === "shipping_note" ? "Nota de Envio" : "Etiqueta de Envio";
-    alert(`${docName} gerada com sucesso para o pedido ${orderId}!`);
-    setShowDocumentsMenu(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -343,17 +331,6 @@ function OrderDetails() {
                             onClick={() => handleCarrierChange(carrier.id)}
                           >
                             <div className="card-body text-center">
-                              <img 
-                                src={carrier.logo} 
-                                alt={carrier.name}
-                                className="img-fluid mb-3"
-                                style={{ maxHeight: '50px', objectFit: 'contain' }}
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                  e.currentTarget.nextElementSibling!.textContent = carrier.name;
-                                }}
-                              />
-                              <div style={{ display: 'none' }}></div>
                               <h6 className="card-title">{carrier.name}</h6>
                               <p className="card-text">
                                 <small className="text-muted">{carrier.estimatedDays}</small>
@@ -408,41 +385,38 @@ function OrderDetails() {
                     </h5>
                   </div>
                   <div className="card-body">
-                    <div className="dropdown w-100">
-                      <button 
-                        className="btn btn-outline-warning dropdown-toggle w-100"
-                        type="button"
-                        onClick={() => setShowDocumentsMenu(!showDocumentsMenu)}
-                        disabled={!selectedCarrier}
-                      >
-                        <i className="bi bi-download me-2"></i>
-                        Gerar Documentos
-                      </button>
-                      {showDocumentsMenu && selectedCarrier && (
-                        <ul className="dropdown-menu show w-100 mt-2">
-                          <li>
-                            <button 
-                              className="dropdown-item"
-                              onClick={() => handleDocumentGeneration('shipping_note')}
-                            >
-                              <i className="bi bi-file-earmark-text me-2"></i>
-                              Nota de Envio
-                            </button>
-                          </li>
-                          <li>
-                            <button 
-                              className="dropdown-item"
-                              onClick={() => handleDocumentGeneration('shipping_label')}
-                            >
-                              <i className="bi bi-tag me-2"></i>
-                              Etiqueta de Envio
-                            </button>
-                          </li>
-                        </ul>
-                      )}
+                    <button 
+                      className="btn btn-outline-warning w-100 mb-3"
+                      type="button"
+                      onClick={() => alert("Funcionalidade temporariamente indisponível")}
+                      disabled={!selectedCarrier}
+                    >
+                      <i className="bi bi-download me-2"></i>
+                      Gerar Documentos
+                    </button>
+                    
+                    <div className="mb-2">
+                      <label className="form-label d-flex align-items-center justify-content-between">
+                        <span>
+                          <i className="bi bi-file-earmark-text me-2"></i>
+                          Notas de envio
+                        </span>
+                        <i className="bi bi-x text-muted"></i>
+                      </label>
                     </div>
+                    
+                    <div className="mb-2">
+                      <label className="form-label d-flex align-items-center justify-content-between">
+                        <span>
+                          <i className="bi bi-tag me-2"></i>
+                          Etiquetas de envio
+                        </span>
+                        <i className="bi bi-x text-muted"></i>
+                      </label>
+                    </div>
+
                     {!selectedCarrier && (
-                      <small className="text-muted">
+                      <small className="text-muted mt-2 d-block">
                         Selecione uma transportadora para gerar documentos
                       </small>
                     )}
@@ -450,13 +424,13 @@ function OrderDetails() {
                 </div>
 
                 {/* Botão de Despacho */}
-                <div className="card shadow-sm">
+                <div className="card shadow-sm mt-4">
                   <div className="card-body text-center">
                     <button
                       className="btn btn-success btn-lg w-100 py-3"
                       onClick={handleDispatchOrder}
                       disabled={!selectedCarrier || order.status === "Despachado"}
-                      style={{ fontSize: '1.2rem', fontWeight: 'bold' }}
+                      style={{ fontSize: '1.2rem', fontWeight: 'bold', marginTop: '20px' }}
                     >
                       <i className="bi bi-send-fill me-2"></i>
                       {order.status === "Despachado" ? "Já Despachado" : "Despachar Encomenda"}

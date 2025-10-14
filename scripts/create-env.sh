@@ -11,6 +11,10 @@ DB_PORT="6543"
 DB_NAME="postgres"
 DB_USER="postgres.pylhwbcmavnjfczwribo"
 DB_PASS="ESgrupo204-"
+
+SUPABASE_URL=https://pylhwbcmavnjfczwribo.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5bGh3YmNtYXZuamZjendyaWJvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTgwODkzNiwiZXhwIjoyMDc1Mzg0OTM2fQ.JYy4I0c_cZLlS2bRGnPDHXDuSh9R9rkwIZZGQiw97oY
+
 # ================================================
 
 ## Determine backend directory and target .env path

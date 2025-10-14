@@ -67,7 +67,7 @@ export default function OrdersPanel() {
         
         // Fetch carriers
         const carriersResp = await fetch("/carriers").catch(() =>
-          fetch("http://localhost:8082/carriers")
+          fetch("http://localhost:8080/carriers")
         );
         if (!carriersResp.ok) throw new Error(`Carriers fetch failed: ${carriersResp.status}`);
         const carriersData = await carriersResp.json();

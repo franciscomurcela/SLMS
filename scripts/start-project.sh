@@ -50,13 +50,30 @@ echo ""
 echo "🌐 Services:"
 echo "  - Keycloak:        http://localhost:8083"
 echo "  - User Service:    http://localhost:8082"
+echo "  - Order Service:   http://localhost:8081"
 echo "  - Carrier Service: http://localhost:8080"
 echo ""
-echo "📋 Next steps:"
-echo "  1. Configure Keycloak (see SETUP.md section 1.3)"
-echo "  2. Start frontend:"
-echo "     cd react-frontend/frontend"
-echo "     npm run dev"
+echo "📋 Next step: Configure Keycloak (see SETUP.md section 1.3)"
 echo ""
 echo "🔑 Keycloak admin: http://localhost:8083/admin (admin/admin)"
+echo ""
+echo "🚀 Starting frontend in new terminal..."
+sleep 2
+
+# Start frontend in new terminal (works on Linux/Mac)
+if command -v gnome-terminal &> /dev/null; then
+    gnome-terminal -- bash -c "cd '$FRONTEND_DIR' && echo '🌐 Starting frontend...' && npm run dev; exec bash"
+elif command -v xterm &> /dev/null; then
+    xterm -e "cd '$FRONTEND_DIR' && echo '🌐 Starting frontend...' && npm run dev; bash" &
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    osascript -e "tell application \"Terminal\" to do script \"cd '$FRONTEND_DIR' && echo '🌐 Starting frontend...' && npm run dev\""
+else
+    echo "⚠️  Could not detect terminal. Start frontend manually:"
+    echo "   cd react-frontend/frontend"
+    echo "   npm run dev"
+fi
+
+echo ""
+echo "✅ Setup complete!"
+echo "📱 Frontend will be available at: http://localhost:5173"
 echo ""

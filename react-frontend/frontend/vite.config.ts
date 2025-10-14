@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // forward API calls in development to the carrier service on localhost:8082
+      // forward API calls in development to the carrier service on localhost:8080
       '/carriers': {
-        target: 'http://localhost:8082',
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },

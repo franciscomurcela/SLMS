@@ -73,13 +73,21 @@ Write-Host ""
 Write-Host "🌐 Services:" -ForegroundColor Cyan
 Write-Host "  - Keycloak:        http://localhost:8083"
 Write-Host "  - User Service:    http://localhost:8082"
+Write-Host "  - Order Service:   http://localhost:8081"
 Write-Host "  - Carrier Service: http://localhost:8080"
 Write-Host ""
-Write-Host "📋 Next steps:" -ForegroundColor Yellow
-Write-Host "  1. Configure Keycloak (see SETUP.md section 1.3)"
-Write-Host "  2. Start frontend:"
-Write-Host "     cd react-frontend\frontend"
-Write-Host "     npm run dev"
+Write-Host "📋 Next step: Configure Keycloak (see SETUP.md section 1.3)" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "🔑 Keycloak admin: http://localhost:8083/admin (admin/admin)" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "🚀 Starting frontend in new terminal..." -ForegroundColor Yellow
+Start-Sleep -Seconds 2
+
+# Start frontend in new terminal
+$FrontendCommand = "cd '$FrontendDir'; Write-Host '🌐 Starting frontend...' -ForegroundColor Cyan; npm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $FrontendCommand
+
+Write-Host ""
+Write-Host "✅ Frontend terminal opened!" -ForegroundColor Green
+Write-Host "📱 Frontend will be available at: http://localhost:5173" -ForegroundColor Cyan
 Write-Host ""

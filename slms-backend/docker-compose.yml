@@ -1,4 +1,8 @@
 services:
+  # ============================================
+  # DATABASES
+  # ============================================
+  
   # PostgreSQL para Keycloak
   keycloak-db:
     image: postgres:15
@@ -9,6 +13,8 @@ services:
       POSTGRES_PASSWORD: keycloak
     volumes:
       - keycloak-pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Porta externa 5433 para evitar conflito
     networks:
       - slms-network
     healthcheck:
@@ -16,6 +22,30 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # PostgreSQL para Order Service
+  order-db:
+    image: postgres:15
+    container_name: order-db
+    environment:
+      POSTGRES_DB: shipping
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"  # Porta padrão para order service
+    networks:
+      - slms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d shipping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # AUTHENTICATION & SECURITY
+  # ============================================
 
   # Keycloak (Authentication Service) - Porta 8083
   keycloak:
@@ -40,8 +70,10 @@ services:
       - keycloak-data:/opt/keycloak/data
     networks:
       - slms-network
-    # Simplified: just wait for container to be up
-    # Health check removed because curl not available in container
+
+  # ============================================
+  # MICROSERVICES
+  # ============================================
 
   # User Service (Authentication + User Sync) - Porta 8082
   user-service:
@@ -52,13 +84,12 @@ services:
     environment:
       SPRING_APPLICATION_NAME: user_service
       SERVER_PORT: 8082
-      # Removed ISSUER_URI - using application.properties with localhost:8083
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
     ports:
       - "8082:8082"
     extra_hosts:
-      - "host.docker.internal:host-gateway"  # Allow container to access host's localhost
+      - "host.docker.internal:host-gateway"
     depends_on:
       - keycloak
     networks:
@@ -87,6 +118,27 @@ services:
       retries: 3
       start_period: 60s
 
+  # Order Service - Porta 8081
+  order-service:
+    build:
+      context: ./order_service/demo
+      dockerfile: Dockerfile
+    container_name: order-service
+    environment:
+      SPRING_APPLICATION_NAME: order_service
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+    ports:
+      - "8081:8080"
+    networks:
+      - slms-network
+
+# ============================================
+# NETWORKS & VOLUMES
+# ============================================
+
 networks:
   slms-network:
     driver: bridge
@@ -95,4 +147,6 @@ volumes:
   keycloak-pgdata:
     driver: local
   keycloak-data:
+    driver: local
+  order-db-data:
     driver: local

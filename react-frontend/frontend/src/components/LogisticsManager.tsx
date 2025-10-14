@@ -41,8 +41,8 @@ function LogisticsManager() {
       }
 
       try {
-        console.log('Fetching direct http://localhost:8082/carriers ...');
-        const r2 = await fetch('http://localhost:8082/carriers');
+        console.log('Fetching direct http://localhost:8080/carriers ...');
+        const r2 = await fetch('http://localhost:8080/carriers');
         const text2 = await r2.text();
         setRawResponse(text2);
         if (!r2.ok) throw new Error(`HTTP ${r2.status}`);

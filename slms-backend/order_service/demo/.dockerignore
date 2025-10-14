@@ -1,0 +1,9 @@
+target/
+.m2/
+.idea/
+*.iml
+*.class
+logs/
+*.log
+**/node_modules
+/.git

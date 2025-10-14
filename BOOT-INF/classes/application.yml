@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    # Use preferQueryMode=simple and prepareThreshold=0 to avoid server-side prepared statements when
+    # connecting through Supabase's transaction pooler (PgBouncer). Also enforce SSL.
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require&preferQueryMode=simple&prepareThreshold=0
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    # Ensure Hibernate quotes identifiers so exact case-sensitive table names (like Orders) are used.
+    properties:
+      hibernate.globally_quoted_identifiers: true
+    show-sql: true
+    open-in-view: false

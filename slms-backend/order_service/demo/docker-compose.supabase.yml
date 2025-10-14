@@ -1,0 +1,24 @@
+services:
+  app:
+    build: .
+    image: order-demo:latest
+    ports:
+      - '8081:8080'
+    # Use centralized env file from shipping_backend so other services can share the same DB creds
+    env_file:
+      - ../../.env
+    environment:
+      # SPRING_DATASOURCE_URL will be read from .env
+      # Optional: keep DB_* vars for backwards compatibility
+      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL}"
+      DB_HOST: "${DB_HOST}"
+      DB_PORT: "${DB_PORT}"
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASS: "${DB_PASS}"
+      # Mount central config file and make Spring boot load it
+      SPRING_CONFIG_ADDITIONAL_LOCATION: "/shared-config/application-db.yml"
+
+    volumes:
+      - ../../config/application-db.yml:/shared-config/application-db.yml:ro
+

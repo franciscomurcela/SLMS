@@ -1,0 +1,10 @@
+services:
+  carrier:
+    build: .
+    image: carrier-service:latest
+    ports:
+      - '8082:8080'
+    env_file:
+      - ../../.env
+    volumes:
+      - ../../config/application-db.yml:/shared-config/application-db.yml:ro

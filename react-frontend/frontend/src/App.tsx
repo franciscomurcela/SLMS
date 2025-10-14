@@ -7,8 +7,9 @@ import ConfirmDelivery from "./components/ConfirmDelivery";
 import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
-import OrderDetails from "./components/OrderDetails";
+import ProcessOrder from "./components/PageProcessOrder";
 import CustomerServiceRep from "./components/PageCustomerServiceRep";
+import AuthTest from "./components/AuthTest";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Paths from "./components/UtilsPaths";
 
@@ -18,6 +19,7 @@ function App() {
       <Router>
         <Routes>
           <Route path={Paths.PATH_LOGIN} element={<Login />} />
+          <Route path="/auth-test" element={<AuthTest />} />
           <Route path={Paths.PATH_DRIVER} element={<Driver />} />
           <Route
             path={Paths.PATH_DRIVER_PROOF_OF_DELIVERY}
@@ -41,7 +43,7 @@ function App() {
           />
           <Route path={Paths.PATH_PROFILE} element={<Profile />} />
           <Route path={Paths.PATH_WAREHOUSE} element={<Warehouse />} />
-          <Route path="/warehouse/order/:orderId" element={<OrderDetails />} />
+          <Route path="/warehouse/process/:orderId" element={<ProcessOrder />} />
           <Route
             path={Paths.PATH_CUSTOMER_SERVICE_REP}
             element={<CustomerServiceRep />}

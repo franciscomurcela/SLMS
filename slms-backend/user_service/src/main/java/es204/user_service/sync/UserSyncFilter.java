@@ -46,14 +46,17 @@ public class UserSyncFilter implements Filter {
                 String sub = jwt.getClaimAsString("sub");
                 String email = jwt.getClaimAsString("email");
                 String preferredUsername = jwt.getClaimAsString("preferred_username");
+                String givenName = jwt.getClaimAsString("given_name");
+                String familyName = jwt.getClaimAsString("family_name");
                 
                 if (sub != null) {
                     UUID keycloakId = UUID.fromString(sub);
                     
                     // Sync user to Supabase (create if not exists, update last_login if exists)
-                    userSyncService.syncUser(keycloakId, email, preferredUsername);
+                    userSyncService.syncUser(keycloakId, email, preferredUsername, givenName, familyName);
                     
-                    log.debug("User synced: keycloak_id={}, email={}", keycloakId, email);
+                    log.debug("User synced: keycloak_id={}, email={}, name={} {} {}", 
+                        keycloakId, email, preferredUsername, givenName, familyName);
                 }
             } catch (Exception e) {
                 // Log error but don't block request

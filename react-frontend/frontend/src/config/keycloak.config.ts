@@ -1,6 +1,6 @@
 // Keycloak configuration
 export const keycloakConfig = {
-  url: 'http://localhost:8081',
+  url: 'http://localhost:8083',
   realm: 'ESg204',
   clientId: 'frontend',
 };

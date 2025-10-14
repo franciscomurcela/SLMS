@@ -35,7 +35,7 @@ Supabase (Users table)
 
 ### Pré-requisitos
 
-1. Keycloak a correr (porta 8081)
+1. Keycloak a correr (porta 8083)
 2. Supabase configurado com tabela `Users`
 3. Java 17+
 4. Maven 3.6+
@@ -122,7 +122,7 @@ spring.application.name=user_service
 server.port=8082
 
 # Keycloak JWT validation
-spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8081/realms/ESg204
+spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8083/realms/ESg204
 
 # Supabase
 supabase.url=${SUPABASE_URL}
@@ -180,7 +180,7 @@ CREATE INDEX idx_users_keycloak_id ON public."Users"(keycloak_id);
 
 ```bash
 # Obter token do Keycloak (substitua credenciais)
-TOKEN=$(curl -X POST http://localhost:8081/realms/ESg204/protocol/openid-connect/token \
+TOKEN=$(curl -X POST http://localhost:8083/realms/ESg204/protocol/openid-connect/token \
   -d "client_id=frontend" \
   -d "username=testuser" \
   -d "password=testpass" \
@@ -249,10 +249,10 @@ Os outros microserviços (carrier_service, order_service, etc.) **NÃO precisam*
 **Problema**: `401 Unauthorized`
 
 **Soluções**:
-1. Verifique se Keycloak está a correr em `http://localhost:8081`
+1. Verifique se Keycloak está a correr em `http://localhost:8083`
 2. Teste o JWKS endpoint:
    ```bash
-   curl http://localhost:8081/realms/ESg204/protocol/openid-connect/certs
+   curl http://localhost:8083/realms/ESg204/protocol/openid-connect/certs
    ```
 3. Verifique se `issuer-uri` está correto no `application.properties`
 

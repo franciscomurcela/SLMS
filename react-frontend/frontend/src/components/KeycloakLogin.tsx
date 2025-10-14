@@ -4,7 +4,7 @@ import { useKeycloak } from '../context/KeycloakContext';
 import './KeycloakLogin.css';
 
 const KeycloakLogin = () => {
-  const { keycloak, authenticated, loading, login, userInfo } = useKeycloak();
+  const { authenticated, loading, login, userInfo } = useKeycloak();
   const navigate = useNavigate();
 
   useEffect(() => {

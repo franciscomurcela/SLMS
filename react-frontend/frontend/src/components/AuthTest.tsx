@@ -3,7 +3,7 @@ import { BACKEND_URL } from "../config/keycloak.config";
 import { useState } from "react";
 
 function AuthTest() {
-  const { keycloak, authenticated, loading, userInfo, token, logout } = useKeycloak();
+  const { authenticated, loading, userInfo, token, logout } = useKeycloak();
   const [backendResponse, setBackendResponse] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 

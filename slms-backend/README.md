@@ -66,7 +66,7 @@ O script cria:
 - ✅ Client `frontend` (público, PKCE habilitado)
 - ✅ Utilizador de teste: `testuser` / `testpass`
 
-**Keycloak Admin Console:** http://localhost:8081
+**Keycloak Admin Console:** http://localhost:8083
 - Username: `admin`
 - Password: `admin`
 
@@ -204,7 +204,7 @@ docker compose -f docker-compose.keycloak.yml logs -f keycloak
 ## 🔐 Utilizadores de Teste
 
 ### Keycloak Admin
-- URL: http://localhost:8081
+- URL: http://localhost:8083
 - Username: `admin`
 - Password: `admin`
 

@@ -2,62 +2,55 @@ import Header from "./Header";
 import { Sidebar } from "react-pro-sidebar";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
-import WarehouseCard from "./WarehouseCard";
+import OrdersPanel from "./OrdersPanel";
 
 const role: string = Roles.ROLE_WAREHOUSE;
 const href: string = Paths.PATH_WAREHOUSE;
-
-const pedido: string = "12345";
 
 function Warehouse() {
   return (
     <>
       <Header role={role} href={href} />
-      <Sidebar>
-        <div className="d-grid gap-2 col-6 mx-auto">
-          <button className="btn btn-primary" type="button">
-            Rating Transportadoras
-          </button>
-          <button className="btn btn-primary" type="button">
-            Gerar Relatórios
-          </button>
-          <button className="btn btn-primary" type="button">
-            KPI
-          </button>
-        </div>
-      </Sidebar>
+      <div className="d-flex">
+        <Sidebar className="bg-light border-end" style={{ minHeight: "100vh" }}>
+          <div className="p-3">
+            <h6 className="text-muted text-uppercase mb-3">Ferramentas</h6>
+            <div className="d-grid gap-2">
+              <button className="btn btn-outline-primary" type="button">
+                <i className="bi bi-star me-2"></i>
+                Rating Transportadoras
+              </button>
+              <button className="btn btn-outline-primary" type="button">
+                <i className="bi bi-file-earmark-text me-2"></i>
+                Gerar Relatórios
+              </button>
+              <button className="btn btn-outline-primary" type="button">
+                <i className="bi bi-graph-up me-2"></i>
+                KPI
+              </button>
+            </div>
+          </div>
+        </Sidebar>
 
-      <div className="d-grid gap-2 col-6 mx-auto">
-        <div
-          className="btn-group"
-          role="group"
-          aria-label="Basic radio toggle button group"
-        >
-          <input
-            type="radio"
-            className="btn-check"
-            name="btnradio"
-            id="btnradio1"
-          />
-          <label className="btn btn-outline-primary">Pending</label>
+        <main className="flex-grow-1 p-4" style={{ backgroundColor: "#f8f9fa" }}>
+          <div className="container-fluid">
+            <div className="row mb-4">
+              <div className="col">
+                <h2 className="mb-0">
+                  <i className="bi bi-building me-2 text-primary"></i>
+                  Warehouse - Gestão de Pedidos
+                </h2>
+                <p className="text-muted">Visualize e gerencie os pedidos recebidos</p>
+              </div>
+            </div>
 
-          <input
-            type="radio"
-            className="btn-check"
-            name="btnradio"
-            id="btnradio2"
-          />
-          <label className="btn btn-outline-primary">Sent</label>
-        </div>
-        <WarehouseCard requestID={pedido} />
-
-        <ul className="list-group">
-          <li className="list-group-item">Pedido #{pedido}</li>
-          <li className="list-group-item">Entregues</li>
-          <li className="list-group-item">A third item</li>
-          <li className="list-group-item">A fourth item</li>
-          <li className="list-group-item">And a fifth one</li>
-        </ul>
+            <div className="row">
+              <div className="col-12">
+                <OrdersPanel />
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     </>
   );

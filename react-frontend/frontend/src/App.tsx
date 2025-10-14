@@ -6,6 +6,7 @@ import DriverCargoManifest from "./components/DriverCargoManifest";
 import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
+import ProcessOrder from "./components/PageProcessOrder";
 import CustomerServiceRep from "./components/PageCustomerServiceRep";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Paths from "./components/UtilsPaths";
@@ -35,6 +36,7 @@ function App() {
           />
           <Route path={Paths.PATH_PROFILE} element={<Profile />} />
           <Route path={Paths.PATH_WAREHOUSE} element={<Warehouse />} />
+          <Route path="/warehouse/process/:orderId" element={<ProcessOrder />} />
           <Route
             path={Paths.PATH_CUSTOMER_SERVICE_REP}
             element={<CustomerServiceRep />}

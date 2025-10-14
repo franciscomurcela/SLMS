@@ -1,11 +1,24 @@
 import { useKeycloak } from "../context/KeycloakContext";
 import { BACKEND_URL } from "../config/keycloak.config";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function AuthTest() {
   const { authenticated, loading, userInfo, token, logout } = useKeycloak();
   const [backendResponse, setBackendResponse] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Safety timeout: if loading for more than 10 seconds, show error
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 10000);
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
 
   const testBackendCall = async () => {
     try {
@@ -30,8 +43,29 @@ function AuthTest() {
     }
   };
 
-  if (loading) {
-    return <div className="container mt-5">A carregar Keycloak...</div>;
+  if (loading && !loadingTimeout) {
+    return (
+      <div className="container mt-5">
+        <div className="alert alert-info">
+          <div className="spinner-border spinner-border-sm me-2" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          A carregar Keycloak...
+        </div>
+      </div>
+    );
+  }
+
+  if (loadingTimeout) {
+    return (
+      <div className="container mt-5">
+        <div className="alert alert-danger">
+          ❌ Erro: Keycloak demorou muito tempo a carregar. 
+          <br/>
+          Por favor, recarregue a página ou verifique se o Keycloak está a correr (porta 8083).
+        </div>
+      </div>
+    );
   }
 
   if (!authenticated) {

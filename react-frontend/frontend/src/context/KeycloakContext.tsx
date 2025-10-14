@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
 import { keycloakConfig, keycloakInitOptions } from '../config/keycloak.config';
@@ -34,18 +34,23 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [initialized, setInitialized] = useState(false);
+  const initializingRef = useRef(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent re-initialization
-    if (initialized) {
-      console.log('Keycloak already initialized, skipping...');
+    // Prevent re-initialization using ref (more reliable than state)
+    if (initializedRef.current || initializingRef.current) {
+      console.log('Keycloak already initialized or initializing, skipping...');
       return;
     }
+
+    initializingRef.current = true;
 
     const initKeycloak = async () => {
       try {
         console.log('Initializing Keycloak...');
+        setLoading(true);
+        
         const keycloakInstance = new Keycloak(keycloakConfig);
         
         const auth = await keycloakInstance.init(keycloakInitOptions);
@@ -54,15 +59,34 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         
         setKeycloak(keycloakInstance);
         setAuthenticated(auth);
-        setInitialized(true);
+        initializedRef.current = true;
+        setLoading(false);
 
         if (auth) {
-          // Load user info
-          const info = await keycloakInstance.loadUserInfo();
-          setUserInfo(info);
+          // Load user info (but don't block on it)
+          keycloakInstance.loadUserInfo()
+            .then((info) => {
+              setUserInfo(info);
+              console.log('User info loaded:', info);
+            })
+            .catch((err) => {
+              console.warn('Failed to load user info from endpoint, extracting from token:', err);
+              // Fallback: extract user info from token claims
+              if (keycloakInstance.tokenParsed) {
+                const tokenInfo = {
+                  sub: keycloakInstance.tokenParsed.sub,
+                  email: keycloakInstance.tokenParsed.email,
+                  preferred_username: keycloakInstance.tokenParsed.preferred_username,
+                  name: keycloakInstance.tokenParsed.name,
+                  given_name: keycloakInstance.tokenParsed.given_name,
+                  family_name: keycloakInstance.tokenParsed.family_name,
+                };
+                setUserInfo(tokenInfo);
+                console.log('User info extracted from token:', tokenInfo);
+              }
+            });
           
-          console.log('User authenticated:', info);
-          console.log('Token:', keycloakInstance.token);
+          console.log('User authenticated, token:', keycloakInstance.token?.substring(0, 50) + '...');
         } else {
           console.log('User not authenticated');
         }
@@ -84,16 +108,17 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
           });
         };
 
-        setLoading(false);
       } catch (error) {
         console.error('Failed to initialize Keycloak:', error);
         setLoading(false);
-        setInitialized(true);
+        initializedRef.current = true;
+      } finally {
+        initializingRef.current = false;
       }
     };
 
     initKeycloak();
-  }, [initialized]);
+  }, []); // Empty dependency array - run only once on mount
 
   const login = () => {
     if (keycloak) {

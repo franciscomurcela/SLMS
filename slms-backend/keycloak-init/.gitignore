@@ -1,0 +1,15 @@
+# Keycloak init files
+# Keep only the realm export JSON, ignore temporary files
+
+# Temporary export files
+*.tmp
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Keep the realm export
+!ESg204-realm.json
+!README.md

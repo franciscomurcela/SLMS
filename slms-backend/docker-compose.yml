@@ -21,7 +21,9 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
     container_name: keycloak
-    command: start-dev
+    command: 
+      - start-dev
+      - --import-realm
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
@@ -38,10 +40,9 @@ services:
         condition: service_healthy
     volumes:
       - keycloak-data:/opt/keycloak/data
+      - ./keycloak-init:/opt/keycloak/data/import
     networks:
       - slms-network
-    # Simplified: just wait for container to be up
-    # Health check removed because curl not available in container
 
   # User Service (Authentication + User Sync) - Porta 8082
   user-service:

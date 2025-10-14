@@ -72,7 +72,7 @@ export default function PageProcessOrder() {
 
         // Fetch carriers
         const carriersResp = await fetch("/carriers").catch(() =>
-          fetch("http://localhost:8082/carriers")
+          fetch("http://localhost:8080/carriers")
         );
         if (!carriersResp.ok) throw new Error("Failed to fetch carriers");
         const carriersData = await carriersResp.json();

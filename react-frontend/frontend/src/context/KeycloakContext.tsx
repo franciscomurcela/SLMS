@@ -11,6 +11,9 @@ interface KeycloakContextType {
   logout: () => void;
   token: string | undefined;
   userInfo: any;
+  roles: string[];
+  hasRole: (role: string) => boolean;
+  primaryRole: string | undefined;
 }
 
 const KeycloakContext = createContext<KeycloakContextType>({
@@ -21,6 +24,9 @@ const KeycloakContext = createContext<KeycloakContextType>({
   logout: () => {},
   token: undefined,
   userInfo: null,
+  roles: [],
+  hasRole: () => false,
+  primaryRole: undefined,
 });
 
 export const useKeycloak = () => useContext(KeycloakContext);
@@ -29,11 +35,20 @@ interface KeycloakProviderProps {
   children: ReactNode;
 }
 
+// Role priority order (higher index = higher priority)
+const ROLE_PRIORITY = [
+  'Customer',
+  'Warehouse_Staff',
+  'Driver', 
+  'Logistics_Manager',
+] as const;
+
 export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [roles, setRoles] = useState<string[]>([]);
   const initializingRef = useRef(false);
   const initializedRef = useRef(false);
 
@@ -63,6 +78,13 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         setLoading(false);
 
         if (auth) {
+          // Extract roles from token
+          const userRoles = keycloakInstance.tokenParsed?.realm_access?.roles || [];
+          const appRoles = userRoles.filter((role: string) => 
+            ROLE_PRIORITY.includes(role as typeof ROLE_PRIORITY[number])
+          );
+          setRoles(appRoles);
+          console.log('User roles:', appRoles);
           // Load user info (but don't block on it)
           keycloakInstance.loadUserInfo()
             .then((info) => {
@@ -132,6 +154,16 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
     }
   };
 
+  const hasRole = (role: string): boolean => {
+    return roles.includes(role);
+  };
+
+  // Get the highest priority role
+  const primaryRole = ROLE_PRIORITY
+    .slice()
+    .reverse()
+    .find(role => roles.includes(role));
+
   return (
     <KeycloakContext.Provider
       value={{
@@ -142,6 +174,9 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         logout,
         token: keycloak?.token,
         userInfo,
+        roles,
+        hasRole,
+        primaryRole,
       }}
     >
       {children}

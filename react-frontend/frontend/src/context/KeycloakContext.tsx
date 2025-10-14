@@ -34,16 +34,27 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
+    // Prevent re-initialization
+    if (initialized) {
+      console.log('Keycloak already initialized, skipping...');
+      return;
+    }
+
     const initKeycloak = async () => {
       try {
+        console.log('Initializing Keycloak...');
         const keycloakInstance = new Keycloak(keycloakConfig);
         
         const auth = await keycloakInstance.init(keycloakInitOptions);
         
+        console.log('Keycloak initialized, authenticated:', auth);
+        
         setKeycloak(keycloakInstance);
         setAuthenticated(auth);
+        setInitialized(true);
 
         if (auth) {
           // Load user info
@@ -52,6 +63,8 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
           
           console.log('User authenticated:', info);
           console.log('Token:', keycloakInstance.token);
+        } else {
+          console.log('User not authenticated');
         }
 
         // Setup token refresh
@@ -60,11 +73,13 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
           keycloakInstance.updateToken(30).then((refreshed: boolean) => {
             if (refreshed) {
               console.log('Token refreshed');
+              setAuthenticated(true);
             } else {
               console.warn('Token not refreshed, still valid');
             }
           }).catch(() => {
             console.error('Failed to refresh token');
+            setAuthenticated(false);
             keycloakInstance.login();
           });
         };
@@ -73,11 +88,12 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
       } catch (error) {
         console.error('Failed to initialize Keycloak:', error);
         setLoading(false);
+        setInitialized(true);
       }
     };
 
     initKeycloak();
-  }, []);
+  }, [initialized]);
 
   const login = () => {
     if (keycloak) {

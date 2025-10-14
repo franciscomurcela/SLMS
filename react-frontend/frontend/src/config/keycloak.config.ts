@@ -6,10 +6,15 @@ export const keycloakConfig = {
 };
 
 export const keycloakInitOptions = {
-  onLoad: undefined, // Não fazer login automático - apenas quando o utilizador clicar no botão
+  // Don't auto-login, just check if there's an existing session
+  onLoad: 'check-sso' as const,
   pkceMethod: 'S256' as const,
   checkLoginIframe: false,
+  // Disable silent check SSO to avoid CORS issues
+  silentCheckSsoRedirectUri: undefined,
+  // Enable response mode to handle callback properly
+  responseMode: 'fragment' as const,
 };
 
-// Backend API base URL
-export const BACKEND_URL = 'http://localhost:8080';
+// Backend API base URL - user_service handles authentication
+export const BACKEND_URL = 'http://localhost:8082';

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 interface Order {
   orderId: string;
   customerId: string;
+  customerName?: string;  // Nome completo do cliente
   carrierId: string | null;
   originAddress: string;
   destinationAddress: string;
@@ -206,7 +207,11 @@ export default function OrdersPanel() {
                     <small>#{order.orderId.slice(0, 8)}</small>
                   </td>
                   <td>
-                    <small>Cliente {order.customerId.slice(0, 8)}</small>
+                    {order.customerName ? (
+                      <small>{order.customerName}</small>
+                    ) : (
+                      <small className="text-muted">Cliente {order.customerId.slice(0, 8)}</small>
+                    )}
                   </td>
                   <td>
                     {order.carrierId ? (

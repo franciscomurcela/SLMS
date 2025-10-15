@@ -38,6 +38,7 @@ interface KeycloakProviderProps {
 // Role priority order (higher index = higher priority)
 const ROLE_PRIORITY = [
   'Customer',
+  'Csr',
   'Warehouse_Staff',
   'Driver', 
   'Logistics_Manager',
@@ -78,6 +79,11 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         setLoading(false);
 
         if (auth) {
+          // Debug: Log the entire token to see structure
+          console.log('🔍 Full token parsed:', keycloakInstance.tokenParsed);
+          console.log('🔍 Realm access:', keycloakInstance.tokenParsed?.realm_access);
+          console.log('🔍 Resource access:', keycloakInstance.tokenParsed?.resource_access);
+          
           // Extract roles from token
           const userRoles = keycloakInstance.tokenParsed?.realm_access?.roles || [];
           const appRoles = userRoles.filter((role: string) => 

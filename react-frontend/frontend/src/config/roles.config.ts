@@ -8,6 +8,7 @@ export const ROLE_ROUTES: Record<string, string> = {
   'Logistics_Manager': '/logisticsmanager',
   'Driver': '/driver',
   'Warehouse_Staff': '/warehouse',
+  'Csr': '/customerservicerep',
 } as const;
 
 export const APP_ROLES = {
@@ -15,6 +16,7 @@ export const APP_ROLES = {
   LOGISTICS_MANAGER: 'Logistics_Manager',
   DRIVER: 'Driver',
   WAREHOUSE_STAFF: 'Warehouse_Staff',
+  CSR: 'Csr',
 } as const;
 
 /**

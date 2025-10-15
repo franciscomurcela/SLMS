@@ -100,7 +100,7 @@ function App() {
           <Route
             path={Paths.PATH_CUSTOMER_SERVICE_REP}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole={APP_ROLES.CSR}>
                 <CustomerServiceRep />
               </ProtectedRoute>
             }

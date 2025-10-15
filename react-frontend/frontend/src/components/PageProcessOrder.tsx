@@ -130,44 +130,14 @@ export default function PageProcessOrder() {
         throw new Error(`Erro ao despachar: ${errorText}`);
       }
 
-      // Show confirmation dialog for packing slip download
-      const shouldDownload = window.confirm(
-        "✅ Pedido despachado com sucesso!\n\n📄 Deseja fazer download do Packing Slip?"
-      );
-      
-      if (shouldDownload) {
-        await downloadPackingSlip(order.orderId);
-      }
-      
+      // Successfully dispatched - navigate back to warehouse
+      alert("✅ Pedido despachado com sucesso!");
       navigate(Paths.PATH_WAREHOUSE);
     } catch (e) {
       console.error("Dispatch error:", e);
       alert(`Erro ao despachar pedido: ${e}`);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const downloadPackingSlip = async (orderId: string) => {
-    try {
-      const resp = await fetch(`/api/orders/${orderId}/packing-slip`).catch(() =>
-        fetch(`http://localhost:8081/api/orders/${orderId}/packing-slip`)
-      );
-
-      if (!resp.ok) throw new Error("Failed to generate packing slip");
-
-      const blob = await resp.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `packing-slip-${orderId.slice(0, 8)}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error("Download error:", e);
-      alert("Erro ao fazer download do packing slip");
     }
   };
 

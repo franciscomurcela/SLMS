@@ -41,6 +41,18 @@ public class Order {
     @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate = LocalDateTime.now();
 
+    @Column(name = "tracking_id")
+    private UUID trackingId;
+
+    @Column(name = "shipment_id")
+    private UUID shipmentId;
+
+    @Column(name = "actual_delivery_time")
+    private LocalDateTime actualDeliveryTime;
+
+    @Column(name = "pod")
+    private String pod; // Proof of Delivery
+
     // Getters e Setters
     public UUID getOrderId() { return orderId; }
     public void setOrderId(UUID orderId) { this.orderId = orderId; }
@@ -65,4 +77,16 @@ public class Order {
 
     public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
+
+    public UUID getTrackingId() { return trackingId; }
+    public void setTrackingId(UUID trackingId) { this.trackingId = trackingId; }
+
+    public UUID getShipmentId() { return shipmentId; }
+    public void setShipmentId(UUID shipmentId) { this.shipmentId = shipmentId; }
+
+    public LocalDateTime getActualDeliveryTime() { return actualDeliveryTime; }
+    public void setActualDeliveryTime(LocalDateTime actualDeliveryTime) { this.actualDeliveryTime = actualDeliveryTime; }
+
+    public String getPod() { return pod; }
+    public void setPod(String pod) { this.pod = pod; }
 }

@@ -113,6 +113,40 @@ public class OrderController {
         return repository.save(order);
     }
 
+    @GetMapping("/track/{trackingId}")
+    public ResponseEntity<Map<String, Object>> trackOrder(@PathVariable UUID trackingId) {
+        try {
+            String sql = """
+                SELECT 
+                    o.tracking_id::text as "trackingId",
+                    o.order_date as "orderDate",
+                    o.origin_address as "originAddress",
+                    o.destination_address as "destinationAddress",
+                    o.weight as "weight",
+                    o.status as "status",
+                    o.shipment_id::text as "shipmentId",
+                    o.actual_delivery_time as "actualDeliveryTime",
+                    o.pod as "proofOfDelivery",
+                    c.name as "carrierName",
+                    c.carrier_id::text as "carrierId"
+                FROM "Orders" o
+                LEFT JOIN "Carrier" c ON o.carrier_id = c.carrier_id
+                WHERE o.tracking_id = ?
+                """;
+            
+            List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, trackingId);
+            
+            if (results.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            return ResponseEntity.ok(results.get(0));
+            
+        } catch (Exception e) {
+            throw new RuntimeException("Error tracking order: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/{orderId}/packing-slip")
     public ResponseEntity<byte[]> generatePackingSlip(@PathVariable UUID orderId) {
         try {

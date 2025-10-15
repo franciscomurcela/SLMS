@@ -121,6 +121,30 @@ export default function OrdersPanel() {
     }
   };
 
+  const downloadShippingLabel = async (orderId: string) => {
+    try {
+      const url = `/api/orders/${orderId}/shipping-label`;
+      const resp = await fetch(url).catch(() =>
+        fetch(`http://localhost:8081${url}`)
+      );
+      
+      if (!resp.ok) throw new Error("Failed to download shipping label");
+      
+      const blob = await resp.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `shipping-label-${orderId.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (e) {
+      console.error("Download error:", e);
+      alert(`Erro ao fazer download da etiqueta: ${e}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: "200px" }}>
@@ -242,13 +266,24 @@ export default function OrdersPanel() {
                       </button>
                     )}
                     {(order.status === "InTransit" || order.status === "Delivered") && (
-                      <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => downloadPackingSlip(order.orderId)}
-                      >
-                        <i className="bi bi-download me-1"></i>
-                        Packing Slip
-                      </button>
+                      <div className="btn-group" role="group">
+                        <button
+                          className="btn btn-sm btn-success"
+                          onClick={() => downloadPackingSlip(order.orderId)}
+                          title="Download Packing Slip"
+                        >
+                          <i className="bi bi-file-text me-1"></i>
+                          Packing Slip
+                        </button>
+                        <button
+                          className="btn btn-sm btn-info"
+                          onClick={() => downloadShippingLabel(order.orderId)}
+                          title="Download Etiqueta de Envio"
+                        >
+                          <i className="bi bi-qr-code me-1"></i>
+                          Etiqueta
+                        </button>
+                      </div>
                     )}
                     {order.status !== "Pending" && order.status !== "InTransit" && order.status !== "Delivered" && (
                       <span className="text-muted">—</span>

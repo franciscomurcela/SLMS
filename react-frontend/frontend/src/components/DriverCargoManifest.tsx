@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Paths from './UtilsPaths';
+import { useKeycloak } from '../context/KeycloakContext';
 
 const role: string = 'Driver';
 
@@ -31,134 +32,54 @@ interface ShipmentWithOrders extends Shipment {
 
 function DriverCargoManifest() {
   const navigate = useNavigate();
+  const { keycloak, userInfo } = useKeycloak();
   const [shipments, setShipments] = useState<ShipmentWithOrders[]>([]);
   const [expandedShipmentId, setExpandedShipmentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadShipments();
-  }, []);
+    if (userInfo?.sub) {
+      loadShipments();
+    }
+  }, [userInfo]);
 
   const loadShipments = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // TODO: Implementar os endpoints reais no backend
-      // Dados mock temporários para testes - agrupados por cliente
-      const mockShipmentsData: ShipmentWithOrders[] = [
-        {
-          shipmentId: '550e8400-e29b-41d4-a716-446655440000',
-          carrierId: 'carrier-001',
-          driverId: 'driver-001',
-          departureTime: '2025-10-15T08:00:00',
-          arrivalTime: '2025-10-15T18:00:00',
-          status: 'InTransit',
-          orders: [
-            // Múltiplas encomendas do mesmo cliente (customer-001)
-            {
-              orderId: 'order-001',
-              originAddress: 'Armazém Central, Aveiro',
-              destinationAddress: 'Rua das Flores, 123, Porto',
-              status: 'InTransit',
-              orderDate: '2025-10-14T10:00:00',
-              weight: 15.5,
-              shipmentId: '550e8400-e29b-41d4-a716-446655440000',
-              customerId: 'customer-001'
-            },
-            {
-              orderId: 'order-002',
-              originAddress: 'Armazém Central, Aveiro',
-              destinationAddress: 'Rua das Flores, 123, Porto',
-              status: 'InTransit',
-              orderDate: '2025-10-14T11:00:00',
-              weight: 8.2,
-              shipmentId: '550e8400-e29b-41d4-a716-446655440000',
-              customerId: 'customer-001'  // Mesmo cliente!
-            },
-            {
-              orderId: 'order-003',
-              originAddress: 'Armazém Central, Aveiro',
-              destinationAddress: 'Rua das Flores, 123, Porto',
-              status: 'InTransit',
-              orderDate: '2025-10-14T12:00:00',
-              weight: 5.0,
-              shipmentId: '550e8400-e29b-41d4-a716-446655440000',
-              customerId: 'customer-001'  // Mesmo cliente!
-            }
-          ]
-        },
-        {
-          shipmentId: '650e8400-e29b-41d4-a716-446655440001',
-          carrierId: 'carrier-001',
-          driverId: 'driver-001',
-          departureTime: '2025-10-15T09:00:00',
-          arrivalTime: '2025-10-15T19:00:00',
-          status: 'InTransit',
-          orders: [
-            // Múltiplas encomendas de outro cliente (customer-002)
-            {
-              orderId: 'order-004',
-              originAddress: 'Armazém Central, Aveiro',
-              destinationAddress: 'Av. da Liberdade, 456, Lisboa',
-              status: 'InTransit',
-              orderDate: '2025-10-14T13:00:00',
-              weight: 12.0,
-              shipmentId: '650e8400-e29b-41d4-a716-446655440001',
-              customerId: 'customer-002'
-            },
-            {
-              orderId: 'order-005',
-              originAddress: 'Armazém Central, Aveiro',
-              destinationAddress: 'Av. da Liberdade, 456, Lisboa',
-              status: 'InTransit',
-              orderDate: '2025-10-14T14:00:00',
-              weight: 7.5,
-              shipmentId: '650e8400-e29b-41d4-a716-446655440001',
-              customerId: 'customer-002'  // Mesmo cliente!
-            }
-          ]
-        },
-        {
-          shipmentId: '750e8400-e29b-41d4-a716-446655440002',
-          carrierId: 'carrier-001',
-          driverId: 'driver-001',
-          departureTime: '2025-10-14T09:00:00',
-          arrivalTime: '2025-10-14T17:00:00',
-          status: 'Delivered',
-          orders: [
-            // Encomenda já entregue (customer-003)
-            {
-              orderId: 'order-006',
-              originAddress: 'Armazém Central, Aveiro',
-              destinationAddress: 'Praça do Comércio, 789, Coimbra',
-              status: 'Delivered',
-              orderDate: '2025-10-13T09:00:00',
-              weight: 20.0,
-              shipmentId: '750e8400-e29b-41d4-a716-446655440002',
-              customerId: 'customer-003'
-            }
-          ]
+      // Get keycloak_id from Keycloak JWT (sub claim = keycloak_id in Users table)
+      const keycloakId = userInfo?.sub;
+      
+      if (!keycloakId) {
+        console.error('Keycloak ID not found in token');
+        setError('ID do utilizador não encontrado. Por favor, faça login novamente.');
+        return;
+      }
+
+      console.log('🚚 Loading InTransit shipments for keycloak_id:', keycloakId);
+      
+      // Call optimized endpoint that navigates: keycloak_id → Users.id → Driver.user_id → Shipments
+      // This endpoint returns InTransit shipments with their orders
+      const response = await fetch(`http://localhost:8081/api/shipments/my-shipments/${keycloakId}`, {
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+          'Content-Type': 'application/json'
         }
-      ];
+      });
       
-      setShipments(mockShipmentsData);
+      if (!response.ok) {
+        throw new Error(`Failed to load shipments: ${response.status}`);
+      }
       
-      /* Código real - descomentar quando os endpoints estiverem prontos:
-      const shipmentsResponse = await fetch('/api/shipments/driver/');
-      const driverShipments: Shipment[] = await shipmentsResponse.json();
-      
-      const ordersResponse = await fetch('/api/orders');
-      const allOrders: Order[] = await ordersResponse.json();
-      
-      const shipmentsWithOrders: ShipmentWithOrders[] = driverShipments.map(shipment => ({
-        ...shipment,
-        orders: allOrders.filter(order => order.shipmentId === shipment.shipmentId)
-      }));
-      
+      const shipmentsWithOrders: ShipmentWithOrders[] = await response.json();
+      console.log('✅ Shipments with orders:', shipmentsWithOrders);
       setShipments(shipmentsWithOrders);
-      */
+      
     } catch (error) {
-      console.error('Error loading shipments:', error);
+      console.error('❌ Error loading shipments:', error);
+      setError('Erro ao carregar os envios. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -196,29 +117,72 @@ function DriverCargoManifest() {
     <>
       <Header role={role} href={Paths.PATH_DRIVER} />
       <div className='container mt-5'>
-        <h1 className='text-center mb-4'>Manifesto de Carga</h1>
+        <h1 className='text-center mb-4'>
+          <i className='bi bi-truck'></i> Manifesto de Carga do Motorista
+        </h1>
+        <p className='text-center text-muted mb-4'>
+          Shipments InTransit atribuídos a si
+        </p>
 
-        {loading && <div className='text-center'><div className='spinner-border'></div></div>}
-
-        {!loading && shipments.length === 0 && (
-          <div className='alert alert-info text-center'>Nenhum shipment encontrado</div>
+        {loading && (
+          <div className='text-center'>
+            <div className='spinner-border text-primary' role='status'>
+              <span className='visually-hidden'>A carregar...</span>
+            </div>
+            <p className='mt-2'>A carregar os seus shipments...</p>
+          </div>
         )}
 
-        {!loading && shipments.length > 0 && (
+        {error && (
+          <div className='alert alert-danger text-center' role='alert'>
+            <i className='bi bi-exclamation-triangle'></i> {error}
+            <button className='btn btn-sm btn-outline-danger ms-3' onClick={loadShipments}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && shipments.length === 0 && (
+          <div className='alert alert-info text-center'>
+            <i className='bi bi-info-circle'></i> Nenhum shipment InTransit atribuído a si no momento.
+          </div>
+        )}
+
+        {!loading && !error && shipments.length > 0 && (
           <div>
-            <h5>Total de Shipments: <span className='badge bg-primary'>{shipments.length}</span></h5>
+            <div className='alert alert-success mb-4'>
+              <strong><i className='bi bi-check-circle'></i> Total de Shipments:</strong>{' '}
+              <span className='badge bg-primary ms-2'>{shipments.length}</span>
+              {' • '}
+              <strong>Total de Encomendas:</strong>{' '}
+              <span className='badge bg-success ms-2'>
+                {shipments.reduce((acc, s) => acc + s.orders.length, 0)}
+              </span>
+            </div>
             
             {shipments.map((shipment) => (
-              <div key={shipment.shipmentId} className='card mb-3'>
-                <div className='card-header bg-light' onClick={() => toggleShipment(shipment.shipmentId)} style={{ cursor: 'pointer' }}>
+              <div key={shipment.shipmentId} className='card mb-3 shadow-sm'>
+                <div 
+                  className='card-header bg-light' 
+                  onClick={() => toggleShipment(shipment.shipmentId)} 
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className='d-flex justify-content-between align-items-center'>
                     <div>
-                      <h5><i className='bi bi-truck'></i> Shipment #{shipment.shipmentId.substring(0, 8)}... {getStatusBadge(shipment.status)}</h5>
-                      <small className='text-muted'>Partida: {formatDate(shipment.departureTime)} | Chegada: {formatDate(shipment.arrivalTime)}</small>
+                      <h5 className='mb-1'>
+                        <i className='bi bi-truck'></i> Shipment #{shipment.shipmentId.substring(0, 8)}...{' '}
+                        {getStatusBadge(shipment.status)}
+                      </h5>
+                      <small className='text-muted'>
+                        <i className='bi bi-calendar'></i> Partida: {formatDate(shipment.departureTime)}{' | '}
+                        Chegada: {formatDate(shipment.arrivalTime)}
+                      </small>
                     </div>
-                    <div>
-                      <span className='badge bg-secondary'>{shipment.orders.length} encomendas</span>
-                      <i className='bi bi-chevron-down ms-2'></i>
+                    <div className='d-flex align-items-center'>
+                      <span className='badge bg-secondary me-2'>
+                        {shipment.orders.length} encomenda{shipment.orders.length !== 1 ? 's' : ''}
+                      </span>
+                      <i className={`bi bi-chevron-${expandedShipmentId === shipment.shipmentId ? 'up' : 'down'}`}></i>
                     </div>
                   </div>
                 </div>
@@ -226,24 +190,46 @@ function DriverCargoManifest() {
                 {expandedShipmentId === shipment.shipmentId && (
                   <div className='card-body'>
                     {shipment.orders.length === 0 ? (
-                      <div className='alert alert-warning'>Nenhuma encomenda</div>
+                      <div className='alert alert-warning'>
+                        <i className='bi bi-exclamation-triangle'></i> Nenhuma encomenda neste shipment
+                      </div>
                     ) : (
                       <div className='row'>
                         {shipment.orders.map((order) => (
                           <div key={order.orderId} className='col-md-6 mb-3'>
-                            <div className='card border-primary'>
+                            <div className='card border-primary h-100'>
                               <div className='card-body'>
-                                <div className='d-flex justify-content-between mb-2'>
-                                  <h6><i className='bi bi-box'></i> #{order.orderId.substring(0, 8)}...</h6>
+                                <div className='d-flex justify-content-between mb-3'>
+                                  <h6 className='mb-0'>
+                                    <i className='bi bi-box-seam'></i> Encomenda #{order.orderId.substring(0, 8)}...
+                                  </h6>
                                   {getStatusBadge(order.status)}
                                 </div>
-                                <div className='mb-2'><strong>Origem:</strong><p className='text-muted'>{order.originAddress}</p></div>
-                                <div className='mb-2'><strong>Destino:</strong><p className='text-muted'>{order.destinationAddress}</p></div>
-                                <div className='row'>
-                                  <div className='col-6'><small><strong>Data:</strong> {formatDate(order.orderDate)}</small></div>
-                                  <div className='col-6'><small><strong>Peso:</strong> {order.weight} kg</small></div>
+                                
+                                <div className='mb-2'>
+                                  <strong><i className='bi bi-geo'></i> Origem:</strong>
+                                  <p className='text-muted mb-0'>{order.originAddress}</p>
                                 </div>
-                                <button className='btn btn-sm btn-outline-primary mt-2 w-100'><i className='bi bi-geo-alt'></i> Ver Mapa</button>
+                                
+                                <div className='mb-3'>
+                                  <strong><i className='bi bi-geo-alt-fill'></i> Destino:</strong>
+                                  <p className='text-muted mb-0'>{order.destinationAddress}</p>
+                                </div>
+                                
+                                <div className='row text-center'>
+                                  <div className='col-6'>
+                                    <small className='text-muted'>Data</small>
+                                    <p className='mb-0'><strong>{formatDate(order.orderDate)}</strong></p>
+                                  </div>
+                                  <div className='col-6'>
+                                    <small className='text-muted'>Peso</small>
+                                    <p className='mb-0'><strong>{order.weight} kg</strong></p>
+                                  </div>
+                                </div>
+                                
+                                <button className='btn btn-sm btn-outline-primary mt-3 w-100'>
+                                  <i className='bi bi-geo-alt'></i> Ver no Mapa
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -259,7 +245,7 @@ function DriverCargoManifest() {
 
         <div className='text-center mt-4'>
           <button className='btn btn-secondary' onClick={() => navigate(Paths.PATH_DRIVER)}>
-            <i className='bi bi-arrow-left'></i> Voltar
+            <i className='bi bi-arrow-left'></i> Voltar ao Dashboard
           </button>
         </div>
       </div>

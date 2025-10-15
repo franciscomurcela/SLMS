@@ -26,4 +26,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
         ORDER BY o.order_date DESC
         """, nativeQuery = true)
     List<Map<String, Object>> findAllOrdersWithCustomerNames();
+    
+    /**
+     * Find all orders belonging to a specific shipment
+     * @param shipmentId The UUID of the shipment
+     * @return List of orders for this shipment
+     */
+    List<Order> findByShipmentId(UUID shipmentId);
 }

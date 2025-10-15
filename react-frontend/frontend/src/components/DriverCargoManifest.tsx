@@ -1,367 +1,254 @@
-import { useState } from "react";
-import Header from "./Header";
-import map from "../assets/map.svg";
-import Paths from "./UtilsPaths";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Header from './Header';
+import Paths from './UtilsPaths';
+import { useKeycloak } from '../context/KeycloakContext';
 
-const role: string = "Driver";
+const role: string = 'Driver';
 
-interface Package {
-  id: string;
-  deliveryLocation: string;
-  recipient: string;
-  status: "Pendente" | "Entregue";
-  details?: string;
+interface Order {
+  orderId: string;
+  originAddress: string;
+  destinationAddress: string;
+  status: string;
   orderDate: string;
-  distanceKm: number;
+  weight: number;
+  shipmentId?: string;
+  customerId: string;
 }
 
-// Dados de exemplo - substitua por dados reais do backend
-const mockPackages: Package[] = [
-  {
-    id: "PKG001",
-    deliveryLocation: "Rua das Flores, 123, Aveiro",
-    recipient: "João Silva",
-    status: "Pendente",
-    details: "Fragil - Cuidado no manuseamento",
-    orderDate: "2025-10-08",
-    distanceKm: 2.5
-  },
-  {
-    id: "PKG002",
-    deliveryLocation: "Av. Central, 456, Porto",
-    recipient: "Maria Santos",
-    status: "Pendente",
-    details: "Entrega até às 18h",
-    orderDate: "2025-10-09",
-    distanceKm: 45.2
-  },
-  {
-    id: "PKG003",
-    deliveryLocation: "Praça da República, 789, Lisboa",
-    recipient: "Carlos Oliveira",
-    status: "Entregue",
-    details: "Entregue com sucesso",
-    orderDate: "2025-10-07",
-    distanceKm: 120.8
-  },
-  {
-    id: "PKG004",
-    deliveryLocation: "Rua do Comércio, 321, Coimbra",
-    recipient: "Ana Costa",
-    status: "Pendente",
-    details: "Contactar antes da entrega",
-    orderDate: "2025-10-09",
-    distanceKm: 15.7
-  },
-  {
-    id: "PKG005",
-    deliveryLocation: "Rua da Liberdade, 88, Braga",
-    recipient: "Pedro Fernandes",
-    status: "Entregue",
-    details: "Entregue no porteiro",
-    orderDate: "2025-10-06",
-    distanceKm: 35.3
-  }
-];
+interface Shipment {
+  shipmentId: string;
+  carrierId: string;
+  driverId: string;
+  departureTime: string;
+  arrivalTime: string;
+  status: string;
+}
+
+interface ShipmentWithOrders extends Shipment {
+  orders: Order[];
+}
 
 function DriverCargoManifest() {
-  const [filter, setFilter] = useState<"Pendente" | "Entregue" | "Todas">("Todas");
-  const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
-  const [sortBy, setSortBy] = useState<"orderDate" | "distanceKm">("orderDate");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+  const { keycloak, userInfo } = useKeycloak();
+  const [shipments, setShipments] = useState<ShipmentWithOrders[]>([]);
+  const [expandedShipmentId, setExpandedShipmentId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filtrar pacotes
-  const filteredPackages = filter === "Todas" 
-    ? mockPackages 
-    : mockPackages.filter(pkg => pkg.status === filter);
+  useEffect(() => {
+    if (userInfo?.sub) {
+      loadShipments();
+    }
+  }, [userInfo]);
 
-  // Ordenar pacotes
-  const sortedPackages = [...filteredPackages].sort((a, b) => {
-    // Se mostrar todas, pendentes primeiro
-    if (filter === "Todas") {
-      if (a.status !== b.status) {
-        return a.status === "Pendente" ? -1 : 1;
+  const loadShipments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get keycloak_id from Keycloak JWT (sub claim = keycloak_id in Users table)
+      const keycloakId = userInfo?.sub;
+      
+      if (!keycloakId) {
+        console.error('Keycloak ID not found in token');
+        setError('ID do utilizador não encontrado. Por favor, faça login novamente.');
+        return;
       }
+
+      console.log('🚚 Loading InTransit shipments for keycloak_id:', keycloakId);
+      
+      // Call optimized endpoint that navigates: keycloak_id → Users.id → Driver.user_id → Shipments
+      // This endpoint returns InTransit shipments with their orders
+      const response = await fetch(`http://localhost:8081/api/shipments/my-shipments/${keycloakId}`, {
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load shipments: ${response.status}`);
+      }
+      
+      const shipmentsWithOrders: ShipmentWithOrders[] = await response.json();
+      console.log('✅ Shipments with orders:', shipmentsWithOrders);
+      setShipments(shipmentsWithOrders);
+      
+    } catch (error) {
+      console.error('❌ Error loading shipments:', error);
+      setError('Erro ao carregar os envios. Por favor, tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    
-    // Depois ordenar pelo critério selecionado
-    if (sortBy === "orderDate") {
-      return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime(); // Mais recente primeiro
-    } else {
-      return a.distanceKm - b.distanceKm; // Mais próximo primeiro
-    }
-  });
-
-  const handlePackageClick = (pkg: Package) => {
-    setSelectedPackage(pkg);
   };
 
-  const closeModal = () => {
-    setSelectedPackage(null);
-  };
-
-  const handleMapClick = (pkg: Package) => {
-    // Aqui você pode implementar a abertura do mapa
-    alert(`Abrindo mapa para: ${pkg.deliveryLocation}`);
-  };
-
-  const handleMarkAsDelivered = (pkg: Package) => {
-    // Aqui você pode implementar a marcação como entregue
-    alert(`Marcando ${pkg.id} como entregue`);
-    closeModal();
+  const toggleShipment = (shipmentId: string) => {
+    setExpandedShipmentId(expandedShipmentId === shipmentId ? null : shipmentId);
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-PT', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric' 
+    return new Date(dateString).toLocaleString('pt-PT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
-  const handleSortChange = (newSortBy: "orderDate" | "distanceKm") => {
-    setSortBy(newSortBy);
-    setIsDropdownOpen(false);
+  const getStatusBadge = (status: string) => {
+    const badges = {
+      Pending: 'bg-warning text-dark',
+      InTransit: 'bg-primary',
+      Delivered: 'bg-success'
+    };
+    const statusText = {
+      Pending: 'Pendente',
+      InTransit: 'Em Trânsito',
+      Delivered: 'Entregue'
+    };
+    return <span className={`badge ${badges[status as keyof typeof badges]}`}>{statusText[status as keyof typeof statusText] || status}</span>;
   };
 
   return (
     <>
-      <Header role={role} href={Paths.PATH_DRIVER_CARGO_MANIFEST} />
-      
-      <div className="container mt-4">
-        <div className="row">
-          <div className="col-12">
-            <h2 className="text-center mb-4" style={{color: '#2c3e50'}}>Manifesto de Carga</h2>
+      <Header role={role} href={Paths.PATH_DRIVER} />
+      <div className='container mt-5'>
+        <h1 className='text-center mb-4'>
+          <i className='bi bi-truck'></i> Manifesto de Carga do Motorista
+        </h1>
+        <p className='text-center text-muted mb-4'>
+          Shipments InTransit atribuídos a si
+        </p>
+
+        {loading && (
+          <div className='text-center'>
+            <div className='spinner-border text-primary' role='status'>
+              <span className='visually-hidden'>A carregar...</span>
+            </div>
+            <p className='mt-2'>A carregar os seus shipments...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className='alert alert-danger text-center' role='alert'>
+            <i className='bi bi-exclamation-triangle'></i> {error}
+            <button className='btn btn-sm btn-outline-danger ms-3' onClick={loadShipments}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && shipments.length === 0 && (
+          <div className='alert alert-info text-center'>
+            <i className='bi bi-info-circle'></i> Nenhum shipment InTransit atribuído a si no momento.
+          </div>
+        )}
+
+        {!loading && !error && shipments.length > 0 && (
+          <div>
+            <div className='alert alert-success mb-4'>
+              <strong><i className='bi bi-check-circle'></i> Total de Shipments:</strong>{' '}
+              <span className='badge bg-primary ms-2'>{shipments.length}</span>
+              {' • '}
+              <strong>Total de Encomendas:</strong>{' '}
+              <span className='badge bg-success ms-2'>
+                {shipments.reduce((acc, s) => acc + s.orders.length, 0)}
+              </span>
+            </div>
             
-            {/* Filtros e Ordenação */}
-            <div className="row mb-4">
-              <div className="col-md-6">
-                <div className="d-flex justify-content-center justify-content-md-start">
-                  <div className="btn-group" role="group">
-                    <button
-                      type="button"
-                      className={`btn ${filter === "Pendente" ? "btn-primary" : "btn-outline-primary"}`}
-                      onClick={() => setFilter("Pendente")}
-                      style={{backgroundColor: filter === "Pendente" ? "#007bff" : "transparent"}}
-                    >
-                      Pendentes ({mockPackages.filter(p => p.status === "Pendente").length})
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn ${filter === "Entregue" ? "btn-primary" : "btn-outline-primary"}`}
-                      onClick={() => setFilter("Entregue")}
-                      style={{backgroundColor: filter === "Entregue" ? "#007bff" : "transparent"}}
-                    >
-                      Entregues ({mockPackages.filter(p => p.status === "Entregue").length})
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn ${filter === "Todas" ? "btn-primary" : "btn-outline-primary"}`}
-                      onClick={() => setFilter("Todas")}
-                      style={{backgroundColor: filter === "Todas" ? "#007bff" : "transparent"}}
-                    >
-                      Todas ({mockPackages.length})
-                    </button>
+            {shipments.map((shipment) => (
+              <div key={shipment.shipmentId} className='card mb-3 shadow-sm'>
+                <div 
+                  className='card-header bg-light' 
+                  onClick={() => toggleShipment(shipment.shipmentId)} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className='d-flex justify-content-between align-items-center'>
+                    <div>
+                      <h5 className='mb-1'>
+                        <i className='bi bi-truck'></i> Shipment #{shipment.shipmentId.substring(0, 8)}...{' '}
+                        {getStatusBadge(shipment.status)}
+                      </h5>
+                      <small className='text-muted'>
+                        <i className='bi bi-calendar'></i> Partida: {formatDate(shipment.departureTime)}{' | '}
+                        Chegada: {formatDate(shipment.arrivalTime)}
+                      </small>
+                    </div>
+                    <div className='d-flex align-items-center'>
+                      <span className='badge bg-secondary me-2'>
+                        {shipment.orders.length} encomenda{shipment.orders.length !== 1 ? 's' : ''}
+                      </span>
+                      <i className={`bi bi-chevron-${expandedShipmentId === shipment.shipmentId ? 'up' : 'down'}`}></i>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="col-md-6">
-                <div className="d-flex justify-content-center justify-content-md-end">
-                  <div className="dropdown position-relative">
-                    <button 
-                      className="btn btn-outline-secondary dropdown-toggle" 
-                      type="button" 
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      style={{minWidth: '180px'}}
-                    >
-                      Ordenar por: {sortBy === "orderDate" ? "Data do Pedido" : "Distância"}
-                    </button>
-                    {isDropdownOpen && (
-                      <ul 
-                        className="dropdown-menu show position-absolute" 
-                        style={{top: '100%', left: 0, zIndex: 1000}}
-                      >
-                        <li>
-                          <button 
-                            className={`dropdown-item ${sortBy === "orderDate" ? "active" : ""}`}
-                            onClick={() => handleSortChange("orderDate")}
-                          >
-                            Data do Pedido
-                          </button>
-                        </li>
-                        <li>
-                          <button 
-                            className={`dropdown-item ${sortBy === "distanceKm" ? "active" : ""}`}
-                            onClick={() => handleSortChange("distanceKm")}
-                          >
-                            Distância ao Driver
-                          </button>
-                        </li>
-                      </ul>
+
+                {expandedShipmentId === shipment.shipmentId && (
+                  <div className='card-body'>
+                    {shipment.orders.length === 0 ? (
+                      <div className='alert alert-warning'>
+                        <i className='bi bi-exclamation-triangle'></i> Nenhuma encomenda neste shipment
+                      </div>
+                    ) : (
+                      <div className='row'>
+                        {shipment.orders.map((order) => (
+                          <div key={order.orderId} className='col-md-6 mb-3'>
+                            <div className='card border-primary h-100'>
+                              <div className='card-body'>
+                                <div className='d-flex justify-content-between mb-3'>
+                                  <h6 className='mb-0'>
+                                    <i className='bi bi-box-seam'></i> Encomenda #{order.orderId.substring(0, 8)}...
+                                  </h6>
+                                  {getStatusBadge(order.status)}
+                                </div>
+                                
+                                <div className='mb-2'>
+                                  <strong><i className='bi bi-geo'></i> Origem:</strong>
+                                  <p className='text-muted mb-0'>{order.originAddress}</p>
+                                </div>
+                                
+                                <div className='mb-3'>
+                                  <strong><i className='bi bi-geo-alt-fill'></i> Destino:</strong>
+                                  <p className='text-muted mb-0'>{order.destinationAddress}</p>
+                                </div>
+                                
+                                <div className='row text-center'>
+                                  <div className='col-6'>
+                                    <small className='text-muted'>Data</small>
+                                    <p className='mb-0'><strong>{formatDate(order.orderDate)}</strong></p>
+                                  </div>
+                                  <div className='col-6'>
+                                    <small className='text-muted'>Peso</small>
+                                    <p className='mb-0'><strong>{order.weight} kg</strong></p>
+                                  </div>
+                                </div>
+                                
+                                <button className='btn btn-sm btn-outline-primary mt-3 w-100'>
+                                  <i className='bi bi-geo-alt'></i> Ver no Mapa
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
               </div>
-            </div>
-
-            {/* Lista de Encomendas */}
-            <div className="row">
-              {sortedPackages.map((pkg) => (
-                <div key={pkg.id} className="col-md-6 col-lg-4 mb-3">
-                  <div 
-                    className="card shadow-sm h-100" 
-                    style={{
-                      cursor: 'pointer', 
-                      transition: 'transform 0.2s',
-                      borderLeft: pkg.status === "Entregue" ? "4px solid #28a745" : "4px solid #ffc107"
-                    }}
-                    onClick={() => handlePackageClick(pkg)}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    <div className="card-body">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <h6 className="card-title text-primary mb-0">ID: {pkg.id}</h6>
-                        <span className={`badge ${pkg.status === "Entregue" ? "bg-success" : "bg-warning text-dark"}`}>
-                          {pkg.status}
-                        </span>
-                      </div>
-                      
-                      <p className="card-text mb-2">
-                        <strong>Local de entrega:</strong><br />
-                        <small>{pkg.deliveryLocation}</small>
-                      </p>
-                      
-                      <p className="card-text mb-2">
-                        <strong>Destinatário:</strong> {pkg.recipient}
-                      </p>
-                      
-                      <div className="row mb-3">
-                        <div className="col-6">
-                          <small className="text-muted">
-                            <strong>Data:</strong><br />
-                            {formatDate(pkg.orderDate)}
-                          </small>
-                        </div>
-                        <div className="col-6">
-                          <small className="text-muted">
-                            <strong>Distância:</strong><br />
-                            {pkg.distanceKm} km
-                          </small>
-                        </div>
-                      </div>
-                      
-                      <button
-                        className="btn btn-primary btn-sm w-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMapClick(pkg);
-                        }}
-                        style={{backgroundColor: "#007bff", borderColor: "#007bff"}}
-                      >
-                        <img src={map} alt="Mapa" width="16" height="16" className="me-2" />
-                        Mapa
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {sortedPackages.length === 0 && (
-              <div className="text-center mt-4">
-                <div className="alert alert-info">
-                  <h5>Nenhuma encomenda {filter.toLowerCase()} encontrada</h5>
-                  <p className="mb-0">
-                    {filter === "Pendente" 
-                      ? "Todas as encomendas foram entregues!" 
-                      : filter === "Entregue"
-                      ? "Ainda não há encomendas entregues."
-                      : "Não há encomendas no sistema."}
-                  </p>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
+        )}
+
+        <div className='text-center mt-4'>
+          <button className='btn btn-secondary' onClick={() => navigate(Paths.PATH_DRIVER)}>
+            <i className='bi bi-arrow-left'></i> Voltar ao Dashboard
+          </button>
         </div>
       </div>
-
-      {/* Modal de Detalhes da Encomenda */}
-      {selectedPackage && (
-        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Detalhes da Encomenda</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={closeModal}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <strong>ID:</strong> {selectedPackage.id}
-                </div>
-                <div className="mb-3">
-                  <strong>Local de entrega:</strong><br />
-                  {selectedPackage.deliveryLocation}
-                </div>
-                <div className="mb-3">
-                  <strong>Destinatário:</strong> {selectedPackage.recipient}
-                </div>
-                <div className="mb-3">
-                  <strong>Data do Pedido:</strong> {formatDate(selectedPackage.orderDate)}
-                </div>
-                <div className="mb-3">
-                  <strong>Distância:</strong> {selectedPackage.distanceKm} km
-                </div>
-                <div className="mb-3">
-                  <strong>Status:</strong> 
-                  <span className={`badge ms-2 ${selectedPackage.status === "Entregue" ? "bg-success" : "bg-warning text-dark"}`}>
-                    {selectedPackage.status}
-                  </span>
-                </div>
-                {selectedPackage.details && (
-                  <div className="mb-3">
-                    <strong>Detalhes:</strong><br />
-                    <div className="alert alert-light">
-                      {selectedPackage.details}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  onClick={closeModal}
-                >
-                  Fechar
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary"
-                  onClick={() => handleMapClick(selectedPackage)}
-                  style={{backgroundColor: "#007bff", borderColor: "#007bff"}}
-                >
-                  Ver no Mapa
-                </button>
-                {selectedPackage.status === "Pendente" && (
-                  <button 
-                    type="button" 
-                    className="btn btn-success"
-                    onClick={() => handleMarkAsDelivered(selectedPackage)}
-                  >
-                    Marcar como Entregue
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

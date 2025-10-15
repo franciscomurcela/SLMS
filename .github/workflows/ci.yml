@@ -12,36 +12,60 @@ jobs:
   backend:
     name: Build & Test Backend
     runs-on: self-hosted
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: logistics_db
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres" --health-interval=10s --health-timeout=5s --health-retries=5
-    env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/logistics_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+    strategy:
+      matrix:
+        java: [17, 21]
     defaults:
       run:
         working-directory: slms-backend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
-      - name: Build with Maven
-        run: ./mvnw clean install
-      - name: Run tests
-        run: ./mvnw test
+          java-version: ${{ matrix.java }}
+      - name: Display Java version
+        run: java -version
+      - name: Create .env from GitHub Secrets (temporary)
+        env:
+          SPRING_DATASOURCE_URL: ${{ secrets.SPRING_DATASOURCE_URL }}
+          SPRING_DATASOURCE_USERNAME: ${{ secrets.SPRING_DATASOURCE_USERNAME }}
+          SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+        run: |
+          echo "Creating .env from secrets (will be present only during the job)"
+          cat > .env <<EOF
+          SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+          SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+          SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+
+          DB_HOST=${DB_HOST}
+          DB_PORT=${DB_PORT}
+          DB_NAME=${DB_NAME}
+          DB_USER=${DB_USER}
+          DB_PASS=${DB_PASS}
+          EOF
+      - name: Ensure all mvnw are executable
+        shell: bash
+        run: |
+          echo "Looking for mvnw files and making them executable"
+          find . -name mvnw -print -exec chmod +x {} +
+      - name: Build with Maven (run all wrappers found)
+        shell: bash
+        run: |
+          echo "Running 'mvnw clean install' for every module that has a mvnw"
+          find . -name mvnw -print -execdir ./mvnw clean install \;
+      - name: Run tests (run all wrappers found)
+        shell: bash
+        run: |
+          echo "Running 'mvnw test' for every module that has a mvnw"
+          find . -name mvnw -print -execdir ./mvnw test \;
 
   frontend:
     name: Build & Test Frontend
@@ -67,3 +91,5 @@ jobs:
         run: npm run build
       - name: Test
         run: npm test || echo "No tests defined"
+
+        #test

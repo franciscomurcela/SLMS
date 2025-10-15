@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    # Prefer using the central SPRING_DATASOURCE_URL (includes jdbc params for Supabase pooler)
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    # HikariCP settings with sensible defaults (override with env vars if needed)
+    hikari:
+      maximum-pool-size: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:1}
+      minimum-idle: ${SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE:0}
+      connection-timeout: ${SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT:120000}
+      idle-timeout: ${SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT:600000}
+      max-lifetime: ${SPRING_DATASOURCE_HIKARI_MAX_LIFETIME:1800000}
+      auto-commit: false
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      # Keep identifiers quoted to match case-sensitive tables (used by Supabase)
+      hibernate.globally_quoted_identifiers: true
+      # Avoid server-side prepared statements when using PgBouncer in transaction pooling
+      hibernate.connection.provider_disables_autocommit: true
+      org.hibernate.engine.jdbc.connections.spi.PhysicalConnectionHandlingMode: DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION
+      # Explicit dialect avoids needing JDBC metadata at startup when connections are scarce
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# Management/Actuator settings for debugging: expose health & info and always show details
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+    show-sql: true

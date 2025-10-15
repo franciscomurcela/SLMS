@@ -1,0 +1,163 @@
+services:
+  # ============================================
+  # DATABASES
+  # ============================================
+  
+  # PostgreSQL para Keycloak
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    volumes:
+      - keycloak-pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Porta externa 5433 para evitar conflito
+    networks:
+      - slms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL para Order Service
+  order-db:
+    image: postgres:15
+    container_name: order-db
+    environment:
+      POSTGRES_DB: shipping
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"  # Porta padrão para order service
+    networks:
+      - slms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d shipping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # AUTHENTICATION & SECURITY
+  # ============================================
+
+  # Keycloak (Authentication Service) - Porta 8083
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    command: 
+      - start-dev
+      - --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: 'false'
+      KC_HTTP_ENABLED: 'true'
+    ports:
+      - "8083:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ./keycloak-init:/opt/keycloak/data/import
+    networks:
+      - slms-network
+
+  # User Service (Authentication + User Sync) - Porta 8082
+  user-service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    container_name: user-service
+    environment:
+      SPRING_APPLICATION_NAME: user_service
+      SERVER_PORT: 8082
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      # HikariCP connection pool settings (para evitar "Max connections" no Supabase)
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 2
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5
+      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: 30000
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: 600000
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 20000
+    ports:
+      - "8082:8082"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - keycloak
+    networks:
+      - slms-network
+
+  # Carrier Service (Business Logic) - Porta 8080
+  carrier-service:
+    build:
+      context: ./carrier_service/carrier_service
+      dockerfile: Dockerfile
+    container_name: carrier-service
+    environment:
+      SPRING_APPLICATION_NAME: carrier_service
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      # Limitar pool de conexões para não exceder limite do Supabase
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 3
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
+    ports:
+      - "8080:8080"
+    networks:
+      - slms-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Order Service - Porta 8081
+  order-service:
+    build:
+      context: ./order_service/demo
+      dockerfile: Dockerfile
+    container_name: order-service
+    environment:
+      SPRING_APPLICATION_NAME: order_service
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      # Limitar pool de conexões para não exceder limite do Supabase
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 3
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
+    ports:
+      - "8081:8080"
+    networks:
+      - slms-network
+
+# ============================================
+# NETWORKS & VOLUMES
+# ============================================
+
+networks:
+  slms-network:
+    driver: bridge
+
+volumes:
+  keycloak-pgdata:
+    driver: local
+  keycloak-data:
+    driver: local
+  order-db-data:
+    driver: local

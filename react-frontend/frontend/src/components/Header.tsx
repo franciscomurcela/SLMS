@@ -41,6 +41,7 @@ function Header({
               onClick={() => {
                 setGoToProfile(true);
               }}
+              style={{ minWidth: '120px', height: '38px' }}
             >
               {Roles.ROLE_PROFILE}
             </button>
@@ -50,6 +51,7 @@ function Header({
               onClick={() => {
                 setGoToTrackingPortal(true);
               }}
+              style={{ minWidth: '120px', height: '38px' }}
             >
               {Roles.ROLE_TRACKING_PORTAL}
             </button>

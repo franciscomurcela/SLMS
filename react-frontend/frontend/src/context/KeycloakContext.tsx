@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
-import { keycloakConfig, keycloakInitOptions } from '../config/keycloak.config';
+import { keycloakConfig, keycloakInitOptions, BACKEND_URL } from '../config/keycloak.config';
 
 interface KeycloakContextType {
   keycloak: Keycloak | null;
@@ -11,6 +11,9 @@ interface KeycloakContextType {
   logout: () => void;
   token: string | undefined;
   userInfo: any;
+  roles: string[];
+  hasRole: (role: string) => boolean;
+  primaryRole: string | undefined;
 }
 
 const KeycloakContext = createContext<KeycloakContextType>({
@@ -21,6 +24,9 @@ const KeycloakContext = createContext<KeycloakContextType>({
   logout: () => {},
   token: undefined,
   userInfo: null,
+  roles: [],
+  hasRole: () => false,
+  primaryRole: undefined,
 });
 
 export const useKeycloak = () => useContext(KeycloakContext);
@@ -29,11 +35,20 @@ interface KeycloakProviderProps {
   children: ReactNode;
 }
 
+// Role priority order (higher index = higher priority)
+const ROLE_PRIORITY = [
+  'Customer',
+  'Warehouse_Staff',
+  'Driver', 
+  'Logistics_Manager',
+] as const;
+
 export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
+  const [roles, setRoles] = useState<string[]>([]);
   const initializingRef = useRef(false);
   const initializedRef = useRef(false);
 
@@ -63,6 +78,42 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         setLoading(false);
 
         if (auth) {
+          // Extract roles from token
+          const userRoles = keycloakInstance.tokenParsed?.realm_access?.roles || [];
+          const appRoles = userRoles.filter((role: string) => 
+            ROLE_PRIORITY.includes(role as typeof ROLE_PRIORITY[number])
+          );
+          setRoles(appRoles);
+          console.log('User roles:', appRoles);
+
+          // 🔄 SYNC USER TO SUPABASE AUTOMATICALLY
+          // Call /user/whoami to trigger UserSyncFilter on backend
+          // This ensures the user exists in Supabase database
+          const syncUserToSupabase = async () => {
+            try {
+              console.log('🔄 Syncing user to Supabase...');
+              const response = await fetch(`${BACKEND_URL}/user/whoami`, {
+                headers: {
+                  'Authorization': `Bearer ${keycloakInstance.token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                console.log('✅ User synced to Supabase:', data);
+              } else {
+                console.warn('⚠️ User sync request failed:', response.status, response.statusText);
+              }
+            } catch (error) {
+              console.error('❌ Error syncing user to Supabase:', error);
+              // Don't block authentication if sync fails
+            }
+          };
+
+          // Sync user in background (non-blocking)
+          syncUserToSupabase();
+
           // Load user info (but don't block on it)
           keycloakInstance.loadUserInfo()
             .then((info) => {
@@ -132,6 +183,16 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
     }
   };
 
+  const hasRole = (role: string): boolean => {
+    return roles.includes(role);
+  };
+
+  // Get the highest priority role
+  const primaryRole = ROLE_PRIORITY
+    .slice()
+    .reverse()
+    .find(role => roles.includes(role));
+
   return (
     <KeycloakContext.Provider
       value={{
@@ -142,6 +203,9 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         logout,
         token: keycloak?.token,
         userInfo,
+        roles,
+        hasRole,
+        primaryRole,
       }}
     >
       {children}

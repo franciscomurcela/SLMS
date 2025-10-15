@@ -2,8 +2,10 @@ import { Navigate } from "react-router-dom";
 import { useState } from "react";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
+import { useKeycloak } from "../context/KeycloakContext";
 
 function Header({ role, href }: { role: string; href: string }) {
+  const { logout, authenticated } = useKeycloak();
   const [goToProfile, setGoToProfile] = useState(false);
   const [goToDriver, setGoToDriver] = useState(false);
   const [goToTrackingPortal, setGoToTrackingPortal] = useState(false);
@@ -95,6 +97,18 @@ function Header({ role, href }: { role: string; href: string }) {
         >
           {Roles.ROLE_LOGISTICS_MANAGER}
         </button>
+
+        {authenticated && (
+          <button
+            type="button"
+            className="btn btn-danger ms-2"
+            onClick={logout}
+            title="Fazer logout do Keycloak"
+          >
+            <i className="bi bi-box-arrow-right me-1"></i>
+            Logout
+          </button>
+        )}
       </nav>
     </>
   );

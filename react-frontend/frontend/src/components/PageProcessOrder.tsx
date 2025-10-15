@@ -103,16 +103,14 @@ export default function PageProcessOrder() {
 
     setSubmitting(true);
     try {
-      // Update order via PATCH endpoint
+      // Update order via PUT endpoint - only send updatable fields
       const updatePayload = {
-        orderId: order.orderId,
         customerId: order.customerId,
         carrierId: formData.carrierId,
         originAddress: formData.originAddress,
         destinationAddress: formData.destinationAddress,
         weight: formData.weight,
         status: "InTransit", // Change to InTransit on dispatch
-        orderDate: order.orderDate,
       };
 
       const resp = await fetch(`/api/orders/${order.orderId}`, {

@@ -4,6 +4,8 @@ import Paths from "./UtilsPaths";
 import { useNavigate } from "react-router-dom";
 import type { Session } from "./InterfaceSession";
 import { useState } from "react";
+import { useKeycloak } from "../context/KeycloakContext";
+import { getRouteForRole } from "../config/roles.config";
 
 const role: string = Roles.ROLE_PROFILE;
 const href: string = Paths.PATH_PROFILE;
@@ -19,6 +21,7 @@ const session: Session = {
 
 function Profile() {
   const navigate = useNavigate();
+  const { primaryRole } = useKeycloak();
 
   /* implementar keycloak */
   const [isLogout, setIsLogout] = useState(false);
@@ -27,11 +30,32 @@ function Profile() {
     //clear session
     navigate(Paths.PATH_LOGIN);
   }
+
+  const handleBackToRole = () => {
+    if (primaryRole) {
+      const targetRoute = getRouteForRole(primaryRole);
+      if (targetRoute) {
+        navigate(targetRoute);
+      }
+    }
+  };
+
   return (
     <>
       <Header role={role} href={href} />
 
       <div className="d-grid gap-2 col-6 mx-auto">
+        {primaryRole && (
+          <button
+            type="button"
+            className="btn btn-primary mb-3"
+            onClick={handleBackToRole}
+            style={{ justifySelf: 'start' }}
+          >
+            <i className="bi bi-arrow-left me-2"></i>
+            Voltar para {primaryRole}
+          </button>
+        )}
         <div className="row mb-4">
           <div className="card bg-light h-100">
             <div className="card-body">

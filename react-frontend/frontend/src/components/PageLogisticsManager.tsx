@@ -2,7 +2,6 @@ import Header from "./Header";
 import BiaxialLineChart from "./BiaaxialChart";
 import SimpleCharts from "./SimpleCharts";
 import CarriersPanel from "./CarriersPanel";
-import { Sidebar} from "react-pro-sidebar";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 
@@ -13,19 +12,6 @@ function LogisticsManager() {
   return (
     <>
       <Header role={role} href={href} />
-      <Sidebar>
-        <div className="d-grid gap-2 col-6 mx-auto">
-          <button className="btn btn-primary" type="button">
-            Rating Transportadoras
-          </button>
-          <button className="btn btn-primary" type="button">
-            Gerar Relatórios
-          </button>
-          <button className="btn btn-primary" type="button">
-            KPI
-          </button>
-        </div>
-      </Sidebar>
       <div className="d-grid gap-2 col-6 mx-auto">
         <CarriersPanel />
         <SimpleCharts />

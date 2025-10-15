@@ -30,7 +30,7 @@ function Login() {
   if (authenticated && !primaryRole) {
     return (
       <>
-        <Header role={role} href={href} />
+        <Header role={role} href={href} showNavButtons={false} />
         <div className="container text-center mt-5">
           <h3>Já está autenticado!</h3>
           <p className="text-warning">Nenhuma role atribuída. Contacte o administrador.</p>
@@ -41,7 +41,7 @@ function Login() {
 
   return (
     <>
-      <Header role={role} href={href} />
+      <Header role={role} href={href} showNavButtons={false} />
 
       <div className="container text-center mt-5">
         <div className="row justify-content-center">

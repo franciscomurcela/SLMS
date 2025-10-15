@@ -1,0 +1,4 @@
+com\shipping\shippingservice\model\Shipment.class
+com\shipping\shippingservice\controller\ShipmentController.class
+com\shipping\shippingservice\repository\ShipmentRepository.class
+com\shipping\shippingservice\ShippingServiceApplication.class

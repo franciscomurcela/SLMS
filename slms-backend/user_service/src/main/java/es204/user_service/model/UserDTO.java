@@ -1,5 +1,6 @@
 package es204.user_service.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 import java.time.Instant;
@@ -28,6 +29,7 @@ public class UserDTO {
     private UUID keycloakId;
     
     @JsonProperty("last_login")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS][.SSS][.SS][.S]", timezone = "UTC")
     private Instant lastLogin;
 
     // Constructors

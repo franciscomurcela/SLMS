@@ -1,0 +1,30 @@
+services:
+  # ============================================
+  # FRONTEND APPLICATION
+  # ============================================
+
+  # React Frontend - Porta 3000
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: slms-frontend
+    ports:
+      - "3000:80"
+    networks:
+      - slms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# ============================================
+# NETWORKS
+# ============================================
+
+networks:
+  slms-network:
+    driver: bridge

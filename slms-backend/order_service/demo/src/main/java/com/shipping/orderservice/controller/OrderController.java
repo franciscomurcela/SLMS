@@ -132,11 +132,11 @@ public class OrderController {
     }
 
     @GetMapping("/track/{trackingId}")
-    public ResponseEntity<Map<String, Object>> trackOrder(@PathVariable UUID trackingId) {
+    public ResponseEntity<Map<String, Object>> trackOrder(@PathVariable String trackingId) {
         try {
             String sql = """
                 SELECT 
-                    o.tracking_id::text as "trackingId",
+                    o.tracking_id as "trackingId",
                     o.order_date as "orderDate",
                     o.origin_address as "originAddress",
                     o.destination_address as "destinationAddress",

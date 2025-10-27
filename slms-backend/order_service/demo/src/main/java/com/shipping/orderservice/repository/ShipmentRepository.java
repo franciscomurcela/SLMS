@@ -46,7 +46,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
         FROM "Shipments" s
         INNER JOIN "Driver" d ON s.driver_id = d.driver_id
         INNER JOIN "Users" u ON d.user_id = u.id
-        WHERE u.keycloak_id = :keycloakId
+        WHERE u.keycloak_id = CAST(:keycloakId AS uuid)
         AND s.status = 'InTransit'
         ORDER BY s.departure_time DESC
         """, nativeQuery = true)

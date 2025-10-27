@@ -140,6 +140,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 3
       SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
+      KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/realms/ESg204/protocol/openid-connect/certs"
+      KEYCLOAK_ISSUER_URI: "http://192.168.160.9:8083/realms/ESg204"
     ports:
       - "8080:8080"
     networks:

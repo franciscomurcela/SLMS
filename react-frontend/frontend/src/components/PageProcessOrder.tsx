@@ -50,9 +50,7 @@ export default function PageProcessOrder() {
         setLoading(true);
         
         // Fetch order details
-        const orderResp = await fetch(`/api/orders`).catch(() =>
-          fetch(`http://localhost:8081/api/orders`)
-        );
+        const orderResp = await fetch(`/api/orders`);
         if (!orderResp.ok) throw new Error("Failed to fetch orders");
         const orders: Order[] = await orderResp.json();
         const foundOrder = orders.find((o) => o.orderId === orderId);
@@ -117,13 +115,7 @@ export default function PageProcessOrder() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatePayload),
-      }).catch(() =>
-        fetch(`http://localhost:8081/api/orders/${order.orderId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatePayload),
-        })
-      );
+      });
 
       if (!resp.ok) {
         const errorText = await resp.text();

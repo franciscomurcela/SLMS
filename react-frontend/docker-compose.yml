@@ -29,4 +29,5 @@ services:
 
 networks:
   slms-network:
-    driver: bridge
+    name: slms-backend_slms-network
+    external: true

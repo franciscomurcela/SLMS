@@ -44,26 +44,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # PostgreSQL para Order Service
-  order-db:
-    image: postgres:15
-    container_name: order-db
-    environment:
-      POSTGRES_DB: shipping
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-    volumes:
-      - order-db-data:/var/lib/postgresql/data
-    ports:
-      - "5434:5432"  # Mudado para 5434 para evitar conflito com slms-db
-    networks:
-      - slms-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d shipping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # ============================================
   # AUTHENTICATION & SECURITY
   # ============================================
@@ -186,6 +166,4 @@ volumes:
   keycloak-pgdata:
     driver: local
   keycloak-data:
-    driver: local
-  order-db-data:
     driver: local

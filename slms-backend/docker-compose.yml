@@ -23,6 +23,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # PostgreSQL Local (substitui Supabase) - Base de dados principal
+  slms-db:
+    image: postgres:15-alpine  # Alpine = mais leve (95MB vs 313MB)
+    container_name: slms-db
+    environment:
+      POSTGRES_DB: slms_db
+      POSTGRES_USER: slms_user
+      POSTGRES_PASSWORD: slms_password
+    volumes:
+      - slms-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"  # Porta principal para todos os services
+    networks:
+      - slms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slms_user -d slms_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   # PostgreSQL para Order Service
   order-db:
     image: postgres:15
@@ -34,7 +55,7 @@ services:
     volumes:
       - order-db-data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"  # Porta padrão para order service
+      - "5434:5432"  # Mudado para 5434 para evitar conflito com slms-db
     networks:
       - slms-network
     healthcheck:
@@ -157,6 +178,8 @@ networks:
     driver: bridge
 
 volumes:
+  slms-db-data:
+    driver: local
   keycloak-pgdata:
     driver: local
   keycloak-data:

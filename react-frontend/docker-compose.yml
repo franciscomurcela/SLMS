@@ -11,6 +11,8 @@ services:
     container_name: slms-frontend
     ports:
       - "0.0.0.0:3000:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - slms-network
     restart: unless-stopped

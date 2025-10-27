@@ -42,7 +42,7 @@ public class Order {
     private LocalDateTime orderDate = LocalDateTime.now();
 
     @Column(name = "tracking_id")
-    private UUID trackingId;
+    private String trackingId;  // Changed from UUID to String to match PostgreSQL text type
 
     @Column(name = "shipment_id")
     private UUID shipmentId;
@@ -78,8 +78,8 @@ public class Order {
     public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
 
-    public UUID getTrackingId() { return trackingId; }
-    public void setTrackingId(UUID trackingId) { this.trackingId = trackingId; }
+    public String getTrackingId() { return trackingId; }
+    public void setTrackingId(String trackingId) { this.trackingId = trackingId; }
 
     public UUID getShipmentId() { return shipmentId; }
     public void setShipmentId(UUID shipmentId) { this.shipmentId = shipmentId; }

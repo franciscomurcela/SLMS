@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Paths from './UtilsPaths';
 import { useKeycloak } from '../context/KeycloakContext';
+import { useFeatureFlag } from '../context/FeatureFlagsContext';
 
 const role: string = 'Driver';
 
@@ -37,6 +38,9 @@ function DriverCargoManifest() {
   const [expandedShipmentId, setExpandedShipmentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Feature flag para controlar a funcionalidade de visualização da rota
+  const isMapViewEnabled = useFeatureFlag('delivery-route-map-view');
 
   useEffect(() => {
     if (userInfo?.sub) {
@@ -227,12 +231,21 @@ function DriverCargoManifest() {
                                   </div>
                                 </div>
                                 
-                                <button 
-                                  className='btn btn-sm btn-outline-primary mt-3 w-100'
-                                  onClick={() => navigate(`/delivery-route/${order.orderId}`)}
-                                >
-                                  <i className='bi bi-geo-alt'></i> Ver no Mapa
-                                </button>
+                                {/* Botão "Ver no Mapa" controlado por feature flag */}
+                                {isMapViewEnabled ? (
+                                  <button 
+                                    className='btn btn-sm btn-outline-primary mt-3 w-100'
+                                    onClick={() => navigate(`/delivery-route/${order.orderId}`)}
+                                  >
+                                    <i className='bi bi-geo-alt'></i> Ver no Mapa
+                                  </button>
+                                ) : (
+                                  <div className='mt-3 text-center'>
+                                    <small className='text-muted'>
+                                      <i className='bi bi-info-circle'></i> Funcionalidade de mapa temporariamente indisponível
+                                    </small>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>

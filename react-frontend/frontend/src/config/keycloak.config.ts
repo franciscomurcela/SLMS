@@ -1,11 +1,9 @@
 // Keycloak configuration
-// Dynamic URL based on window location for remote access compatibility
+// Use same-origin URL through Nginx proxy to avoid CORS and secure context issues
 const getKeycloakUrl = () => {
-  // If accessing via remote IP, use that IP for Keycloak too
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `http://${window.location.hostname}:8083`;
-  }
-  return 'http://localhost:8083';
+  // Always use relative path /auth when behind Nginx
+  // This makes it same-origin and works without HTTPS
+  return `${window.location.protocol}//${window.location.host}/auth`;
 };
 
 export const keycloakConfig = {
@@ -27,11 +25,10 @@ export const keycloakInitOptions = {
 };
 
 // Backend API base URL - user_service handles authentication
+// Use same-origin URL through Nginx proxy
 const getBackendUrl = () => {
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return `http://${window.location.hostname}:8082`;
-  }
-  return 'http://localhost:8082';
+  // Always use relative path /api when behind Nginx
+  return `${window.location.protocol}//${window.location.host}/api`;
 };
 
 export const BACKEND_URL = getBackendUrl();

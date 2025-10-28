@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
+import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
   orderId: string;
@@ -69,9 +70,7 @@ export default function PageProcessOrder() {
         });
 
         // Fetch carriers
-        const carriersResp = await fetch("/carriers").catch(() =>
-          fetch("http://localhost:8080/carriers")
-        );
+        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS);
         if (!carriersResp.ok) throw new Error("Failed to fetch carriers");
         const carriersData = await carriersResp.json();
         setCarriers(carriersData);

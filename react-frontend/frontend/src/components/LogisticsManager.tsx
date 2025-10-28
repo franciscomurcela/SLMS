@@ -3,6 +3,7 @@ import BiaxialLineChart from "./BiaaxialChart";
 import SimpleCharts from "./SimpleCharts";
 import { Sidebar } from "react-pro-sidebar";
 import { useEffect, useState } from "react";
+import { API_ENDPOINTS } from "../config/api.config";
 
 const role: string = "Logistics Manager";
 
@@ -18,11 +19,10 @@ function LogisticsManager() {
 
   useEffect(() => {
     setLoading(true);
-    // try proxy first (vite dev). if that fails, fallback to direct backend URL
     async function load() {
       try {
-        console.log('Fetching /carriers via proxy...');
-        const r = await fetch('/carriers');
+        console.log('Fetching carriers via Nginx proxy...');
+        const r = await fetch(API_ENDPOINTS.CARRIERS);
         const text = await r.text();
         setRawResponse(text);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -30,27 +30,12 @@ function LogisticsManager() {
         if (Array.isArray(data) && data.length > 0) {
           setRows(data);
           setError(null);
-          setLoading(false);
-          return;
+        } else {
+          setRows([]);
+          setError('No carriers data available');
         }
-
-        // fallback to backend host
-        console.warn('/carriers returned no rows; trying direct backend...');
       } catch (err) {
-        console.warn('proxy fetch failed:', err);
-      }
-
-      try {
-        console.log('Fetching direct http://localhost:8080/carriers ...');
-        const r2 = await fetch('http://localhost:8080/carriers');
-        const text2 = await r2.text();
-        setRawResponse(text2);
-        if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
-        const data2 = JSON.parse(text2);
-        setRows(Array.isArray(data2) ? data2 : []);
-        setError(null);
-      } catch (err) {
-        console.error('direct fetch failed:', err);
+        console.error('Failed to fetch carriers:', err);
         setError(String(err));
       } finally {
         setLoading(false);

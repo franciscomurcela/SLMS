@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
   orderId: string;
@@ -60,14 +61,12 @@ export default function OrdersPanel() {
       setError(null);
       try {
         // Fetch orders
-        const ordersResp = await fetch("/api/orders");
+        const ordersResp = await fetch(API_ENDPOINTS.ORDERS);
         if (!ordersResp.ok) throw new Error(`Orders fetch failed: ${ordersResp.status}`);
         const ordersData = await ordersResp.json();
         
         // Fetch carriers
-        const carriersResp = await fetch("/carriers").catch(() =>
-          fetch("http://localhost:8080/carriers")
-        );
+        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS);
         if (!carriersResp.ok) throw new Error(`Carriers fetch failed: ${carriersResp.status}`);
         const carriersData = await carriersResp.json();
         

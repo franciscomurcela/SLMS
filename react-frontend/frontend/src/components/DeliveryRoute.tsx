@@ -29,6 +29,7 @@ const DeliveryRoute: React.FC = () => {
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const currentMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const mapInitializedRef = useRef<boolean>(false); // Flag para evitar múltiplas inicializações
   
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,7 +133,22 @@ const DeliveryRoute: React.FC = () => {
   }, [keycloak?.token, orderId]);
 
   useEffect(() => {
-    if (!mapLoaded || !orderDetails || !mapRef.current || mapInstanceRef.current) return;
+    console.log('🗺️ useEffect do mapa executado:', {
+      mapLoaded,
+      orderDetails: !!orderDetails,
+      mapRefCurrent: !!mapRef.current,
+      mapInstanceRef: !!mapInstanceRef.current,
+      mapInitialized: mapInitializedRef.current
+    });
+
+    if (!mapLoaded || !orderDetails || !mapRef.current || mapInstanceRef.current || mapInitializedRef.current) {
+      console.log('🚫 Condições não atendidas para inicializar mapa');
+      return;
+    }
+
+    // Marcar como inicializado para evitar múltiplas execuções
+    mapInitializedRef.current = true;
+    console.log('✅ Iniciando inicialização do mapa...');
 
     const initializeMap = async () => {
       try {
@@ -167,6 +183,7 @@ const DeliveryRoute: React.FC = () => {
 
         setCurrentPosition(currentPos);
 
+        console.log('🗺️ Criando instância do Google Maps...');
         const map = new google.maps.Map(mapRef.current!, {
           zoom: 14,
           center: currentPos,
@@ -307,6 +324,8 @@ const DeliveryRoute: React.FC = () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
+      // Reset da flag para permitir reinicialização se necessário
+      mapInitializedRef.current = false;
     };
   }, [mapLoaded, orderDetails]);
 

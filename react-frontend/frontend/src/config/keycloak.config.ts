@@ -15,15 +15,11 @@ export const keycloakConfig = {
 export const keycloakInitOptions = {
   // Don't auto-login, just check if there's an existing session
   onLoad: 'check-sso' as const,
-  // CRITICAL: Use implicit flow for HTTP (no Web Crypto API needed)
-  flow: 'implicit' as const,
   checkLoginIframe: false,
   // Disable silent check SSO to avoid CORS issues
   silentCheckSsoRedirectUri: undefined,
   // Enable response mode to handle callback properly
   responseMode: 'fragment' as const,
-  // Force disable Web Crypto API usage
-  enableLogging: false,
 };
 
 // Backend API base URL - user_service handles authentication

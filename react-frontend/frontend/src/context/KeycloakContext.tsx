@@ -72,13 +72,31 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         if (!window.crypto || !window.crypto.subtle) {
           console.warn('⚠️ Web Crypto API not available (HTTP), using mock');
           (window as any).crypto = {
-            subtle: {},
+            subtle: {
+              digest: () => Promise.reject(new Error('Web Crypto not available in insecure context')),
+              encrypt: () => Promise.reject(new Error('Web Crypto not available in insecure context')),
+              decrypt: () => Promise.reject(new Error('Web Crypto not available in insecure context')),
+            },
             getRandomValues: (arr: any) => {
               for (let i = 0; i < arr.length; i++) {
                 arr[i] = Math.floor(Math.random() * 256);
               }
               return arr;
             }
+          };
+        }
+        
+        // Force disable PKCE by overriding Keycloak's internal check
+        const originalInit = (Keycloak as any).prototype.init;
+        if (originalInit) {
+          (Keycloak as any).prototype.init = function(initOptions: any) {
+            // Force disable PKCE
+            const modifiedOptions = {
+              ...initOptions,
+              pkceMethod: undefined,
+            };
+            console.log('🔧 Forcing Keycloak init without PKCE');
+            return originalInit.call(this, modifiedOptions);
           };
         }
         

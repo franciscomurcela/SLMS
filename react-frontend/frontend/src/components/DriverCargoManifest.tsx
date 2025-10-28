@@ -227,7 +227,10 @@ function DriverCargoManifest() {
                                   </div>
                                 </div>
                                 
-                                <button className='btn btn-sm btn-outline-primary mt-3 w-100'>
+                                <button 
+                                  className='btn btn-sm btn-outline-primary mt-3 w-100'
+                                  onClick={() => navigate(`/delivery-route/${order.orderId}`)}
+                                >
                                   <i className='bi bi-geo-alt'></i> Ver no Mapa
                                 </button>
                               </div>

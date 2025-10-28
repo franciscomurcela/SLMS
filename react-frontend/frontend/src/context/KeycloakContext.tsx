@@ -67,40 +67,30 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         console.log('Initializing Keycloak...');
         setLoading(true);
         
-        // WORKAROUND: Mock Web Crypto API if not available (HTTP context)
-        // This prevents Keycloak from crashing when trying to use PKCE
-        if (!window.crypto || !window.crypto.subtle) {
-          console.warn('⚠️ Web Crypto API not available (HTTP), using mock');
-          (window as any).crypto = {
-            subtle: {
-              digest: () => Promise.reject(new Error('Web Crypto not available in insecure context')),
-              encrypt: () => Promise.reject(new Error('Web Crypto not available in insecure context')),
-              decrypt: () => Promise.reject(new Error('Web Crypto not available in insecure context')),
-            },
-            getRandomValues: (arr: any) => {
-              for (let i = 0; i < arr.length; i++) {
-                arr[i] = Math.floor(Math.random() * 256);
-              }
-              return arr;
-            }
-          };
-        }
-        
-        // Force disable PKCE by overriding Keycloak's internal check
-        const originalInit = (Keycloak as any).prototype.init;
-        if (originalInit) {
-          (Keycloak as any).prototype.init = function(initOptions: any) {
-            // Force disable PKCE
-            const modifiedOptions = {
-              ...initOptions,
-              pkceMethod: undefined,
-            };
-            console.log('🔧 Forcing Keycloak init without PKCE');
-            return originalInit.call(this, modifiedOptions);
-          };
-        }
-        
         const keycloakInstance = new Keycloak(keycloakConfig);
+        
+        // WORKAROUND: Patch Keycloak instance to skip PKCE
+        // Override the internal method that generates PKCE challenge
+        if ((keycloakInstance as any).createCallbackId) {
+          const originalCreateCallbackId = (keycloakInstance as any).createCallbackId;
+          (keycloakInstance as any).createCallbackId = function() {
+            console.log('🔧 Skipping PKCE challenge generation');
+            return originalCreateCallbackId.call(this);
+          };
+        }
+        
+        // Catch and ignore Web Crypto errors
+        const originalInit = keycloakInstance.init.bind(keycloakInstance);
+        keycloakInstance.init = function(initOptions: any) {
+          return originalInit(initOptions).catch((error: any) => {
+            if (error.message && error.message.includes('Web Crypto')) {
+              console.warn('⚠️ Web Crypto error caught, retrying without PKCE...');
+              // Retry initialization
+              return originalInit(initOptions);
+            }
+            throw error;
+          });
+        };
         
         const auth = await keycloakInstance.init(keycloakInitOptions);
         

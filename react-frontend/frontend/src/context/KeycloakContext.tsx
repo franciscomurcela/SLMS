@@ -69,29 +69,6 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         
         const keycloakInstance = new Keycloak(keycloakConfig);
         
-        // WORKAROUND: Patch Keycloak instance to skip PKCE
-        // Override the internal method that generates PKCE challenge
-        if ((keycloakInstance as any).createCallbackId) {
-          const originalCreateCallbackId = (keycloakInstance as any).createCallbackId;
-          (keycloakInstance as any).createCallbackId = function() {
-            console.log('🔧 Skipping PKCE challenge generation');
-            return originalCreateCallbackId.call(this);
-          };
-        }
-        
-        // Catch and ignore Web Crypto errors
-        const originalInit = keycloakInstance.init.bind(keycloakInstance);
-        keycloakInstance.init = function(initOptions: any) {
-          return originalInit(initOptions).catch((error: any) => {
-            if (error.message && error.message.includes('Web Crypto')) {
-              console.warn('⚠️ Web Crypto error caught, retrying without PKCE...');
-              // Retry initialization
-              return originalInit(initOptions);
-            }
-            throw error;
-          });
-        };
-        
         const auth = await keycloakInstance.init(keycloakInitOptions);
         
         console.log('Keycloak initialized, authenticated:', auth);

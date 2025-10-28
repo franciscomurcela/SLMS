@@ -15,7 +15,7 @@
     "@mui/material": "^7.3.4",
     "@mui/x-charts": "^8.13.1",
     "bootstrap": "^5.3.8",
-    "keycloak-js": "^26.2.1",
+    "keycloak-js": "^21.1.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-pro-sidebar": "^1.1.0",

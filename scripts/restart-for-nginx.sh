@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# Script para reiniciar os serviços após configurar Nginx
-# Este script:
-# 1. Para todos os containers
-# 2. Rebuilda o frontend com as novas configurações
-# 3. Reinicia o backend com as novas variáveis de ambiente
-# 4. Mostra os logs para debug
+# Script simplificado para reiniciar os serviços após configurar Nginx
+# Build do frontend é feito dentro do container Docker (multi-stage build)
 
 set -e
 
@@ -20,13 +16,8 @@ cd ../slms-backend
 docker-compose down
 
 echo ""
-echo "🏗️  Building frontend com novas configurações..."
-cd ../react-frontend/frontend
-npm run build
-
-echo ""
-echo "🐳 Building frontend container..."
-cd ..
+echo "🐳 Rebuilding frontend container (build automático)..."
+cd ../react-frontend
 docker-compose build --no-cache frontend
 
 echo ""

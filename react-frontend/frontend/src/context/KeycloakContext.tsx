@@ -67,6 +67,21 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         console.log('Initializing Keycloak...');
         setLoading(true);
         
+        // WORKAROUND: Mock Web Crypto API if not available (HTTP context)
+        // This prevents Keycloak from crashing when trying to use PKCE
+        if (!window.crypto || !window.crypto.subtle) {
+          console.warn('⚠️ Web Crypto API not available (HTTP), using mock');
+          (window as any).crypto = {
+            subtle: {},
+            getRandomValues: (arr: any) => {
+              for (let i = 0; i < arr.length; i++) {
+                arr[i] = Math.floor(Math.random() * 256);
+              }
+              return arr;
+            }
+          };
+        }
+        
         const keycloakInstance = new Keycloak(keycloakConfig);
         
         const auth = await keycloakInstance.init(keycloakInitOptions);

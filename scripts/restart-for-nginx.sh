@@ -9,20 +9,24 @@
 
 set -e
 
-echo "🔄 Parando todos os containers..."
-cd slms-backend
+echo "🔄 Parando frontend..."
+cd react-frontend
 docker-compose down
-cd ../react-frontend
+docker rm -f slms-frontend 2>/dev/null || true
+
+echo ""
+echo "🔄 Parando backend..."
+cd ../slms-backend
 docker-compose down
 
 echo ""
-echo "🏗️  Rebuilding frontend com novas configurações..."
-cd frontend
+echo "🏗️  Building frontend com novas configurações..."
+cd ../react-frontend/frontend
 npm run build
-cd ..
 
 echo ""
-echo "🐳 Rebuilding frontend container..."
+echo "🐳 Building frontend container..."
+cd ..
 docker-compose build --no-cache frontend
 
 echo ""

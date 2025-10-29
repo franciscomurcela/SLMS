@@ -348,7 +348,7 @@ public class OrderController {
                 FROM "Orders" o
                 LEFT JOIN "Costumer" c ON o.costumer_id = c.user_id
                 LEFT JOIN "Users" u ON c.user_id = u.id
-                WHERE u.keycloak_id::text = :keycloakId
+                WHERE u.keycloak_id::text = ?
                 ORDER BY o.order_date DESC
                 """;
             

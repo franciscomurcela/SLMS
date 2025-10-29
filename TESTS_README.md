@@ -26,9 +26,9 @@ Este projeto cobre e executa automaticamente no pipeline CI/CD os principais tip
   - **Arquivo exemplo:** `user_service/src/test/java/es204/user_service/model/UserDTOTest.java`
 
 - **Frontend (React):**
-  - **Ferramenta:** Testing Library/Jest
-  - **Como roda:** Executado via `npm run test`.
-  - **Arquivo exemplo:** `react-frontend/frontend/src/__tests__/App.unit.test.tsx`
+  - **Ferramenta:** Vitest + Testing Library
+  - **Como roda:** Executado via `npm run test` ou `npm run test:unit`.
+  - **Arquivo exemplo:** `react-frontend/frontend/src/__unit__/App.unit.test.tsx`
 
 ## 3. Teste de Integração (Integration Test)
 
@@ -43,7 +43,7 @@ Este projeto cobre e executa automaticamente no pipeline CI/CD os principais tip
 - **Frontend (React):**
   - **Ferramenta:** Playwright
   - **Como roda:** Executado via `npm run test:e2e` (requer app rodando localmente e Playwright configurado).
-  - **Arquivo exemplo:** `react-frontend/frontend/src/__tests__/App.e2e.test.ts`
+  - **Arquivo exemplo:** (ver documentação Playwright, arquivos de exemplo removidos)
 
 ---
 
@@ -66,6 +66,8 @@ Este projeto cobre e executa automaticamente no pipeline CI/CD os principais tip
 - **Unitários:**
   ```sh
   npm run test
+  # ou
+  npm run test:unit
   ```
 - **E2E:**
   ```sh

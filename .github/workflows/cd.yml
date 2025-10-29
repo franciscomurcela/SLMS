@@ -24,7 +24,7 @@ jobs:
         working-directory: ./react-frontend/frontend
       # Teste unitário frontend
       - name: Testes unitários frontend
-        run: npm run test
+        run: npm run test:unit
         working-directory: ./react-frontend/frontend
       # Teste E2E frontend
       - name: Testes E2E frontend

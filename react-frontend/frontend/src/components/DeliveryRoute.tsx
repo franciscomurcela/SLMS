@@ -123,8 +123,9 @@ const DeliveryRoute: React.FC = () => {
         setLoading(true);
         const keycloakId = keycloak.tokenParsed?.sub;
 
+        // Use same-origin request through Nginx proxy
         const shipmentsResponse = await fetch(
-          `http://localhost:8081/api/shipments/my-shipments/${keycloakId}`,
+          `/api/shipments/my-shipments/${keycloakId}`,
           {
             headers: {
               'Authorization': `Bearer ${keycloak.token}`,

@@ -43,7 +43,7 @@ function formatDate(dateString: string) {
 }
 
 function Customer() {
-  const { primaryRole, userInfo, hasRole } = useKeycloak();
+  const { primaryRole, userInfo, hasRole, keycloak } = useKeycloak();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,16 +57,23 @@ function Customer() {
 
     async function loadOrders() {
       // Only load orders if user is a customer and history is being shown
-      if (!isCustomer || !showOrderHistory) {
+      if (!isCustomer || !showOrderHistory || !keycloak?.tokenParsed?.sub) {
         return;
       }
 
       setLoading(true);
       setError(null);
       try {
-        const ordersResp = await fetch("/api/orders").catch(() =>
-          fetch("http://localhost:8081/api/orders")
-        );
+        const keycloakId = keycloak.tokenParsed.sub;
+        
+        // Use same-origin request through Nginx proxy with customer's keycloakId
+        const ordersResp = await fetch(`/api/orders/my-orders/${keycloakId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${keycloak.token}`,
+          },
+        });
+        
         if (!ordersResp.ok)
           throw new Error(`Orders fetch failed: ${ordersResp.status}`);
         const ordersData = await ordersResp.json();
@@ -86,7 +93,7 @@ function Customer() {
     return () => {
       mounted = false;
     };
-  }, [isCustomer, showOrderHistory]);
+  }, [isCustomer, showOrderHistory, keycloak]);
 
   // Get the user's name from Keycloak, with fallbacks
   const displayName =

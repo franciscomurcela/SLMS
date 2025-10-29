@@ -4,6 +4,7 @@ import Driver from "./components/Driver";
 import DriverProofOfDelivery from "./components/DriverProofOfDelivery";
 import DriverCargoManifest from "./components/DriverCargoManifest";
 import ConfirmDelivery from "./components/ConfirmDelivery";
+import DeliveryRoute from "./components/DeliveryRoute";
 import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
@@ -54,6 +55,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
                 <ConfirmDelivery />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery-route/:orderId"
+            element={
+              <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
+                <DeliveryRoute />
               </ProtectedRoute>
             }
           />

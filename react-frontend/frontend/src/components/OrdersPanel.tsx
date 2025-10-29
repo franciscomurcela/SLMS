@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useKeycloak } from "../context/KeycloakContext";
 import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
@@ -47,6 +48,7 @@ function formatWeight(weight: number) {
 }
 
 export default function OrdersPanel() {
+  const { keycloak } = useKeycloak();
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -57,16 +59,34 @@ export default function OrdersPanel() {
     let mounted = true;
 
     async function loadData() {
+      // Wait for Keycloak to be ready
+      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
+        console.log("[OrdersPanel] Waiting for Keycloak...");
+        setLoading(true);
+        return;
+      }
+
+      console.log("[OrdersPanel] Keycloak ready, fetching orders with token");
       setLoading(true);
       setError(null);
       try {
-        // Fetch orders
-        const ordersResp = await fetch(API_ENDPOINTS.ORDERS);
+        // Fetch orders with Authorization header
+        const ordersResp = await fetch(API_ENDPOINTS.ORDERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!ordersResp.ok) throw new Error(`Orders fetch failed: ${ordersResp.status}`);
         const ordersData = await ordersResp.json();
         
-        // Fetch carriers
-        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS);
+        // Fetch carriers with Authorization header
+        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!carriersResp.ok) throw new Error(`Carriers fetch failed: ${carriersResp.status}`);
         const carriersData = await carriersResp.json();
         
@@ -86,7 +106,7 @@ export default function OrdersPanel() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [keycloak]);
 
   const getCarrierName = (carrierId: string | null): string => {
     if (!carrierId) return "Sem atribuição";

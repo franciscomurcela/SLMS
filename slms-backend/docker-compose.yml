@@ -68,8 +68,6 @@ services:
       KC_PROXY: 'edge'
       KC_PROXY_HEADERS: 'xforwarded'
       KC_HTTP_RELATIVE_PATH: '/auth'
-      KC_HOSTNAME: '192.168.160.9'
-      KC_HOSTNAME_PORT: '443'
       KC_HOSTNAME_URL: 'https://192.168.160.9/auth'
       KC_HOSTNAME_ADMIN_URL: 'https://192.168.160.9/auth'
     ports:

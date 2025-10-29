@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useKeycloak } from "../context/KeycloakContext";
 import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
@@ -30,6 +31,7 @@ const href: string = Paths.PATH_WAREHOUSE;
 export default function PageProcessOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  const { keycloak } = useKeycloak();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
@@ -51,7 +53,12 @@ export default function PageProcessOrder() {
         setLoading(true);
         
         // Fetch order details
-        const orderResp = await fetch(`/api/orders`);
+        const orderResp = await fetch(`/api/orders`, {
+          headers: {
+            'Authorization': `Bearer ${keycloak?.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!orderResp.ok) throw new Error("Failed to fetch orders");
         const orders: Order[] = await orderResp.json();
         const foundOrder = orders.find((o) => o.orderId === orderId);
@@ -70,7 +77,12 @@ export default function PageProcessOrder() {
         });
 
         // Fetch carriers
-        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS);
+        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak?.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!carriersResp.ok) throw new Error("Failed to fetch carriers");
         const carriersData = await carriersResp.json();
         setCarriers(carriersData);
@@ -112,7 +124,10 @@ export default function PageProcessOrder() {
 
       const resp = await fetch(`/api/orders/${order.orderId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(updatePayload),
       });
 

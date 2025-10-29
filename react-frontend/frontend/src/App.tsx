@@ -4,6 +4,8 @@ import Driver from "./components/Driver";
 import DriverProofOfDelivery from "./components/DriverProofOfDelivery";
 import DriverCargoManifest from "./components/DriverCargoManifest";
 import ConfirmDelivery from "./components/ConfirmDelivery";
+import Customer from "./components/PageCustomer";
+import DeliveryRoute from "./components/DeliveryRoute";
 import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
@@ -23,15 +25,15 @@ function App() {
           {/* Public routes */}
           <Route path={Paths.PATH_LOGIN} element={<Login />} />
           <Route path="/auth-test" element={<AuthTest />} />
-          
+
           {/* Protected routes - require authentication */}
-          <Route 
-            path={Paths.PATH_DRIVER} 
+          <Route
+            path={Paths.PATH_DRIVER}
             element={
               <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
                 <Driver />
               </ProtectedRoute>
-            } 
+            }
           />
           <Route
             path={Paths.PATH_DRIVER_PROOF_OF_DELIVERY}
@@ -58,6 +60,14 @@ function App() {
             }
           />
           <Route
+            path="/delivery-route/:orderId"
+            element={
+              <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
+                <DeliveryRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path={Paths.PATH_LOGISTICS_MANAGER}
             element={
               <ProtectedRoute requiredRole={APP_ROLES.LOGISTICS_MANAGER}>
@@ -73,29 +83,29 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route 
-            path={Paths.PATH_PROFILE} 
+          <Route
+            path={Paths.PATH_PROFILE}
             element={
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path={Paths.PATH_WAREHOUSE} 
+          <Route
+            path={Paths.PATH_WAREHOUSE}
             element={
               <ProtectedRoute requiredRole={APP_ROLES.WAREHOUSE_STAFF}>
                 <Warehouse />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/warehouse/process/:orderId" 
+          <Route
+            path="/warehouse/process/:orderId"
             element={
               <ProtectedRoute requiredRole={APP_ROLES.WAREHOUSE_STAFF}>
                 <ProcessOrder />
               </ProtectedRoute>
-            } 
+            }
           />
           <Route
             path={Paths.PATH_CUSTOMER_SERVICE_REP}
@@ -109,11 +119,11 @@ function App() {
             path={Paths.PATH_CUSTOMER}
             element={
               <ProtectedRoute requiredRole={APP_ROLES.CUSTOMER}>
-                <CustomerServiceRep />
+                <Customer />
               </ProtectedRoute>
             }
           />
-          
+
           {/* Catch-all route - redirect to login */}
           <Route path="*" element={<Login />} />
         </Routes>

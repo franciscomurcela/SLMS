@@ -26,7 +26,7 @@ interface TrackingResult {
 
 function TrackingPortal() {
   const navigate = useNavigate();
-  const { primaryRole } = useKeycloak();
+  const { primaryRole, keycloak } = useKeycloak();
   const [trackingId, setTrackingId] = useState("");
   const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,11 +53,12 @@ function TrackingPortal() {
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/orders/track/${trackingId.trim()}`,
+        `/api/orders/track/${trackingId.trim()}`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${keycloak?.token}`,
           },
         }
       );

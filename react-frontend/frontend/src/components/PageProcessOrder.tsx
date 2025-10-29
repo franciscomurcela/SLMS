@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useKeycloak } from "../context/KeycloakContext";
 import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
+import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
   orderId: string;
@@ -29,6 +31,7 @@ const href: string = Paths.PATH_WAREHOUSE;
 export default function PageProcessOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  const { keycloak } = useKeycloak();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
@@ -46,13 +49,26 @@ export default function PageProcessOrder() {
 
   useEffect(() => {
     async function loadData() {
+      // Wait for Keycloak to be ready and have a token
+      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
+        console.log("Waiting for Keycloak... authenticated:", keycloak?.authenticated, "has token:", !!keycloak?.token);
+        setLoading(true);
+        return;
+      }
+
+      console.log("Keycloak ready! Token length:", keycloak.token.length);
+
       try {
         setLoading(true);
         
         // Fetch order details
-        const orderResp = await fetch(`/api/orders`).catch(() =>
-          fetch(`http://localhost:8081/api/orders`)
-        );
+        console.log("Fetching orders with token:", keycloak.token.substring(0, 20) + "...");
+        const orderResp = await fetch(`/api/orders`, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!orderResp.ok) throw new Error("Failed to fetch orders");
         const orders: Order[] = await orderResp.json();
         const foundOrder = orders.find((o) => o.orderId === orderId);
@@ -71,9 +87,12 @@ export default function PageProcessOrder() {
         });
 
         // Fetch carriers
-        const carriersResp = await fetch("/carriers").catch(() =>
-          fetch("http://localhost:8080/carriers")
-        );
+        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!carriersResp.ok) throw new Error("Failed to fetch carriers");
         const carriersData = await carriersResp.json();
         setCarriers(carriersData);
@@ -86,7 +105,7 @@ export default function PageProcessOrder() {
     }
 
     if (orderId) loadData();
-  }, [orderId]);
+  }, [orderId, keycloak]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -115,15 +134,12 @@ export default function PageProcessOrder() {
 
       const resp = await fetch(`/api/orders/${order.orderId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(updatePayload),
-      }).catch(() =>
-        fetch(`http://localhost:8081/api/orders/${order.orderId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatePayload),
-        })
-      );
+      });
 
       if (!resp.ok) {
         const errorText = await resp.text();

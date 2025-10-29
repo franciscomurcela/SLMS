@@ -40,20 +40,24 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             // Enable OAuth2 Resource Server (JWT validation against Keycloak)
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))
-            // Add UserSyncFilter after authentication to sync user with Supabase
-            .addFilterAfter(userSyncFilter, UsernamePasswordAuthenticationFilter.class);
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
+            // DISABLED: UserSyncFilter (using PostgreSQL now instead of Supabase API)
+            // .addFilterAfter(userSyncFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     /**
-     * Configure CORS to allow requests from frontend (localhost:5173)
+     * Configure CORS to allow requests from frontend (localhost:5173 and remote IP)
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://192.168.160.9:3000"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

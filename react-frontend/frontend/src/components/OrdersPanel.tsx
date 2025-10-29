@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useKeycloak } from "../context/KeycloakContext";
+import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
   orderId: string;
@@ -46,6 +48,7 @@ function formatWeight(weight: number) {
 }
 
 export default function OrdersPanel() {
+  const { keycloak } = useKeycloak();
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -56,20 +59,34 @@ export default function OrdersPanel() {
     let mounted = true;
 
     async function loadData() {
+      // Wait for Keycloak to be ready
+      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
+        console.log("[OrdersPanel] Waiting for Keycloak...");
+        setLoading(true);
+        return;
+      }
+
+      console.log("[OrdersPanel] Keycloak ready, fetching orders with token");
       setLoading(true);
       setError(null);
       try {
-        // Fetch orders
-        const ordersResp = await fetch("/api/orders").catch(() => 
-          fetch("http://localhost:8081/api/orders")
-        );
+        // Fetch orders with Authorization header
+        const ordersResp = await fetch(API_ENDPOINTS.ORDERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!ordersResp.ok) throw new Error(`Orders fetch failed: ${ordersResp.status}`);
         const ordersData = await ordersResp.json();
         
-        // Fetch carriers
-        const carriersResp = await fetch("/carriers").catch(() =>
-          fetch("http://localhost:8080/carriers")
-        );
+        // Fetch carriers with Authorization header
+        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (!carriersResp.ok) throw new Error(`Carriers fetch failed: ${carriersResp.status}`);
         const carriersData = await carriersResp.json();
         
@@ -89,7 +106,7 @@ export default function OrdersPanel() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [keycloak]);
 
   const getCarrierName = (carrierId: string | null): string => {
     if (!carrierId) return "Sem atribuição";
@@ -100,9 +117,11 @@ export default function OrdersPanel() {
   const downloadPackingSlip = async (orderId: string) => {
     try {
       const url = `/api/orders/${orderId}/packing-slip`;
-      const resp = await fetch(url).catch(() =>
-        fetch(`http://localhost:8081${url}`)
-      );
+      const resp = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+        }
+      });
       
       if (!resp.ok) throw new Error("Failed to download packing slip");
       
@@ -124,9 +143,11 @@ export default function OrdersPanel() {
   const downloadShippingLabel = async (orderId: string) => {
     try {
       const url = `/api/orders/${orderId}/shipping-label`;
-      const resp = await fetch(url).catch(() =>
-        fetch(`http://localhost:8081${url}`)
-      );
+      const resp = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+        }
+      });
       
       if (!resp.ok) throw new Error("Failed to download shipping label");
       

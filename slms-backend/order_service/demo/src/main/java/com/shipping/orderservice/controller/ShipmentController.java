@@ -152,20 +152,34 @@ public class ShipmentController {
     @GetMapping("/my-shipments/{keycloakId}")
     public ResponseEntity<List<ShipmentWithOrdersDTO>> getMyShipmentsWithOrders(@PathVariable String keycloakId) {
         try {
+            System.out.println("=== Fetching shipments for keycloakId: " + keycloakId);
+            
             // Get InTransit shipments for this user (navigating through Users and Driver tables)
             List<Shipment> shipments = shipmentRepository.findInTransitShipmentsByKeycloakId(keycloakId);
             
-            // For each shipment, fetch its orders
-            List<ShipmentWithOrdersDTO> result = shipments.stream()
-                .map(shipment -> {
-                    List<Order> orders = orderRepository.findByShipmentId(shipment.getShipmentId());
-                    return new ShipmentWithOrdersDTO(shipment, orders);
-                })
-                .collect(Collectors.toList());
+            System.out.println("=== Found " + shipments.size() + " InTransit shipments");
             
+            // For each shipment, fetch its orders
+            List<ShipmentWithOrdersDTO> result = new ArrayList<>();
+            
+            for (Shipment shipment : shipments) {
+                try {
+                    System.out.println("=== Processing shipment: " + shipment.getShipmentId());
+                    List<Order> orders = orderRepository.findByShipmentId(shipment.getShipmentId());
+                    System.out.println("    Found " + orders.size() + " orders");
+                    result.add(new ShipmentWithOrdersDTO(shipment, orders));
+                } catch (Exception e) {
+                    System.err.println("    ERROR processing shipment " + shipment.getShipmentId() + ": " + e.getMessage());
+                    e.printStackTrace();
+                    // Continue with next shipment instead of failing completely
+                }
+            }
+            
+            System.out.println("=== Returning " + result.size() + " shipments with orders");
             return ResponseEntity.ok(result);
+            
         } catch (Exception e) {
-            System.err.println("Error fetching shipments for keycloakId " + keycloakId + ": " + e.getMessage());
+            System.err.println("=== ERROR fetching shipments for keycloakId " + keycloakId + ": " + e.getClass().getName() + " - " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }

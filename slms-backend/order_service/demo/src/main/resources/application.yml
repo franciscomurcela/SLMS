@@ -1,10 +1,9 @@
 spring:
   datasource:
-    # Use preferQueryMode=simple and prepareThreshold=0 to avoid server-side prepared statements when
-    # connecting through Supabase's transaction pooler (PgBouncer). Also enforce SSL.
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require&preferQueryMode=simple&prepareThreshold=0
-    username: ${DB_USER}
-    password: ${DB_PASS}
+    # Local PostgreSQL configuration (no SSL required for local container communication)
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/slms_db}
+    username: ${SPRING_DATASOURCE_USERNAME:slms_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:slms_password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

@@ -175,32 +175,16 @@ function Customer() {
                   </div>
                 )}
 
-                {!loading &&
-                  !error &&
-                  orders.filter(
-                    (order) =>
-                      order.status === "Delivered" || order.status === "Pending"
-                  ).length === 0 && (
-                    <div className="alert alert-info" role="alert">
-                      <i className="bi bi-info-circle-fill me-2"></i>
-                      Nenhum pedido encontrado.
-                    </div>
-                  )}
+                {!loading && !error && orders.length === 0 && (
+                  <div className="alert alert-info" role="alert">
+                    <i className="bi bi-info-circle-fill me-2"></i>
+                    Nenhum pedido encontrado.
+                  </div>
+                )}
 
-                {!loading &&
-                  !error &&
-                  orders.filter(
-                    (order) =>
-                      order.status === "Delivered" || order.status === "Pending"
-                  ).length > 0 && (
-                    <div className="list-group">
-                      {orders
-                        .filter(
-                          (order) =>
-                            order.status === "Delivered" ||
-                            order.status === "Pending"
-                        )
-                        .map((order) => (
+                {!loading && !error && orders.length > 0 && (
+                  <div className="list-group">
+                    {orders.map((order) => (
                           <div
                             key={order.orderId}
                             className="list-group-item list-group-item-action"

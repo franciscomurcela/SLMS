@@ -28,7 +28,9 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ chil
         setError(null);
 
         if (!FLAGSMITH_ENVIRONMENT_KEY) {
-          throw new Error('VITE_FLAGSMITH_ENVIRONMENT_KEY não configurada no arquivo .env');
+          console.warn('⚠️ VITE_FLAGSMITH_ENVIRONMENT_KEY não configurada - todas as features estarão ATIVADAS por padrão');
+          setIsLoading(false);
+          return;
         }
 
         console.log('🚩 Inicializando Flagsmith com Environment Key:', FLAGSMITH_ENVIRONMENT_KEY);
@@ -59,12 +61,18 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ chil
 
   const isFeatureEnabled = (flagKey: string): boolean => {
     try {
+      // Se Flagsmith não foi inicializado (sem chave), ativar todas as features por padrão
+      if (!FLAGSMITH_ENVIRONMENT_KEY) {
+        console.log(`🔍 Flagsmith não configurado - feature '${flagKey}' ATIVADA por padrão`);
+        return true;
+      }
+      
       const isEnabled = flagsmith.hasFeature(flagKey);
       console.log(`🔍 Verificando feature flag '${flagKey}':`, isEnabled);
       return isEnabled;
     } catch (err) {
       console.warn(`⚠️ Erro ao verificar flag '${flagKey}':`, err);
-      return false; // Fallback seguro - feature desabilitada por padrão
+      return true; // Fallback seguro - feature ativada por padrão em caso de erro
     }
   };
 

@@ -49,13 +49,19 @@ export default function PageProcessOrder() {
 
   useEffect(() => {
     async function loadData() {
+      // Wait for Keycloak to be ready and have a token
+      if (!keycloak || !keycloak.token) {
+        console.log("Waiting for Keycloak token...");
+        return;
+      }
+
       try {
         setLoading(true);
         
         // Fetch order details
         const orderResp = await fetch(`/api/orders`, {
           headers: {
-            'Authorization': `Bearer ${keycloak?.token}`,
+            'Authorization': `Bearer ${keycloak.token}`,
             'Content-Type': 'application/json'
           }
         });
@@ -79,7 +85,7 @@ export default function PageProcessOrder() {
         // Fetch carriers
         const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {
           headers: {
-            'Authorization': `Bearer ${keycloak?.token}`,
+            'Authorization': `Bearer ${keycloak.token}`,
             'Content-Type': 'application/json'
           }
         });
@@ -95,7 +101,7 @@ export default function PageProcessOrder() {
     }
 
     if (orderId) loadData();
-  }, [orderId]);
+  }, [orderId, keycloak]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

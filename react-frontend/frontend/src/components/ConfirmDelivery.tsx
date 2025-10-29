@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface Props {}
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";

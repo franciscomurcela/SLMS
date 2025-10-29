@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-type Row = Record<string, unknown>;
+type Row = Record<string, any>;
 
 export default function CarriersPanel() {
   const [rows, setRows] = useState<Row[]>([]);

@@ -117,7 +117,11 @@ export default function OrdersPanel() {
   const downloadPackingSlip = async (orderId: string) => {
     try {
       const url = `/api/orders/${orderId}/packing-slip`;
-      const resp = await fetch(url);
+      const resp = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+        }
+      });
       
       if (!resp.ok) throw new Error("Failed to download packing slip");
       
@@ -139,7 +143,11 @@ export default function OrdersPanel() {
   const downloadShippingLabel = async (orderId: string) => {
     try {
       const url = `/api/orders/${orderId}/shipping-label`;
-      const resp = await fetch(url);
+      const resp = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+        }
+      });
       
       if (!resp.ok) throw new Error("Failed to download shipping label");
       

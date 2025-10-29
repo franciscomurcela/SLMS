@@ -49,8 +49,6 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<any>(null);
-  const [userInfo, setUserInfo] = useState<any>(null);
-export const useKeycloak = () => useContext(KeycloakContext);
   const [roles, setRoles] = useState<string[]>([]);
   const initializingRef = useRef(false);
   const initializedRef = useRef(false);

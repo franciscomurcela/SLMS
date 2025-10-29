@@ -42,7 +42,7 @@ public class Order {
     private LocalDateTime orderDate = LocalDateTime.now();
 
     @Column(name = "tracking_id")
-    private UUID trackingId;
+    private String trackingId;  // Changed from UUID to String to match PostgreSQL text type
 
     @Column(name = "shipment_id")
     private UUID shipmentId;
@@ -51,7 +51,7 @@ public class Order {
     private LocalDateTime actualDeliveryTime;
 
     @Column(name = "pod")
-    private String pod; // Proof of Delivery
+    private byte[] pod; // Proof of Delivery (binary data - image/PDF)
 
     // Getters e Setters
     public UUID getOrderId() { return orderId; }
@@ -78,8 +78,8 @@ public class Order {
     public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
 
-    public UUID getTrackingId() { return trackingId; }
-    public void setTrackingId(UUID trackingId) { this.trackingId = trackingId; }
+    public String getTrackingId() { return trackingId; }
+    public void setTrackingId(String trackingId) { this.trackingId = trackingId; }
 
     public UUID getShipmentId() { return shipmentId; }
     public void setShipmentId(UUID shipmentId) { this.shipmentId = shipmentId; }
@@ -87,6 +87,6 @@ public class Order {
     public LocalDateTime getActualDeliveryTime() { return actualDeliveryTime; }
     public void setActualDeliveryTime(LocalDateTime actualDeliveryTime) { this.actualDeliveryTime = actualDeliveryTime; }
 
-    public String getPod() { return pod; }
-    public void setPod(String pod) { this.pod = pod; }
+    public byte[] getPod() { return pod; }
+    public void setPod(byte[] pod) { this.pod = pod; }
 }

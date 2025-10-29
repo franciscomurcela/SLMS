@@ -53,7 +53,7 @@ function TrackingPortal() {
 
     try {
       const response = await fetch(
-        `http://localhost:8081/api/orders/track/${trackingId.trim()}`,
+        `/api/orders/track/${trackingId.trim()}`,
         {
           method: "GET",
           headers: {

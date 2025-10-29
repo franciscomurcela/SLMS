@@ -2,9 +2,9 @@
 # create-env.sh
 
 # === Edit these hardcoded values before running ===
-SPRING_DATASOURCE_URL="jdbc:postgresql://aws-1-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require&preferQueryMode=simple&prepareThreshold=0"
-SPRING_DATASOURCE_USERNAME="postgres.pylhwbcmavnjfczwribo"
-SPRING_DATASOURCE_PASSWORD="ESgrupo204-"
+SPRING_DATASOURCE_URL=jdbc:postgresql://slms-db:5432/slms_db
+SPRING_DATASOURCE_USERNAME=slms_user
+SPRING_DATASOURCE_PASSWORD=slms_password
 
 DB_HOST="aws-1-us-east-2.pooler.supabase.com"
 DB_PORT="6543"

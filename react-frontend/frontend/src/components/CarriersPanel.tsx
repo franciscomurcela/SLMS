@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_ENDPOINTS } from "../config/api.config";
 
 type Row = Record<string, any>;
 
@@ -14,7 +15,7 @@ export default function CarriersPanel() {
     setLoading(true);
     async function load() {
       try {
-        const r = await fetch("/carriers");
+        const r = await fetch(API_ENDPOINTS.CARRIERS);
         const text = await r.text();
         setRawResponse(text);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -26,21 +27,8 @@ export default function CarriersPanel() {
           return;
         }
       } catch (err) {
-        console.warn("proxy fetch failed:", err);
-      }
-
-      try {
-        const r2 = await fetch("http://localhost:8080/carriers");
-        const text2 = await r2.text();
-        setRawResponse(text2);
-        if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
-        const data2 = JSON.parse(text2);
-        setRows(Array.isArray(data2) ? data2 : []);
-        setError(null);
-      } catch (err) {
-        console.error("direct fetch failed:", err);
+        console.warn("carriers fetch failed:", err);
         setError(String(err));
-      } finally {
         setLoading(false);
       }
     }

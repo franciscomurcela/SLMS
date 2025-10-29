@@ -1,0 +1,7 @@
+es204\user_service\controller\UserController.class
+es204\user_service\sync\UserSyncService$1.class
+es204\user_service\UserServiceApplication.class
+es204\user_service\model\UserDTO.class
+es204\user_service\config\SecurityConfig.class
+es204\user_service\sync\UserSyncService.class
+es204\user_service\sync\UserSyncFilter.class

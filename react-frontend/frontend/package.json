@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "playwright test --reporter=line,allure-playwright"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -34,5 +35,8 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7"
+    ,
+    "playwright": "^1.44.0",
+    "allure-playwright": "^2.21.0"
   }
 }

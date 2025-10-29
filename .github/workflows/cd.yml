@@ -10,9 +10,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Instalar dependências do Allure (frontend)
-        run: npm install allure-playwright --save-dev
-        working-directory: ./react-frontend/frontend
       - name: Checkout code
         uses: actions/checkout@v4
 

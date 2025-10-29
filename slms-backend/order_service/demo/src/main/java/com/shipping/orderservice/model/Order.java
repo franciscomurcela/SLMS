@@ -51,7 +51,7 @@ public class Order {
     private LocalDateTime actualDeliveryTime;
 
     @Column(name = "pod")
-    private String pod; // Proof of Delivery
+    private byte[] pod; // Proof of Delivery (binary data - image/PDF)
 
     // Getters e Setters
     public UUID getOrderId() { return orderId; }
@@ -87,6 +87,6 @@ public class Order {
     public LocalDateTime getActualDeliveryTime() { return actualDeliveryTime; }
     public void setActualDeliveryTime(LocalDateTime actualDeliveryTime) { this.actualDeliveryTime = actualDeliveryTime; }
 
-    public String getPod() { return pod; }
-    public void setPod(String pod) { this.pod = pod; }
+    public byte[] getPod() { return pod; }
+    public void setPod(byte[] pod) { this.pod = pod; }
 }

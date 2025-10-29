@@ -18,9 +18,9 @@ export const API_ENDPOINTS = {
   ORDERS: `${API_BASE_URL}/api/orders`,
   SHIPMENTS: `${API_BASE_URL}/api/shipments`,
   
-  // Users API
-  USERS: `${API_BASE_URL}/api/users`,
-  WHOAMI: `${API_BASE_URL}/api/users/whoami`,
+  // Users API (note: user-service uses /user/ not /api/users/)
+  USERS: `${API_BASE_URL}/user`,
+  WHOAMI: `${API_BASE_URL}/user/whoami`,
   
   // Auth
   AUTH: `${API_BASE_URL}/auth`,

@@ -59,6 +59,14 @@ function App() {
             }
           />
           <Route
+            path="/delivery-route/:orderId"
+            element={
+              <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
+                <DeliveryRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path={Paths.PATH_LOGISTICS_MANAGER}
             element={
               <ProtectedRoute requiredRole={APP_ROLES.LOGISTICS_MANAGER}>

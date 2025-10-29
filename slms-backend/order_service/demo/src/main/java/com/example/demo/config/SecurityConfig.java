@@ -1,30 +1,22 @@
-package es204.user_service.config;
+package com.example.demo.config;
 
-import es204.user_service.sync.UserSyncFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Security configuration for User Service
- * Validates JWT tokens from Keycloak and protects user endpoints
+ * Security configuration for Order Service
+ * Validates JWT tokens from Keycloak and protects order endpoints
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
-    private final UserSyncFilter userSyncFilter;
-
-    public SecurityConfig(UserSyncFilter userSyncFilter) {
-        this.userSyncFilter = userSyncFilter;
-    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -35,20 +27,19 @@ public class SecurityConfig {
             .authorizeHttpRequests((authz) -> authz
                 // Public endpoints
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                // All user endpoints require authentication
-                .requestMatchers("/user/**").authenticated()
+                // All order endpoints require authentication
+                .requestMatchers("/api/orders/**").authenticated()
+                .requestMatchers("/api/shipments/**").authenticated()
                 .anyRequest().authenticated()
             )
             // Enable OAuth2 Resource Server (JWT validation against Keycloak)
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
-            // DISABLED: UserSyncFilter (using PostgreSQL now instead of Supabase API)
-            // .addFilterAfter(userSyncFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     /**
-     * Configure CORS to allow requests from frontend (localhost:5173 and remote IP)
+     * Configure CORS to allow requests from frontend
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -56,9 +47,11 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
             "http://localhost:5173",
             "http://localhost:3000",
-            "http://192.168.160.9:3000"
+            "http://192.168.160.9:3000",
+            "https://192.168.160.9",
+            "https://deti-engsoft-09.ua.pt"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         

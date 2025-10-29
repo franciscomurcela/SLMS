@@ -98,7 +98,7 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
           const syncUserToSupabase = async () => {
             try {
               console.log('🔄 Syncing user to Supabase...');
-              const response = await fetch(`${BACKEND_URL}/user/whoami`, {
+              const response = await fetch(`${BACKEND_URL}/users/whoami`, {
                 headers: {
                   'Authorization': `Bearer ${keycloakInstance.token}`,
                   'Content-Type': 'application/json',

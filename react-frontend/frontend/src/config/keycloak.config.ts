@@ -1,6 +1,13 @@
 // Keycloak configuration
+// Use same-origin URL through Nginx proxy to avoid CORS and secure context issues
+const getKeycloakUrl = () => {
+  // Always use relative path /auth when behind Nginx
+  // This makes it same-origin and works without HTTPS
+  return `${window.location.protocol}//${window.location.host}/auth`;
+};
+
 export const keycloakConfig = {
-  url: 'http://localhost:8083',
+  url: getKeycloakUrl(),
   realm: 'ESg204',
   clientId: 'frontend',
 };
@@ -8,7 +15,6 @@ export const keycloakConfig = {
 export const keycloakInitOptions = {
   // Don't auto-login, just check if there's an existing session
   onLoad: 'check-sso' as const,
-  pkceMethod: 'S256' as const,
   checkLoginIframe: false,
   // Disable silent check SSO to avoid CORS issues
   silentCheckSsoRedirectUri: undefined,
@@ -17,4 +23,10 @@ export const keycloakInitOptions = {
 };
 
 // Backend API base URL - user_service handles authentication
-export const BACKEND_URL = 'http://localhost:8082';
+// Use same-origin URL through Nginx proxy
+const getBackendUrl = () => {
+  // Always use relative path /api when behind Nginx
+  return `${window.location.protocol}//${window.location.host}/api`;
+};
+
+export const BACKEND_URL = getBackendUrl();

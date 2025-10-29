@@ -51,31 +51,40 @@ public class OrderController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAllOrders() {
-        // Use JdbcTemplate directly to execute the custom query with JOINs
-        String sql = """
-            SELECT 
-                o.order_id::text as "orderId",
-                o.costumer_id::text as "customerId",
-                TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) as "customerName",
-                o.carrier_id::text as "carrierId",
-                o.origin_address as "originAddress",
-                o.destination_address as "destinationAddress",
-                o.weight as "weight",
-                o.status as "status",
-                o.order_date as "orderDate"
-            FROM "Orders" o
-            LEFT JOIN "Costumer" c ON o.costumer_id = c.user_id
-            LEFT JOIN "Users" u ON c.user_id = u.id
-            ORDER BY o.order_date DESC
-            """;
-        
-        List<Map<String, Object>> orders = jdbcTemplate.queryForList(sql);
-        System.out.println("=== DEBUG: Orders fetched: " + orders.size());
-        if (!orders.isEmpty()) {
-            System.out.println("Sample order: " + orders.get(0));
+    public ResponseEntity<?> getAllOrders() {
+        try {
+            // Use JdbcTemplate directly to execute the custom query with JOINs
+            String sql = """
+                SELECT 
+                    o.order_id::text as "orderId",
+                    o.costumer_id::text as "customerId",
+                    TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) as "customerName",
+                    o.carrier_id::text as "carrierId",
+                    o.origin_address as "originAddress",
+                    o.destination_address as "destinationAddress",
+                    o.weight as "weight",
+                    o.status as "status",
+                    o.order_date as "orderDate"
+                FROM "Orders" o
+                LEFT JOIN "Costumer" c ON o.costumer_id = c.user_id
+                LEFT JOIN "Users" u ON c.user_id = u.id
+                ORDER BY o.order_date DESC
+                """;
+            
+            List<Map<String, Object>> orders = jdbcTemplate.queryForList(sql);
+            System.out.println("=== DEBUG: Orders fetched: " + orders.size());
+            if (!orders.isEmpty()) {
+                System.out.println("Sample order: " + orders.get(0));
+            }
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            System.err.println("=== ERROR fetching orders: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                "error", e.getClass().getSimpleName(),
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
         }
-        return orders;
     }
 
     @GetMapping("/native")
@@ -123,11 +132,11 @@ public class OrderController {
     }
 
     @GetMapping("/track/{trackingId}")
-    public ResponseEntity<Map<String, Object>> trackOrder(@PathVariable UUID trackingId) {
+    public ResponseEntity<Map<String, Object>> trackOrder(@PathVariable String trackingId) {
         try {
             String sql = """
                 SELECT 
-                    o.tracking_id::text as "trackingId",
+                    o.tracking_id as "trackingId",
                     o.order_date as "orderDate",
                     o.origin_address as "originAddress",
                     o.destination_address as "destinationAddress",
@@ -304,6 +313,7 @@ public class OrderController {
             headers.setContentDispositionFormData("attachment", 
                 "shipping-label-" + order.getOrderId() + ".pdf");
             
+            
             return ResponseEntity.ok()
                     .headers(headers)
                     .body(baos.toByteArray());
@@ -312,4 +322,48 @@ public class OrderController {
             throw new RuntimeException("Error generating shipping label: " + e.getMessage());
         }
     }
+
+    /**
+     * Get all orders for a specific customer by their keycloak ID
+     * @param keycloakId The keycloak ID of the customer
+     * @return List of orders for this customer
+     */
+    @GetMapping("/my-orders/{keycloakId}")
+    public ResponseEntity<?> getMyOrders(@PathVariable String keycloakId) {
+        try {
+            System.out.println("=== Fetching orders for customer keycloakId: " + keycloakId);
+            
+            String sql = """
+                SELECT 
+                    o.order_id::text as "orderId",
+                    o.costumer_id::text as "customerId",
+                    TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) as "customerName",
+                    o.carrier_id::text as "carrierId",
+                    o.origin_address as "originAddress",
+                    o.destination_address as "destinationAddress",
+                    o.weight as "weight",
+                    o.status as "status",
+                    o.order_date as "orderDate",
+                    o.tracking_id as "trackingId"
+                FROM "Orders" o
+                LEFT JOIN "Costumer" c ON o.costumer_id = c.user_id
+                LEFT JOIN "Users" u ON c.user_id = u.id
+                WHERE u.keycloak_id::text = ?
+                ORDER BY o.order_date DESC
+                """;
+            
+            List<Map<String, Object>> orders = jdbcTemplate.queryForList(sql, keycloakId);
+            System.out.println("=== Found " + orders.size() + " orders for customer");
+            
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            System.err.println("=== ERROR fetching orders for customer: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                "error", e.getClass().getSimpleName(),
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
+        }
+    }
 }
+

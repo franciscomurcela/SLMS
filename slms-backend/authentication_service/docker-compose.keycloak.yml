@@ -27,6 +27,13 @@ services:
       # Dev mode settings
       KC_HOSTNAME_STRICT: 'false'
       KC_HTTP_ENABLED: 'true'
+      # Proxy configuration for HTTPS and /auth/ path
+      KC_HOSTNAME: '192.168.160.9'
+      KC_HOSTNAME_PORT: '443'
+      KC_HOSTNAME_PATH: '/auth'
+      KC_HTTP_RELATIVE_PATH: '/auth'
+      KC_PROXY: 'edge'
+      KC_PROXY_HEADERS: 'xforwarded'
     ports:
       - "8083:8080"
     depends_on:

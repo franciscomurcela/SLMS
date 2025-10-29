@@ -50,15 +50,19 @@ export default function PageProcessOrder() {
   useEffect(() => {
     async function loadData() {
       // Wait for Keycloak to be ready and have a token
-      if (!keycloak || !keycloak.token) {
-        console.log("Waiting for Keycloak token...");
+      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
+        console.log("Waiting for Keycloak... authenticated:", keycloak?.authenticated, "has token:", !!keycloak?.token);
+        setLoading(true);
         return;
       }
+
+      console.log("Keycloak ready! Token length:", keycloak.token.length);
 
       try {
         setLoading(true);
         
         // Fetch order details
+        console.log("Fetching orders with token:", keycloak.token.substring(0, 20) + "...");
         const orderResp = await fetch(`/api/orders`, {
           headers: {
             'Authorization': `Bearer ${keycloak.token}`,

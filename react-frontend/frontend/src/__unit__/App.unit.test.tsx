@@ -1,0 +1,59 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import OrdersPanel from '../components/OrdersPanel';
+import { describe, it, beforeEach, afterEach, vi, expect } from 'vitest';
+
+describe('OrdersPanel', () => {
+  beforeEach(() => {
+    // Mock fetch para /api/orders e /carriers
+    global.fetch = vi.fn()
+      .mockImplementationOnce(() => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([
+          {
+            orderId: 'order1234',
+            customerId: 'customer1',
+            customerName: 'João Silva',
+            carrierId: 'carrier1',
+            originAddress: 'Rua A',
+            destinationAddress: 'Rua B',
+            weight: 2.5,
+            status: 'Pending',
+            orderDate: '2025-10-29T10:00:00Z',
+          }
+        ])
+      }))
+      .mockImplementationOnce(() => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve([
+          {
+            carrier_id: 'carrier1',
+            name: 'Transportadora XPTO',
+            avg_cost: 10,
+            on_time_rate: 0.95,
+            success_rate: 0.99
+          }
+        ])
+      }));
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it('renderiza pedido na tabela', async () => {
+    render(<OrdersPanel />);
+    // Espera o pedido aparecer na tabela
+    await waitFor(() => {
+      expect(screen.getByText(/João Silva/)).toBeInTheDocument();
+      expect(screen.getByText(/Rua A/)).toBeInTheDocument();
+      expect(screen.getByText(/Rua B/)).toBeInTheDocument();
+      expect(screen.getByText(/2.50 kg/)).toBeInTheDocument();
+      expect(screen.getByText(/Transportadora XPTO/)).toBeInTheDocument();
+      // Verifica o status 'Pending' apenas na linha do pedido
+      const rows = screen.getAllByRole('row');
+      const orderRow = rows.find(row => row.textContent?.includes('João Silva'));
+      expect(orderRow).toBeTruthy();
+      expect(orderRow?.textContent).toMatch(/Pending/);
+    });
+  });
+});

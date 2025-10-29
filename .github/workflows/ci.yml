@@ -81,15 +81,31 @@ jobs:
         with:
           node-version: '20'
       - name: Install dependencies
-        run: 
-          |
-          npm install
-          npm ci
+        run: |
+          npm install --legacy-peer-deps
+          npm ci --legacy-peer-deps
       - name: Lint
         run: npm run lint || echo "Lint warnings"
       - name: Build
         run: npm run build
-      - name: Test
-        run: npm test || echo "No tests defined"
+
+      - name: Testes unitários
+        run: npm run test:unit || echo "No unit tests defined"
+
+
+      - name: Testes E2E (Cypress)
+        run: npm run test:e2e || echo "No E2E tests defined"
+        env:
+          PORT: 5173
+
+      - name: Gerar relatório Allure (frontend)
+        run: |
+          if [ -d "./allure-results" ]; then npx allure generate --clean ./allure-results -o ./allure-report; fi
+        working-directory: react-frontend/frontend
+      - name: Publicar relatório Allure (frontend)
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-frontend
+          path: react-frontend/frontend/allure-report
 
         #test

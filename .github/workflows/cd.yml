@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-  - run: npm ci --legacy-peer-deps
+    # (linha removida, estava fora do bloco steps)
       # Teste estático frontend (lint)
       - name: Lint frontend (Static Analysis)
         run: npm run lint
@@ -26,9 +26,10 @@ jobs:
       - name: Testes unitários frontend
         run: npm run test:unit
         working-directory: ./react-frontend/frontend
-      # Teste E2E frontend
-      - name: Testes E2E frontend
-        run: npm run test:e2e || echo "E2E tests skipped (configure Playwright/browser if needed)"
+
+      # Teste E2E frontend (Cypress)
+      - name: Testes E2E frontend (Cypress)
+        run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
         working-directory: ./react-frontend/frontend
 
       - name: Gerar relatório Allure (frontend)
@@ -58,76 +59,131 @@ jobs:
         working-directory: ./slms-backend/user_service
 
       - name: Gerar relatório Allure (user_service)
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-      - name: Publicar relatório Allure (user_service)
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-user_service
-          path: ./slms-backend/user_service/target/site/allure-maven-plugin
+        steps:
+          - name: Checkout code
+            uses: actions/checkout@v4
 
-      - name: Testar order_service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/order_service/demo
+          - name: Set up Node.js
+            uses: actions/setup-node@v4
+            with:
+              node-version: '20'
 
-      - name: Gerar relatório Allure (order_service)
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/order_service/demo
-      - name: Publicar relatório Allure (order_service)
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-order_service
-          path: ./slms-backend/order_service/demo/target/site/allure-maven-plugin
+          - name: Install dependencies
+            run: npm ci --legacy-peer-deps
+            working-directory: ./react-frontend/frontend
 
-      - name: Testar carrier_service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/carrier_service/carrier_service
+          # Teste estático frontend (lint)
+          - name: Lint frontend (Static Analysis)
+            run: npm run lint
+            working-directory: ./react-frontend/frontend
 
-      - name: Gerar relatório Allure (carrier_service)
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/carrier_service/carrier_service
-      - name: Publicar relatório Allure (carrier_service)
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-carrier_service
-          path: ./slms-backend/carrier_service/carrier_service/target/site/allure-maven-plugin
+          # Teste unitário frontend
+          - name: Testes unitários frontend
+            run: npm run test:unit
+            working-directory: ./react-frontend/frontend
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+          # Teste E2E frontend (Cypress)
+          - name: Testes E2E frontend (Cypress)
+            run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
+            working-directory: ./react-frontend/frontend
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          - name: Gerar relatório Allure (frontend)
+            run: npx allure generate --clean ./allure-results -o ./allure-report
+            working-directory: ./react-frontend/frontend
+          - name: Publicar relatório Allure (frontend)
+            uses: actions/upload-artifact@v4
+            with:
+              name: allure-report-frontend
+              path: ./react-frontend/frontend/allure-report
+          - run: npm run build
+            working-directory: ./react-frontend/frontend
 
-      - name: Build and push Docker image (backend)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./slms-backend/user_service
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
+          # Teste estático backend (Checkstyle)
+          - name: Checkstyle backend
+            run: mvn checkstyle:check --no-transfer-progress
+            working-directory: ./slms-backend/user_service
 
-      - name: Build and push Docker image (frontend)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./react-frontend/frontend
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
+          # Testes backend Java
+          - name: Set up JDK 21
+            uses: actions/setup-java@v4
+            with:
+              distribution: 'temurin'
+              java-version: '21'
 
+          - name: Testar user_service
+            run: mvn test --no-transfer-progress
+            working-directory: ./slms-backend/user_service
 
-      # Deploy direto no runner auto-hospedado
-      - name: Deploy no runner auto-hospedado
-        if: runner.os == 'Linux' || runner.os == 'Windows'
-        run: |
-          echo "Fazendo pull das imagens Docker mais recentes..."
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
-          echo "Reiniciando containers com docker-compose..."
-          cd slms-backend
-          docker-compose down
-          docker-compose up -d
-          cd ../react-frontend/frontend
-          docker-compose down || true
-          docker-compose up -d || true
-        shell: bash
+          - name: Gerar relatório Allure (user_service)
+            run: mvn allure:report --no-transfer-progress
+            working-directory: ./slms-backend/user_service
+          - name: Publicar relatório Allure (user_service)
+            uses: actions/upload-artifact@v4
+            with:
+              name: allure-report-user_service
+              path: ./slms-backend/user_service/target/site/allure-maven-plugin
+
+          - name: Testar order_service
+            run: mvn test --no-transfer-progress
+            working-directory: ./slms-backend/order_service/demo
+
+          - name: Gerar relatório Allure (order_service)
+            run: mvn allure:report --no-transfer-progress
+            working-directory: ./slms-backend/order_service/demo
+          - name: Publicar relatório Allure (order_service)
+            uses: actions/upload-artifact@v4
+            with:
+              name: allure-report-order_service
+              path: ./slms-backend/order_service/demo/target/site/allure-maven-plugin
+
+          - name: Testar carrier_service
+            run: mvn test --no-transfer-progress
+            working-directory: ./slms-backend/carrier_service/carrier_service
+
+          - name: Gerar relatório Allure (carrier_service)
+            run: mvn allure:report --no-transfer-progress
+            working-directory: ./slms-backend/carrier_service/carrier_service
+          - name: Publicar relatório Allure (carrier_service)
+            uses: actions/upload-artifact@v4
+            with:
+              name: allure-report-carrier_service
+              path: ./slms-backend/carrier_service/carrier_service/target/site/allure-maven-plugin
+
+          - name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v3
+
+          - name: Login to DockerHub
+            uses: docker/login-action@v3
+            with:
+              username: ${{ secrets.DOCKERHUB_USERNAME }}
+              password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+          - name: Build and push Docker image (backend)
+            uses: docker/build-push-action@v5
+            with:
+              context: ./slms-backend/user_service
+              push: true
+              tags: ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
+
+          - name: Build and push Docker image (frontend)
+            uses: docker/build-push-action@v5
+            with:
+              context: ./react-frontend/frontend
+              push: true
+              tags: ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
+
+          # Deploy direto no runner auto-hospedado
+          - name: Deploy no runner auto-hospedado
+            if: runner.os == 'Linux' || runner.os == 'Windows'
+            run: |
+              echo "Fazendo pull das imagens Docker mais recentes..."
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
+              docker pull ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
+              echo "Reiniciando containers com docker-compose..."
+              cd slms-backend
+              docker-compose down
+              docker-compose up -d
+              cd ../react-frontend/frontend
+              docker-compose down || true
+              docker-compose up -d || true
+            shell: bash

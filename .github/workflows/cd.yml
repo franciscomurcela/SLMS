@@ -168,8 +168,13 @@ jobs:
       - name: Cleanup existing containers and networks
         if: runner.os == 'Linux' || runner.os == 'Windows'
         run: |
-          echo "Stopping all project containers..."
-          docker stop $(docker ps -q) || true
+          echo "Stopping all running containers..."
+          CONTAINERS=$(docker ps -q)
+          if [ ! -z "$CONTAINERS" ]; then
+            docker stop $CONTAINERS || true
+          else
+            echo "No containers to stop"
+          fi
           echo "Removing all stopped containers..."
           docker container prune -f || true
           echo "Removing unused networks..."

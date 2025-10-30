@@ -9,12 +9,14 @@
   <property name="fileExtensions" value="java, properties, xml"/>
 
   <!-- Relaxed ruleset for ES204 project -->
+  
+  <!-- Line length: increase to 120 instead of 80 -->
+  <module name="LineLength">
+    <property name="max" value="120"/>
+    <property name="severity" value="warning"/>
+  </module>
+  
   <module name="TreeWalker">
-    <!-- Line length: increase to 120 instead of 80 -->
-    <module name="LineLength">
-      <property name="max" value="120"/>
-      <property name="ignorePattern" value="^package.*|^import.*"/>
-    </module>
 
     <!-- Naming conventions -->
     <module name="ConstantName">

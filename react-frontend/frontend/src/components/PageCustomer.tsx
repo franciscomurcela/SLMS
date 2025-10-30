@@ -1,7 +1,7 @@
 import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { useEffect, useState } from "react";
 
 const role: string = Roles.ROLE_CUSTOMER;

@@ -35,7 +35,6 @@ jobs:
       # Teste E2E frontend (Cypress) - SUSPENSO TEMPORARIAMENTE
       # - name: Testes E2E frontend (Cypress)
       #   run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
-        working-directory: ./react-frontend/frontend
 
       - name: Gerar relatório Allure (frontend)
         run: npx allure generate --clean ./allure-results -o ./allure-report

@@ -10,5 +10,10 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'html'],
     },
+    reporters: ['default', 'json', 'junit'],
+    outputFile: {
+      json: './test-results/test-results.json',
+      junit: './test-results/junit.xml',
+    },
   },
 });

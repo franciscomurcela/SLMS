@@ -32,19 +32,56 @@ jobs:
         run: npm run test:unit
         working-directory: ./react-frontend/frontend
 
-      # Teste E2E frontend (Cypress) - SUSPENSO TEMPORARIAMENTE
-      # - name: Testes E2E frontend (Cypress)
-      #   run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
-
-      - name: Gerar relatório Allure (frontend)
-        run: npx allure generate ./allure-results --output ./allure-report
+      # Teste de cobertura frontend
+      - name: Cobertura de testes unitários
+        run: npm run test:unit:coverage
         working-directory: ./react-frontend/frontend
+        continue-on-error: true
+
+      # Teste E2E frontend (Cypress)
+      - name: Testes E2E frontend (Cypress)
+        run: npm run test:e2e
+        working-directory: ./react-frontend/frontend
+        continue-on-error: true
+        env:
+          CYPRESS_baseUrl: http://localhost:5173
+
+      - name: Upload Cypress videos
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-videos
+          path: ./react-frontend/frontend/cypress/videos
+          retention-days: 7
+
+      - name: Upload Cypress screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: ./react-frontend/frontend/cypress/screenshots
+          retention-days: 7
+
+      - name: Converter resultados para Allure (frontend)
+        if: always()
+        run: node scripts/convert-to-allure.js
+        working-directory: ./react-frontend/frontend
+      
+      - name: Gerar relatório Allure (frontend)
+        if: always()
+        run: npx allure generate ./allure-results --clean --output ./allure-report
+        working-directory: ./react-frontend/frontend
+      
       - name: Publicar relatório Allure (frontend)
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: allure-report-frontend
           path: ./react-frontend/frontend/allure-report
-      - run: npm run build
+      
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./react-frontend/frontend
 
       # Teste estático backend (Checkstyle)
       - name: Checkstyle backend

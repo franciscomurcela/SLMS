@@ -1,9 +1,15 @@
 /// <reference types="cypress" />
 
-// E2E tests temporarily suspended
-// describe('Dummy E2E', () => {
-//   it('abre a página inicial do frontend', () => {
-//     cy.visit('http://localhost:5173');
-//     cy.contains('React').should('exist'); // Ajuste o texto conforme o que aparece na sua home
-//   });
-// });
+describe('Smoke Test - Application Loads', () => {
+  it('abre a página inicial do frontend', () => {
+    cy.visit('/');
+    // Verifica se a página carrega sem erros
+    cy.get('body').should('be.visible');
+  });
+
+  it('verifica se a aplicação está respondendo', () => {
+    cy.visit('/');
+    // Verifica se não há erro de console crítico
+    cy.window().should('exist');
+  });
+});

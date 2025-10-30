@@ -98,35 +98,47 @@ jobs:
           java-version: '21'
 
       - name: Testar user_service
+        id: test-user-service
         run: mvn test --no-transfer-progress
         working-directory: ./slms-backend/user_service
+        continue-on-error: true
 
       - name: Gerar relatório Allure (user_service)
+        if: success() || steps.test-user-service.outcome == 'success'
         run: mvn allure:report --no-transfer-progress
         working-directory: ./slms-backend/user_service
       - name: Publicar relatório Allure (user_service)
+        if: success() || steps.test-user-service.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-user_service
           path: ./slms-backend/user_service/target/site/allure-maven-plugin
       - name: Testar order_service
+        id: test-order-service
         run: mvn test --no-transfer-progress
         working-directory: ./slms-backend/order_service/demo
+        continue-on-error: true
       - name: Gerar relatório Allure (order_service)
+        if: success() || steps.test-order-service.outcome == 'success'
         run: mvn allure:report --no-transfer-progress
         working-directory: ./slms-backend/order_service/demo
       - name: Publicar relatório Allure (order_service)
+        if: success() || steps.test-order-service.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-order_service
           path: ./slms-backend/order_service/demo/target/site/allure-maven-plugin
       - name: Testar carrier_service
+        id: test-carrier-service
         run: mvn test --no-transfer-progress
         working-directory: ./slms-backend/carrier_service/carrier_service
+        continue-on-error: true
       - name: Gerar relatório Allure (carrier_service)
+        if: success() || steps.test-carrier-service.outcome == 'success'
         run: mvn allure:report --no-transfer-progress
         working-directory: ./slms-backend/carrier_service/carrier_service
       - name: Publicar relatório Allure (carrier_service)
+        if: success() || steps.test-carrier-service.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-carrier_service

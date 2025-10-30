@@ -1,6 +1,20 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import OrdersPanel from '../components/OrdersPanel';
 import { describe, it, beforeEach, afterEach, vi, expect } from 'vitest';
+import { KeycloakContext } from '../context/KeycloakContextDef';
+
+const mockKeycloakContext = {
+  keycloak: { token: 'mock-token', authenticated: true },
+  authenticated: true,
+  loading: false,
+  login: () => {},
+  logout: () => {},
+  token: 'mock-token',
+  userInfo: { sub: 'user1' },
+  roles: [],
+  hasRole: () => false,
+  primaryRole: undefined,
+};
 
 describe('OrdersPanel', () => {
   beforeEach(() => {
@@ -41,7 +55,11 @@ describe('OrdersPanel', () => {
   });
 
   it('renderiza pedido na tabela', async () => {
-    render(<OrdersPanel />);
+    render(
+      <KeycloakContext.Provider value={mockKeycloakContext}>
+        <OrdersPanel />
+      </KeycloakContext.Provider>
+    );
     // Espera o pedido aparecer na tabela
     await waitFor(() => {
       expect(screen.getByText(/João Silva/)).toBeInTheDocument();

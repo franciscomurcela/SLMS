@@ -1,4 +1,4 @@
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { BACKEND_URL } from "../config/keycloak.config";
 import { useState, useEffect } from "react";
 

@@ -15,7 +15,7 @@ import { KeycloakContext } from '../context/KeycloakContextDef';
  */
 
 const mockKeycloakContext = {
-  keycloak: { token: 'test-token', authenticated: true } as any,
+  keycloak: { token: 'test-token', authenticated: true } as unknown as import('keycloak-js').default,
   authenticated: true,
   loading: false,
   login: vi.fn(),
@@ -35,8 +35,8 @@ describe('Integration Tests - OrdersPanel with API', () => {
 
   it('carrega orders da API e carriers da API e integra os dados', async () => {
     // Mock das chamadas à API
-    (global.fetch as any)
-      .mockResolvedValueOnce({
+    const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
+    mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => [
           {
@@ -120,7 +120,8 @@ describe('Integration Tests - OrdersPanel with API', () => {
 
   it('trata erro da API de orders graciosamente', async () => {
     // Mock de erro na API
-    (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+    const mockFetch = global.fetch as ReturnType<typeof vi.fn>;
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -203,8 +204,9 @@ describe('Integration Tests - Keycloak Authentication Flow', () => {
     
     // Verifica que as chamadas incluem o token de autenticação
     const calls = mockFetch.mock.calls;
-    const hasAuthHeader = calls.some((call: any) => {
-      const headers = call[1]?.headers;
+    const hasAuthHeader = calls.some((call: unknown[]) => {
+      const options = call[1] as RequestInit | undefined;
+      const headers = options?.headers as Record<string, string> | undefined;
       return headers && headers['Authorization'] === 'Bearer test-token';
     });
     expect(hasAuthHeader).toBe(true);

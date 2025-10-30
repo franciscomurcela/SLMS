@@ -171,7 +171,7 @@ const DeliveryRoute: React.FC = () => {
     };
 
     loadOrderDetails();
-  }, [keycloak?.token, orderId]);
+  }, [keycloak?.token, keycloak?.tokenParsed?.sub, orderId]);
 
   useEffect(() => {
     console.log('🗺️ useEffect do mapa executado:', {
@@ -545,7 +545,7 @@ const DeliveryRoute: React.FC = () => {
       }
       navigationStartedRef.current = false;
     };
-  }, [navigationActive, orderDetails]);
+  }, [navigationActive, orderDetails, currentStepIndex, navigationSteps]);
 
   const handleStartNavigation = () => {
     setNavigationActive(true);

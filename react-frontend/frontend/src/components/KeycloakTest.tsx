@@ -80,6 +80,7 @@ const KeycloakTest = () => {
     if (authenticated && token) {
       callWhoAmI();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, token]);
 
   if (!authenticated) {

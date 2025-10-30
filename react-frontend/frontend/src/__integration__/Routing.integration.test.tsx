@@ -15,7 +15,7 @@ import React from 'react';
  */
 
 const mockKeycloakAuthenticated = {
-  keycloak: { token: 'test-token', authenticated: true } as any,
+  keycloak: { token: 'test-token', authenticated: true } as unknown as import('keycloak-js').default,
   authenticated: true,
   loading: false,
   login: vi.fn(),
@@ -28,7 +28,7 @@ const mockKeycloakAuthenticated = {
 };
 
 const mockKeycloakUnauthenticated = {
-  keycloak: { token: undefined, authenticated: false } as any,
+  keycloak: { token: undefined, authenticated: false } as unknown as import('keycloak-js').default,
   authenticated: false,
   loading: false,
   login: vi.fn(),

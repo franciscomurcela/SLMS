@@ -1,6 +1,10 @@
 name: CD Pipeline
 
 on:
+  push:
+    branches:
+      - master
+      - cd-test
   workflow_dispatch:
   workflow_run:
     workflows: ["CI"]
@@ -13,8 +17,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-    # Só executa se o CI passou com sucesso ou se for manual (workflow_dispatch)
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

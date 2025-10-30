@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 // import flagsmith from 'flagsmith';
 
-interface FeatureFlagsContextType {
 export interface FeatureFlagsContextType {
   isFeatureEnabled: (flagKey: string) => boolean;
   isLoading: boolean;

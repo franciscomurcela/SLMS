@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
 import { keycloakConfig, keycloakInitOptions, BACKEND_URL } from '../config/keycloak.config';

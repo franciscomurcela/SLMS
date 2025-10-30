@@ -20,6 +20,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 0
+      
+      - name: Debug - Show current commit
+        run: |
+          echo "Current commit: $(git rev-parse HEAD)"
+          echo "Current branch: $(git branch --show-current)"
+          git log --oneline -1
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

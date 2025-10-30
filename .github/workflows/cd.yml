@@ -165,12 +165,15 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
       # Deploy direto no runner auto-hospedado
-      - name: Cleanup existing containers
+      - name: Cleanup existing containers and networks
         if: runner.os == 'Linux' || runner.os == 'Windows'
         run: |
-          echo "Stopping and removing existing containers..."
-          docker stop keycloak postgres-keycloak supabase-db || true
-          docker rm keycloak postgres-keycloak supabase-db || true
+          echo "Stopping all project containers..."
+          docker stop $(docker ps -q) || true
+          echo "Removing all stopped containers..."
+          docker container prune -f || true
+          echo "Removing unused networks..."
+          docker network prune -f || true
         shell: bash
         continue-on-error: true
       
@@ -178,13 +181,13 @@ jobs:
         if: runner.os == 'Linux' || runner.os == 'Windows'
         run: |
           echo "Fazendo pull das imagens Docker mais recentes..."
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest || true
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest || true
           echo "Reiniciando containers com docker-compose..."
           cd slms-backend
-          docker-compose down || true
+          docker-compose down -v || true
           docker-compose up -d
           cd ../react-frontend/frontend
-          docker-compose down || true
+          docker-compose down -v || true
           docker-compose up -d || true
         shell: bash

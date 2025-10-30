@@ -84,18 +84,19 @@ jobs:
         run: npm run build
         working-directory: ./react-frontend/frontend
 
-      # Teste estático backend (Checkstyle) - Using relaxed rules
-      - name: Checkstyle backend
-        run: mvn checkstyle:check --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-        continue-on-error: true
-
-      # Testes backend Java
+      # Testes backend Java - Setup JDK primeiro
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
+          cache: 'maven'
+
+      # Teste estático backend (Checkstyle) - Using relaxed rules
+      - name: Checkstyle backend
+        run: mvn checkstyle:check --no-transfer-progress
+        working-directory: ./slms-backend/user_service
+        continue-on-error: true
 
       - name: Testar user_service
         id: test-user-service

@@ -4,11 +4,11 @@ import { describe, it, beforeEach, afterEach, vi, expect } from 'vitest';
 import { KeycloakContext } from '../context/KeycloakContextDef';
 
 const mockKeycloakContext = {
-  keycloak: { token: 'mock-token', authenticated: true },
+  keycloak: { token: 'mock-token', authenticated: true } as unknown as import('keycloak-js').default,
   authenticated: true,
   loading: false,
-  login: () => {},
-  logout: () => {},
+  login: vi.fn(),
+  logout: vi.fn(),
   token: 'mock-token',
   userInfo: { sub: 'user1' },
   roles: [],

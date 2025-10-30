@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { FeatureFlagsContextType } from './FeatureFlagsContext';
+import type { FeatureFlagsContextType } from './FeatureFlagsContext';
 import { FeatureFlagsContext } from './FeatureFlagsContextDef';
 
 export const useFeatureFlags = (): FeatureFlagsContextType => {

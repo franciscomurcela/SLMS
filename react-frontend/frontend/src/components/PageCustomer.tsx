@@ -96,8 +96,9 @@ function Customer() {
   }, [isCustomer, showOrderHistory, keycloak]);
 
   // Get the user's name from Keycloak, with fallbacks
-  const displayName =
-    userInfo?.name || userInfo?.preferred_username || "Utilizador";
+  const displayName = String(
+    userInfo?.name || userInfo?.preferred_username || "Utilizador"
+  );
 
   return (
     <>
@@ -113,12 +114,12 @@ function Customer() {
               </h5>
               <h4 className="text-end fw-bold text-dark">{displayName}</h4>
               <p className="text-end text-muted mb-1">
-                {userInfo?.email && (
+                {userInfo?.email ? (
                   <small>
                     <i className="bi bi-envelope me-1"></i>
-                    {userInfo.email}
+                    {String(userInfo.email)}
                   </small>
-                )}
+                ) : null}
               </p>
             </div>
           </div>

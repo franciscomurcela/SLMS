@@ -1,8 +1,8 @@
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { KeycloakContext } from '../context/KeycloakContextDef';
-import React from 'react';
 
 /**
  * TESTES DE INTEGRAÇÃO - ROUTING & AUTENTICAÇÃO

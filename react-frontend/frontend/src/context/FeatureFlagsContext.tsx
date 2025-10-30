@@ -1,4 +1,5 @@
-import React, { createContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { FeatureFlagsContext } from './FeatureFlagsContextDef';
 import type { ReactNode } from 'react';
 // import flagsmith from 'flagsmith';
 
@@ -8,7 +9,6 @@ export interface FeatureFlagsContextType {
   error: string | null;
 }
 
-export const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
 
 interface FeatureFlagsProviderProps {
   children: ReactNode;

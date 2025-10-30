@@ -1,9 +1,10 @@
-import { createContext, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { KeycloakContext } from './KeycloakContextDef';
 import type { ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
 import { keycloakConfig, keycloakInitOptions, BACKEND_URL } from '../config/keycloak.config';
 
-interface KeycloakContextType {
+export interface KeycloakContextType {
   keycloak: Keycloak | null;
   authenticated: boolean;
   loading: boolean;
@@ -16,18 +17,6 @@ interface KeycloakContextType {
   primaryRole: string | undefined;
 }
 
-export const KeycloakContext = createContext<KeycloakContextType>({
-  keycloak: null,
-  authenticated: false,
-  loading: true,
-  login: () => {},
-  logout: () => {},
-  token: undefined,
-  userInfo: null,
-  roles: [],
-  hasRole: () => false,
-  primaryRole: undefined,
-});
 
 // Hook utilitário movido para 'keycloakHooks.ts'
 

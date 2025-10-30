@@ -1,11 +1,9 @@
 # Multi-stage Dockerfile for React frontend
 FROM node:20 AS build
 WORKDIR /app
-COPY package.json .
-# Remove lock file to allow package.json version to be used
-RUN rm -f package-lock.json
-# Install dependencies (will use versions from package.json)
-RUN npm install
+COPY package.json package-lock.json* ./
+# Install dependencies with legacy peer deps flag
+RUN npm install --legacy-peer-deps
 # Copy rest of the files
 COPY . .
 RUN npm run build

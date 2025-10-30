@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - cd-test
   workflow_dispatch:
 
 jobs:

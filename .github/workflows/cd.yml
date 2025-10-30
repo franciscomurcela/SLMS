@@ -1,10 +1,6 @@
 name: CD Pipeline
 
 on:
-  push:
-    branches:
-      - master
-      - cd-test
   workflow_dispatch:
   workflow_run:
     workflows: ["CI"]
@@ -17,6 +13,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,10 +21,11 @@ jobs:
           clean: true
           fetch-depth: 0
       
-      - name: Debug - Show current commit
+      - name: Debug - Show workflow trigger
         run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
           echo "Current commit: $(git rev-parse HEAD)"
-          echo "Current branch: $(git branch --show-current)"
           git log --oneline -1
 
       - name: Set up Node.js
@@ -106,7 +104,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-          cache: 'maven'
+      
+      - name: Install Maven
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y maven
+          mvn --version
+        continue-on-error: false
 
       # Teste estático backend (Checkstyle) - Using relaxed rules
       - name: Checkstyle backend

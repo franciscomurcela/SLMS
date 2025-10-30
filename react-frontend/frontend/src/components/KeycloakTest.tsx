@@ -5,13 +5,13 @@ import './KeycloakTest.css';
 
 interface WhoAmIResponse {
   sub: string;
-  claims: any;
+  claims: Record<string, unknown>;
 }
 
 const KeycloakTest = () => {
   const { authenticated, token, userInfo, logout } = useKeycloak();
   const [whoami, setWhoami] = useState<WhoAmIResponse | null>(null);
-  const [userMeData, setUserMeData] = useState<any>(null);
+  const [userMeData, setUserMeData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,10 +101,10 @@ const KeycloakTest = () => {
         <div className="test-section">
           <h2>User Information</h2>
           <div className="info-box">
-            <p><strong>Username:</strong> {userInfo?.preferred_username}</p>
-            <p><strong>Email:</strong> {userInfo?.email}</p>
-            <p><strong>Name:</strong> {userInfo?.name || userInfo?.given_name}</p>
-            <p><strong>Subject (sub):</strong> {userInfo?.sub}</p>
+            <p><strong>Username:</strong> {typeof userInfo?.preferred_username === 'string' ? userInfo.preferred_username : ''}</p>
+            <p><strong>Email:</strong> {typeof userInfo?.email === 'string' ? userInfo.email : ''}</p>
+            <p><strong>Name:</strong> {typeof userInfo?.name === 'string' ? userInfo.name : (typeof userInfo?.given_name === 'string' ? userInfo.given_name : '')}</p>
+            <p><strong>Subject (sub):</strong> {typeof userInfo?.sub === 'string' ? userInfo.sub : ''}</p>
           </div>
         </div>
 

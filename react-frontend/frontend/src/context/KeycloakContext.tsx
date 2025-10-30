@@ -10,7 +10,7 @@ interface KeycloakContextType {
   login: () => void;
   logout: () => void;
   token: string | undefined;
-  userInfo: any;
+  userInfo: Record<string, unknown> | null;
   roles: string[];
   hasRole: (role: string) => boolean;
   primaryRole: string | undefined;
@@ -48,7 +48,7 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<Record<string, unknown> | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const initializingRef = useRef(false);
   const initializedRef = useRef(false);

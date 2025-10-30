@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import flagsmith from 'flagsmith';
+// import flagsmith from 'flagsmith';
 
 interface FeatureFlagsContextType {
   isFeatureEnabled: (flagKey: string) => boolean;
@@ -35,18 +35,17 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ chil
 
         console.log('🚩 Inicializando Flagsmith com Environment Key:', FLAGSMITH_ENVIRONMENT_KEY);
 
-        await flagsmith.init({
-          environmentID: FLAGSMITH_ENVIRONMENT_KEY,
-          cacheFlags: true,
-          onChange: (_oldFlags: any, params: any) => {
-            console.log('🔄 Feature flags atualizadas pelo Flagsmith:', params.flags);
-          },
-        });
-
-        // Obter flags iniciais
-        const allFlags = flagsmith.getAllFlags();
-        console.log('✅ Flagsmith inicializado com sucesso!');
-        console.log('🏁 Flags disponíveis:', allFlags);
+        // await flagsmith.init({
+        //   environmentID: FLAGSMITH_ENVIRONMENT_KEY,
+        //   cacheFlags: true,
+        //   onChange: (_oldFlags: Record<string, unknown>, params: Record<string, unknown>) => {
+        //     console.log('🔄 Feature flags atualizadas pelo Flagsmith:', params.flags);
+        //   },
+        // });
+        // // Obter flags iniciais
+        // const allFlags = flagsmith.getAllFlags();
+        // console.log('✅ Flagsmith inicializado com sucesso!');
+        // console.log('🏁 Flags disponíveis:', allFlags);
         
       } catch (err) {
         console.error('❌ Erro ao inicializar Flagsmith:', err);
@@ -67,9 +66,10 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ chil
         return true;
       }
       
-      const isEnabled = flagsmith.hasFeature(flagKey);
-      console.log(`🔍 Verificando feature flag '${flagKey}':`, isEnabled);
-      return isEnabled;
+  // const isEnabled = flagsmith.hasFeature(flagKey);
+  // console.log(`🔍 Verificando feature flag '${flagKey}':`, isEnabled);
+  // return isEnabled;
+  return true;
     } catch (err) {
       console.warn(`⚠️ Erro ao verificar flag '${flagKey}':`, err);
       return true; // Fallback seguro - feature ativada por padrão em caso de erro

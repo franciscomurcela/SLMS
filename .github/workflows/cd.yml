@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: '20'
     # (linha removida, estava fora do bloco steps)
+      # Instalar dependências frontend
+      - name: Instalar dependências frontend
+        run: npm install --legacy-peer-deps
+        working-directory: ./react-frontend/frontend
       # Teste estático frontend (lint)
       - name: Lint frontend (Static Analysis)
         run: npm run lint

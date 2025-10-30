@@ -3,12 +3,13 @@ import type { ReactNode } from 'react';
 // import flagsmith from 'flagsmith';
 
 interface FeatureFlagsContextType {
+export interface FeatureFlagsContextType {
   isFeatureEnabled: (flagKey: string) => boolean;
   isLoading: boolean;
   error: string | null;
 }
 
-const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
+export const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
 
 interface FeatureFlagsProviderProps {
   children: ReactNode;
@@ -89,16 +90,4 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ chil
   );
 };
 
-export const useFeatureFlags = (): FeatureFlagsContextType => {
-  const context = useContext(FeatureFlagsContext);
-  if (context === undefined) {
-    throw new Error('useFeatureFlags deve ser usado dentro de um FeatureFlagsProvider');
-  }
-  return context;
-};
-
-// Hook específico para verificar uma feature
-export const useFeatureFlag = (flagKey: string): boolean => {
-  const { isFeatureEnabled } = useFeatureFlags();
-  return isFeatureEnabled(flagKey);
-};
+// Hooks utilitários movidos para 'featureFlagsHooks.ts'

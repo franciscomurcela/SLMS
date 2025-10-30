@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import "./ConfirmDelivery.css";
 
-interface ConfirmDeliveryProps {}
+type ConfirmDeliveryProps = Record<string, never>;
 
 const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   const [searchParams] = useSearchParams();

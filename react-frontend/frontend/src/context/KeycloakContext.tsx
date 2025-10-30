@@ -16,7 +16,7 @@ interface KeycloakContextType {
   primaryRole: string | undefined;
 }
 
-const KeycloakContext = createContext<KeycloakContextType>({
+export const KeycloakContext = createContext<KeycloakContextType>({
   keycloak: null,
   authenticated: false,
   loading: true,
@@ -29,7 +29,7 @@ const KeycloakContext = createContext<KeycloakContextType>({
   primaryRole: undefined,
 });
 
-export const useKeycloak = () => useContext(KeycloakContext);
+// Hook utilitário movido para 'keycloakHooks.ts'
 
 interface KeycloakProviderProps {
   children: ReactNode;

@@ -9,9 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:unit": "vitest run",
-  // "test:e2e": "start-server-and-test dev http://localhost:5173 test:e2e:cypress || echo 'Cypress tests failed'",
-  // "test:e2e:cypress": "cypress run"
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -51,6 +49,6 @@
     "typescript-eslint": "^8.45.0",
   "vite": "^7.1.7",
   "vitest": "^4.0.5",
-  "start-server-and-test": "^2.0.0"
+    "start-server-and-test": "^2.0.0"
   }
 }

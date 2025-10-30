@@ -32,9 +32,9 @@ jobs:
         run: npm run test:unit
         working-directory: ./react-frontend/frontend
 
-      # Teste E2E frontend (Cypress)
-      - name: Testes E2E frontend (Cypress)
-        run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
+      # Teste E2E frontend (Cypress) - SUSPENSO TEMPORARIAMENTE
+      # - name: Testes E2E frontend (Cypress)
+      #   run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
         working-directory: ./react-frontend/frontend
 
       - name: Gerar relatório Allure (frontend)

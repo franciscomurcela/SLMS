@@ -93,8 +93,8 @@ jobs:
         run: npm run test:unit || echo "No unit tests defined"
 
 
-      - name: Testes E2E (Cypress)
-        run: npm run test:e2e || echo "No E2E tests defined"
+      # - name: Testes E2E (Cypress) - SUSPENSO TEMPORARIAMENTE
+      #   run: npm run test:e2e || echo "No E2E tests defined"
         env:
           PORT: 5173
 

@@ -37,7 +37,7 @@ jobs:
       #   run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
 
       - name: Gerar relatório Allure (frontend)
-        run: npx allure generate --clean ./allure-results -o ./allure-report
+        run: npx allure generate ./allure-results --output ./allure-report
         working-directory: ./react-frontend/frontend
       - name: Publicar relatório Allure (frontend)
         uses: actions/upload-artifact@v4

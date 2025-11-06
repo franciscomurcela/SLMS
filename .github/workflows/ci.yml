@@ -86,7 +86,9 @@ jobs:
         shell: bash
         run: |
           cd user_service
-          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+          # Allure results podem estar na raiz ou em target/
+          if [ -f "mvnw" ] && [ -d "allure-results" -o -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
             ./mvnw allure:report --no-transfer-progress
           else
             echo "No Allure results found for user_service - skipping report generation"
@@ -98,7 +100,9 @@ jobs:
         shell: bash
         run: |
           cd order_service/demo
-          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+          # Allure results podem estar na raiz ou em target/
+          if [ -f "mvnw" ] && [ -d "allure-results" -o -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
             ./mvnw allure:report --no-transfer-progress
           else
             echo "No Allure results found for order_service - skipping report generation"
@@ -110,7 +114,9 @@ jobs:
         shell: bash
         run: |
           cd carrier_service/carrier_service
-          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+          # Allure results podem estar na raiz ou em target/
+          if [ -f "mvnw" ] && [ -d "allure-results" -o -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
             ./mvnw allure:report --no-transfer-progress
           else
             echo "No Allure results found for carrier_service - skipping report generation"

@@ -86,8 +86,10 @@ jobs:
         shell: bash
         run: |
           cd user_service
-          if [ -f "mvnw" ]; then
-            ./mvnw allure:report --no-transfer-progress || echo "No Allure results for user_service"
+          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+            ./mvnw allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for user_service - skipping report generation"
           fi
         continue-on-error: true
       
@@ -96,8 +98,10 @@ jobs:
         shell: bash
         run: |
           cd order_service/demo
-          if [ -f "mvnw" ]; then
-            ./mvnw allure:report --no-transfer-progress || echo "No Allure results for order_service"
+          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+            ./mvnw allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for order_service - skipping report generation"
           fi
         continue-on-error: true
       
@@ -106,8 +110,10 @@ jobs:
         shell: bash
         run: |
           cd carrier_service/carrier_service
-          if [ -f "mvnw" ]; then
-            ./mvnw allure:report --no-transfer-progress || echo "No Allure results for carrier_service"
+          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+            ./mvnw allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for carrier_service - skipping report generation"
           fi
         continue-on-error: true
       
@@ -149,10 +155,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install dependencies
+          cache: 'npm'
+          cache-dependency-path: 'react-frontend/frontend/package-lock.json'
+      
+      - name: Clean install dependencies
         run: |
+          rm -rf node_modules package-lock.json
           npm install --legacy-peer-deps
-          npm ci --legacy-peer-deps
       - name: Lint
         run: npm run lint || echo "Lint warnings"
       - name: Build

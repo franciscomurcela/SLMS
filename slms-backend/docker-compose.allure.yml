@@ -9,10 +9,13 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Monta os resultados dos testes de todos os serviços
-      - ./user_service/allure-results:/app/allure-results/user_service:ro
-      - ./order_service/demo/allure-results:/app/allure-results/order_service:ro
-      - ./carrier_service/carrier_service/allure-results:/app/allure-results/carrier_service:ro
+      # Backend - Monta os resultados dos testes de todos os serviços
+      - ./user_service/allure-results:/app/allure-results/backend/user_service:ro
+      - ./order_service/demo/allure-results:/app/allure-results/backend/order_service:ro
+      - ./carrier_service/carrier_service/allure-results:/app/allure-results/backend/carrier_service:ro
+      
+      # Frontend - Monta os resultados dos testes do frontend
+      - ../react-frontend/frontend/allure-results:/app/allure-results/frontend:ro
       
       # Opcional: persistir o relatório gerado
       - ./allure-report:/app/allure-report

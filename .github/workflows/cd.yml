@@ -36,73 +36,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-    # (linha removida, estava fora do bloco steps)
-      # Instalar dependências frontend
+      
+      # Build frontend (sem testes - já executados no CI)
       - name: Instalar dependências frontend
         run: npm install --legacy-peer-deps
         working-directory: ./react-frontend/frontend
-      # Teste estático frontend (lint)
-      - name: Lint frontend (Static Analysis)
-        run: npm run lint
-        working-directory: ./react-frontend/frontend
-      # Teste unitário frontend
-      - name: Testes unitários frontend
-        run: npm run test:unit
-        working-directory: ./react-frontend/frontend
-
-      # Teste de cobertura frontend
-      - name: Cobertura de testes unitários
-        run: npm run test:unit:coverage
-        working-directory: ./react-frontend/frontend
-        continue-on-error: true
-
-      # TODO: Re-enable E2E tests after fixing authentication and backend mocking
-      # Teste E2E frontend (Cypress)
-      # - name: Testes E2E frontend (Cypress)
-      #   run: npm run test:e2e
-      #   working-directory: ./react-frontend/frontend
-      #   continue-on-error: true
-      #   env:
-      #     CYPRESS_baseUrl: http://localhost:5173
-
-      # - name: Upload Cypress videos
-      #   uses: actions/upload-artifact@v4
-      #   if: failure()
-      #   with:
-      #     name: cypress-videos
-      #     path: ./react-frontend/frontend/cypress/videos
-      #     retention-days: 7
-
-      # - name: Upload Cypress screenshots
-      #   uses: actions/upload-artifact@v4
-      #   if: failure()
-      #   with:
-      #     name: cypress-screenshots
-      #     path: ./react-frontend/frontend/cypress/screenshots
-      #     retention-days: 7
-
-      - name: Converter resultados para Allure (frontend)
-        if: always()
-        run: node scripts/convert-to-allure.js
-        working-directory: ./react-frontend/frontend
-      
-      - name: Gerar relatório Allure (frontend)
-        if: always()
-        run: npx allure generate ./allure-results --clean --output ./allure-report
-        working-directory: ./react-frontend/frontend
-      
-      - name: Publicar relatório Allure (frontend)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: allure-report-frontend
-          path: ./react-frontend/frontend/allure-report
       
       - name: Build frontend
         run: npm run build
         working-directory: ./react-frontend/frontend
 
-      # Testes backend Java - Setup JDK primeiro
+      # Setup backend (sem testes - já executados no CI)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -115,59 +59,11 @@ jobs:
           sudo apt-get install -y maven
           mvn --version
         continue-on-error: false
-
-      # Teste estático backend (Checkstyle) - Using relaxed rules
-      - name: Checkstyle backend
-        run: mvn checkstyle:check --no-transfer-progress
+      
+      # Build backend (sem testes)
+      - name: Build user_service
+        run: mvn clean package -DskipTests --no-transfer-progress
         working-directory: ./slms-backend/user_service
-        continue-on-error: true
-
-      - name: Testar user_service
-        id: test-user-service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-        continue-on-error: true
-
-      - name: Gerar relatório Allure (user_service)
-        if: success() || steps.test-user-service.outcome == 'success'
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-      - name: Publicar relatório Allure (user_service)
-        if: success() || steps.test-user-service.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-user_service
-          path: ./slms-backend/user_service/target/site/allure-maven-plugin
-      - name: Testar order_service
-        id: test-order-service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/order_service/demo
-        continue-on-error: true
-      - name: Gerar relatório Allure (order_service)
-        if: success() || steps.test-order-service.outcome == 'success'
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/order_service/demo
-      - name: Publicar relatório Allure (order_service)
-        if: success() || steps.test-order-service.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-order_service
-          path: ./slms-backend/order_service/demo/target/site/allure-maven-plugin
-      - name: Testar carrier_service
-        id: test-carrier-service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/carrier_service/carrier_service
-        continue-on-error: true
-      - name: Gerar relatório Allure (carrier_service)
-        if: success() || steps.test-carrier-service.outcome == 'success'
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/carrier_service/carrier_service
-      - name: Publicar relatório Allure (carrier_service)
-        if: success() || steps.test-carrier-service.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-carrier_service
-          path: ./slms-backend/carrier_service/carrier_service/target/site/allure-maven-plugin
       
       # Docker Build and Push
       - name: Set up Docker Buildx

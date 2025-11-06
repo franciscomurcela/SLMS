@@ -33,3 +33,17 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Java/Maven/Gradle
+**/target/
+**/build/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# Allure
+**/.allure/
+**/allure-results/
+**/allure-report/

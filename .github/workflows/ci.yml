@@ -56,16 +56,85 @@ jobs:
         run: |
           echo "Looking for mvnw files and making them executable"
           find . -name mvnw -print -exec chmod +x {} +
+      
+      # Teste estático backend (Checkstyle) - user_service
+      - name: Checkstyle user_service
+        shell: bash
+        run: |
+          cd user_service
+          if [ -f "mvnw" ]; then
+            ./mvnw checkstyle:check --no-transfer-progress || echo "Checkstyle warnings found"
+          fi
+        continue-on-error: true
+      
       - name: Build with Maven (run all wrappers found)
         shell: bash
         run: |
           echo "Running 'mvnw clean install' for every module that has a mvnw"
           find . -name mvnw -print -execdir ./mvnw clean install \;
+      
+      # Testes unitários e de integração
       - name: Run tests (run all wrappers found)
         shell: bash
         run: |
           echo "Running 'mvnw test' for every module that has a mvnw"
           find . -name mvnw -print -execdir ./mvnw test \;
+      
+      # Gerar relatórios Allure para backend
+      - name: Gerar relatório Allure (user_service)
+        if: always()
+        shell: bash
+        run: |
+          cd user_service
+          if [ -f "mvnw" ]; then
+            ./mvnw allure:report --no-transfer-progress || echo "No Allure results for user_service"
+          fi
+        continue-on-error: true
+      
+      - name: Gerar relatório Allure (order_service)
+        if: always()
+        shell: bash
+        run: |
+          cd order_service/demo
+          if [ -f "mvnw" ]; then
+            ./mvnw allure:report --no-transfer-progress || echo "No Allure results for order_service"
+          fi
+        continue-on-error: true
+      
+      - name: Gerar relatório Allure (carrier_service)
+        if: always()
+        shell: bash
+        run: |
+          cd carrier_service/carrier_service
+          if [ -f "mvnw" ]; then
+            ./mvnw allure:report --no-transfer-progress || echo "No Allure results for carrier_service"
+          fi
+        continue-on-error: true
+      
+      # Publicar relatórios Allure do backend
+      - name: Publicar relatório Allure (user_service)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report-user_service-ci-java${{ matrix.java }}
+          path: slms-backend/user_service/target/site/allure-maven-plugin
+          if-no-files-found: ignore
+      
+      - name: Publicar relatório Allure (order_service)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report-order_service-ci-java${{ matrix.java }}
+          path: slms-backend/order_service/demo/target/site/allure-maven-plugin
+          if-no-files-found: ignore
+      
+      - name: Publicar relatório Allure (carrier_service)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report-carrier_service-ci-java${{ matrix.java }}
+          path: slms-backend/carrier_service/carrier_service/target/site/allure-maven-plugin
+          if-no-files-found: ignore
 
   frontend:
     name: Build & Test Frontend

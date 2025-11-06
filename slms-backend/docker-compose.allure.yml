@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  allure-report:
+    build:
+      context: .
+      dockerfile: Dockerfile.allure
+    container_name: allure-report
+    ports:
+      - "8080:8080"
+    volumes:
+      # Monta os resultados dos testes de todos os serviços
+      - ./user_service/allure-results:/app/allure-results/user_service:ro
+      - ./order_service/demo/allure-results:/app/allure-results/order_service:ro
+      - ./carrier_service/carrier_service/allure-results:/app/allure-results/carrier_service:ro
+      
+      # Opcional: persistir o relatório gerado
+      - ./allure-report:/app/allure-report
+    command: serve allure-results --port 8080 --host 0.0.0.0
+    restart: unless-stopped

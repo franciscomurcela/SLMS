@@ -1,0 +1,25 @@
+# Dockerfile para gerar relatórios Allure
+FROM openjdk:17-slim
+
+# Instalar dependências
+RUN apt-get update && apt-get install -y \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar Allure
+ARG ALLURE_VERSION=2.29.1
+RUN curl -o allure-${ALLURE_VERSION}.zip -Ls https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.zip && \
+    unzip allure-${ALLURE_VERSION}.zip -d /opt/ && \
+    ln -s /opt/allure-${ALLURE_VERSION}/bin/allure /usr/bin/allure && \
+    rm allure-${ALLURE_VERSION}.zip
+
+# Diretórios de trabalho
+WORKDIR /app
+
+# Expor porta para visualizar relatórios
+EXPOSE 8080
+
+# Comando padrão: gerar relatório e servir
+ENTRYPOINT ["allure"]
+CMD ["serve", "allure-results", "--port", "8080"]

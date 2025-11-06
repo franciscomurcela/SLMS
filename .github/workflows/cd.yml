@@ -8,20 +8,34 @@ on:
       - completed
 
 jobs:
+  # Job de debug para ver porque não está a disparar
+  debug-info:
+    runs-on: self-hosted
+    steps:
+      - name: Debug workflow trigger
+        run: |
+          echo "=== DEBUG INFO ==="
+          echo "Event name: ${{ github.event_name }}"
+          echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Workflow run head_branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Current ref: ${{ github.ref }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
+          echo "Workflow run status: ${{ github.event.workflow_run.status }}"
+          
   build-and-deploy:
     runs-on: self-hosted
-    if: >
-      (github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch')
-      && (
-        github.event.workflow_run.head_branch == 'master' ||
-        github.event.workflow_run.head_branch == 'cd-test' ||
-        github.ref == 'refs/heads/master' ||
-        github.ref == 'refs/heads/cd-test'
-      )
+    needs: debug-info
+    # Simplificando a condição - só verifica se CI teve sucesso
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
           clean: true
           fetch-depth: 0
       
@@ -29,6 +43,7 @@ jobs:
         run: |
           echo "Event: ${{ github.event_name }}"
           echo "Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Branch: ${{ github.event.workflow_run.head_branch || github.ref }}"
           echo "Current commit: $(git rev-parse HEAD)"
           git log --oneline -1
 

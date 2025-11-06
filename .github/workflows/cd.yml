@@ -10,7 +10,7 @@ on:
 jobs:
   # Job de debug para ver porque não está a disparar
   debug-info:
-    runs-on: [self-hosted, es2526-204]
+    runs-on: [self-hosted]
     steps:
       - name: Debug workflow trigger
         run: |

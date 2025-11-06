@@ -10,7 +10,7 @@ on:
 jobs:
   # Job de debug para ver porque não está a disparar
   debug-info:
-    runs-on: self-hosted
+    runs-on: [self-hosted, es2526-204]
     steps:
       - name: Debug workflow trigger
         run: |
@@ -25,7 +25,7 @@ jobs:
           echo "Workflow run status: ${{ github.event.workflow_run.status }}"
           
   build-and-deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, es2526-204]
     needs: debug-info
     # Simplificando a condição - só verifica se CI teve sucesso
     if: |

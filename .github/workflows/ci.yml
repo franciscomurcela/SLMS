@@ -11,7 +11,7 @@ on:
 jobs:
   backend:
     name: Build & Test Backend
-    runs-on: self-hosted
+    runs-on: [self-hosted, es2526-204]
     strategy:
       matrix:
         java: [17, 21]
@@ -138,7 +138,7 @@ jobs:
 
   frontend:
     name: Build & Test Frontend
-    runs-on: self-hosted
+    runs-on: [self-hosted, es2526-204]
     defaults:
       run:
         working-directory: react-frontend/frontend

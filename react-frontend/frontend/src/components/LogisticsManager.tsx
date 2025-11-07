@@ -4,12 +4,14 @@ import SimpleCharts from "./SimpleCharts";
 import { Sidebar } from "react-pro-sidebar";
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "../config/api.config";
+import { useKeycloak } from "../context/KeycloakContext";
 
 const role: string = "Logistics Manager";
 
 type Row = Record<string, unknown>;
 
 function LogisticsManager() {
+  const { keycloak } = useKeycloak();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,11 +20,25 @@ function LogisticsManager() {
   const [showRaw, setShowRaw] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     async function load() {
+      // Wait for Keycloak to be ready
+      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
+        console.log("[LogisticsManager] Waiting for Keycloak...");
+        setLoading(true);
+        return;
+      }
+
+      console.log("[LogisticsManager] Keycloak ready, fetching carriers with token");
+      setLoading(true);
+      setError(null);
       try {
-        console.log('Fetching carriers via Nginx proxy...');
-        const r = await fetch(API_ENDPOINTS.CARRIERS);
+        console.log('Fetching carriers via API...');
+        const r = await fetch(API_ENDPOINTS.CARRIERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         const text = await r.text();
         setRawResponse(text);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -43,7 +59,7 @@ function LogisticsManager() {
     }
 
     load();
-  }, []);
+  }, [keycloak?.authenticated, keycloak?.token]);
 
   // friendly labels for common DB columns
   const friendlyNames: Record<string, string> = {

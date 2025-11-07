@@ -5,6 +5,7 @@ import Paths from "./UtilsPaths";
 import { useNavigate } from "react-router-dom";
 import { useKeycloak } from "../context/KeycloakContext";
 import { getRouteForRole } from "../config/roles.config";
+import { API_ENDPOINTS } from "../config/api.config";
 import "./TrackingPortal.css";
 
 const role: string = Roles.ROLE_TRACKING_PORTAL;
@@ -53,7 +54,7 @@ function TrackingPortal() {
 
     try {
       const response = await fetch(
-        `/api/orders/track/${trackingId.trim()}`,
+        `${API_ENDPOINTS.ORDERS}/track/${trackingId.trim()}`,
         {
           method: "GET",
           headers: {

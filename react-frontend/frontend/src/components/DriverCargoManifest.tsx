@@ -4,6 +4,7 @@ import Header from './Header';
 import Paths from './UtilsPaths';
 import { useKeycloak } from '../context/KeycloakContext';
 import { useFeatureFlag } from '../context/FeatureFlagsContext';
+import { API_ENDPOINTS } from '../config/api.config';
 
 const role: string = 'Driver';
 
@@ -66,7 +67,7 @@ function DriverCargoManifest() {
       
       // Call optimized endpoint that navigates: keycloak_id → Users.id → Driver.user_id → Shipments
       // This endpoint returns InTransit shipments with their orders
-      const response = await fetch(`/api/shipments/my-shipments/${keycloakId}`, {
+      const response = await fetch(`${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
           'Content-Type': 'application/json'

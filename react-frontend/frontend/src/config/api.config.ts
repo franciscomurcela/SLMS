@@ -1,29 +1,52 @@
 // API Configuration
-// All API calls should use these base URLs to work correctly with Nginx proxy
+// Adapts to current environment automatically
+
+/**
+ * Determine the current environment and set appropriate base URL
+ */
+const isDevelopment = window.location.hostname === 'localhost' && 
+                     (window.location.port === '3000' || window.location.port === '5173');
 
 /**
  * Base URL for the application
- * Uses the current window location to ensure same-origin requests
+ * - Development: Direct service URLs on localhost
+ * - Production: Uses nginx proxy with current host
  */
-export const API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
+export const API_BASE_URL = isDevelopment 
+  ? 'http://localhost' 
+  : `${window.location.protocol}//${window.location.host}`;
 
 /**
- * Backend API endpoints through Nginx proxy
+ * Backend API endpoints
+ * - Development: Direct service ports
+ * - Production: Through Nginx proxy
  */
 export const API_ENDPOINTS = {
   // Carriers API
-  CARRIERS: `${API_BASE_URL}/carriers`,
+  CARRIERS: isDevelopment 
+    ? `${API_BASE_URL}:8080/carriers`
+    : `${API_BASE_URL}/carriers`,
   
   // Orders API
-  ORDERS: `${API_BASE_URL}/api/orders`,
-  SHIPMENTS: `${API_BASE_URL}/api/shipments`,
+  ORDERS: isDevelopment 
+    ? `${API_BASE_URL}:8081/api/orders`
+    : `${API_BASE_URL}/api/orders`,
+  SHIPMENTS: isDevelopment 
+    ? `${API_BASE_URL}:8081/api/shipments`
+    : `${API_BASE_URL}/api/shipments`,
   
-  // Users API (note: user-service uses /user/ not /api/users/)
-  USERS: `${API_BASE_URL}/user`,
-  WHOAMI: `${API_BASE_URL}/user/whoami`,
+  // Users API
+  USERS: isDevelopment 
+    ? `${API_BASE_URL}:8082/user`
+    : `${API_BASE_URL}/user`,
+  WHOAMI: isDevelopment 
+    ? `${API_BASE_URL}:8082/user/whoami`
+    : `${API_BASE_URL}/user/whoami`,
   
-  // Auth
-  AUTH: `${API_BASE_URL}/auth`,
+  // Auth (Keycloak - port 8083 in development)
+  AUTH: isDevelopment 
+    ? `${API_BASE_URL}:8083/auth`
+    : `${API_BASE_URL}/auth`,
 } as const;
 
 /**

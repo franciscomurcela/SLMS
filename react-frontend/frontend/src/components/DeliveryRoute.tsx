@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useKeycloak } from '../context/KeycloakContext';
+import { API_ENDPOINTS } from '../config/api.config';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -125,7 +126,7 @@ const DeliveryRoute: React.FC = () => {
 
         // Use same-origin request through Nginx proxy
         const shipmentsResponse = await fetch(
-          `/api/shipments/my-shipments/${keycloakId}`,
+          `${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`,
           {
             headers: {
               'Authorization': `Bearer ${keycloak.token}`,

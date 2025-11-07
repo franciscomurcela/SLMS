@@ -1,0 +1,5 @@
+# Copie este ficheiro para terraform.tfvars e preencha com as suas passwords
+# IMPORTANTE: Adicione terraform.tfvars ao .gitignore!
+
+db_password            = "SuaPasswordSeguraAqui123!"
+runner_admin_password  = "OutraPasswordSeguraAqui456!"

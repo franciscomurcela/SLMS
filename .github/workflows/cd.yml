@@ -67,6 +67,11 @@ jobs:
             }
             
             core.setFailed('❌ Timeout waiting for CI to complete');
+          
+  build-and-deploy-azure:
+    runs-on: [self-hosted, Linux, X64, es2526-204]
+    needs: wait-for-ci
+    steps:
 
           
   build-and-deploy-azure:

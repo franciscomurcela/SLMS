@@ -121,7 +121,8 @@ jobs:
       - name: Login no Azure Container Registry
         run: |
           echo "🔐 Autenticando no ACR..."
-          az acr login --name ${{ secrets.ACR_NAME }} --identity
+          az acr login --name ${{ secrets.ACR_NAME }}
+          echo "✅ Autenticado no ACR com sucesso!"
 
       # ==========================================
       # BUILD & PUSH DOCKER IMAGES

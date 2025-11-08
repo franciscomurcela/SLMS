@@ -18,7 +18,7 @@ env:
   RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
 jobs:
-  # Espera pelo CI antes de fazer deploy
+  # Espera pelo CI antes de fazer deploy yayayaya
   wait-for-ci:
     runs-on: ubuntu-latest
     steps:

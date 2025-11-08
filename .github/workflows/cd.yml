@@ -72,12 +72,6 @@ jobs:
     runs-on: [self-hosted, Linux, X64, es2526-204]
     needs: wait-for-ci
     steps:
-
-          
-  build-and-deploy-azure:
-    runs-on: [self-hosted, 204_runner]
-    needs: wait-for-ci
-    steps:
       - name: Verificar se é o runner correto
         run: |
           echo "🔍 Runner Name: $RUNNER_NAME"

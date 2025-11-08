@@ -17,16 +17,37 @@ env:
 jobs:
   # Job de debug
   debug-info:
-    runs-on: [self-hosted, 204_runner]
+    runs-on: self-hosted
+    # Sempre executa para debug
+    if: always()
     steps:
       - name: Debug workflow trigger
         run: |
           echo "=== AZURE DEPLOYMENT INFO ==="
           echo "Event name: ${{ github.event_name }}"
           echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "Workflow run event: ${{ github.event.workflow_run.event }}"
           echo "Branch: ${{ github.event.workflow_run.head_branch || github.ref }}"
           echo "Repository: ${{ github.repository }}"
           echo "Actor: ${{ github.actor }}"
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner Name: $RUNNER_NAME"
+          echo ""
+          echo "Checking if CI succeeded..."
+          if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+            echo "✅ CI passou - CD pode executar"
+          else
+            echo "❌ CI não passou - CD será pulado"
+          fi
+          
+  build-and-deploy-azure:
+    runs-on: self-hosted
+    needs: debug-info
+    # Só executa se CI passou ou se for manual E se for Linux (Azure runner)
+    if: |
+      (github.event_name == 'workflow_dispatch' || 
+       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')) &&
+      runner.os == 'Linux'
           
   build-and-deploy-azure:
     runs-on: [self-hosted, 204_runner]

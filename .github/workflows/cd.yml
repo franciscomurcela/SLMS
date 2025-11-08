@@ -1,10 +1,10 @@
 name: CD Pipeline - Azure Deployment
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
+  push:
+    branches:
+      - cd-test
+      - main
   workflow_dispatch:
 
 permissions:
@@ -18,39 +18,32 @@ env:
   RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
 jobs:
-  # Job de debug - SEMPRE executa quando CD é triggered
-  debug-info:
-    runs-on: [self-hosted, 204_runner]
-    if: always()  # DEBUG: Força execução para ver se CD é triggered
+  # Espera pelo CI antes de fazer deploy
+  wait-for-ci:
+    runs-on: ubuntu-latest
     steps:
-      - name: Debug workflow trigger
+      - name: Wait for CI to complete
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-for-ci
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: "Build & Test Backend"
+          ref: ${{ github.sha }}
+          timeoutSeconds: 1800
+          intervalSeconds: 30
+      
+      - name: Check CI result
+        if: steps.wait-for-ci.outputs.conclusion != 'success'
         run: |
-          echo "=== AZURE DEPLOYMENT INFO ==="
-          echo "Event name: ${{ github.event_name }}"
-          echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
-          echo "Workflow run event: ${{ github.event.workflow_run.event }}"
-          echo "Branch: ${{ github.event.workflow_run.head_branch || github.ref }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "Actor: ${{ github.actor }}"
-          echo "Runner OS: $RUNNER_OS"
-          echo "Runner Name: $RUNNER_NAME"
-          echo "Runner Labels: ${{ toJSON(runner.labels) }}"
-          echo ""
-          echo "Checking if CI succeeded..."
-          if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
-            echo "✅ CI passou - CD pode executar"
-          else
-            echo "❌ CI não passou - CD será pulado"
-            echo "Conclusion was: ${{ github.event.workflow_run.conclusion }}"
-          fi
+          echo "❌ CI não passou - CD cancelado"
+          exit 1
+      
+      - name: CI passou
+        run: echo "✅ CI passou - CD pode prosseguir"
           
   build-and-deploy-azure:
     runs-on: [self-hosted, 204_runner]
-    # REMOVIDO needs: debug-info - deixa os jobs correrem em paralelo
-    # Só executa se CI passou ou se for manual
-    if: |
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    needs: wait-for-ci
     steps:
       - name: Verificar se é o runner correto
         run: |
@@ -78,7 +71,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch || github.ref }}
           clean: true
           fetch-depth: 0
       
@@ -86,7 +78,7 @@ jobs:
         run: |
           echo "🚀 Iniciando deployment para Azure"
           echo "Event: ${{ github.event_name }}"
-          echo "Branch: ${{ github.event.workflow_run.head_branch || github.ref }}"
+          echo "Branch: ${{ github.ref }}"
           echo "Commit: $(git rev-parse HEAD)"
           git log --oneline -1
 
@@ -206,47 +198,32 @@ jobs:
       # ==========================================
       # ALLURE REPORTS (DOWNLOAD FROM CI)
       # ==========================================
-      # ==========================================
-      # ALLURE REPORTS (DOWNLOAD FROM CI)
-      # ==========================================
       - name: Download Allure results (user_service)
         uses: actions/download-artifact@v4
-        if: github.event_name == 'workflow_run'
         with:
           name: allure-results-user_service
           path: slms-backend/user_service/allure-results
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
       
       - name: Download Allure results (carrier_service)
         uses: actions/download-artifact@v4
-        if: github.event_name == 'workflow_run'
         with:
           name: allure-results-carrier_service
           path: slms-backend/carrier_service/carrier_service/allure-results
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
       
       - name: Download Allure results (order_service)
         uses: actions/download-artifact@v4
-        if: github.event_name == 'workflow_run'
         with:
           name: allure-results-order_service
           path: slms-backend/order_service/demo/allure-results
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
       
       - name: Download Allure results (frontend)
         uses: actions/download-artifact@v4
-        if: github.event_name == 'workflow_run'
         with:
           name: allure-results-frontend
           path: react-frontend/frontend/allure-results
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
       
       - name: Deploy Allure Reports Container

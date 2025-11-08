@@ -134,12 +134,17 @@ jobs:
           
           ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           
+          # Build uma vez e tag duas vezes
           docker build -t ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} .
-          docker build -t ${ACR_LOGIN_SERVER}/slms-backend:latest .
+          docker tag ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-backend:latest
           
           echo "📤 Pushing Backend to ACR..."
           docker push ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }}
           docker push ${ACR_LOGIN_SERVER}/slms-backend:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-backend:latest || true
       
       - name: Build e Push - Carrier Service
         run: |
@@ -149,11 +154,15 @@ jobs:
           ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           
           docker build -t ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }} .
-          docker build -t ${ACR_LOGIN_SERVER}/slms-carrier-service:latest .
+          docker tag ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-carrier-service:latest
           
           echo "📤 Pushing Carrier Service to ACR..."
           docker push ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }}
           docker push ${ACR_LOGIN_SERVER}/slms-carrier-service:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-carrier-service:latest || true
       
       - name: Build e Push - Order Service
         run: |
@@ -163,25 +172,35 @@ jobs:
           ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           
           docker build -t ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} .
-          docker build -t ${ACR_LOGIN_SERVER}/slms-order-service:latest .
+          docker tag ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-order-service:latest
           
           echo "📤 Pushing Order Service to ACR..."
           docker push ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }}
           docker push ${ACR_LOGIN_SERVER}/slms-order-service:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-order-service:latest || true
 
       - name: Build e Push - Frontend
+        timeout-minutes: 30
         run: |
           echo "🏗️ Building Frontend..."
           cd react-frontend/frontend
           
           ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           
-          docker build -t ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} .
-          docker build -t ${ACR_LOGIN_SERVER}/slms-frontend:latest .
+          echo "Building with progress output..."
+          docker build --progress=plain -t ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} .
+          docker tag ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-frontend:latest
           
           echo "📤 Pushing Frontend to ACR..."
           docker push ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }}
           docker push ${ACR_LOGIN_SERVER}/slms-frontend:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:latest || true
 
       # ==========================================
       # TERRAFORM DEPLOYMENT

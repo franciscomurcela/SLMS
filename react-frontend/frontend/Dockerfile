@@ -1,12 +1,19 @@
 # Multi-stage Dockerfile for React frontend
 FROM node:20 AS build
 WORKDIR /app
+
+# Aumentar memória do Node.js
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 COPY package.json package-lock.json* ./
 # Install dependencies with legacy peer deps flag
 RUN npm install --legacy-peer-deps
+
 # Copy rest of the files
 COPY . .
-RUN npm run build
+
+# Build com output verboso
+RUN npm run build -- --logLevel info
 
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html

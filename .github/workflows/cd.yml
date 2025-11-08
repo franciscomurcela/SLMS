@@ -1,33 +1,37 @@
-name: CD Pipeline
+name: CD Pipeline - Azure Deployment
 
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: ["CI"]
     types:
       - completed
+    branches:
+      - cd-test
+      - master
+  workflow_dispatch:
+
+env:
+  ACR_NAME: ${{ secrets.ACR_NAME }}
+  RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
 jobs:
-  # Job de debug para ver porque não está a disparar
+  # Job de debug
   debug-info:
-    runs-on: self-hosted
+    runs-on: [self-hosted, 204_runner]
     steps:
       - name: Debug workflow trigger
         run: |
-          echo "=== DEBUG INFO ==="
+          echo "=== AZURE DEPLOYMENT INFO ==="
           echo "Event name: ${{ github.event_name }}"
           echo "Workflow run conclusion: ${{ github.event.workflow_run.conclusion }}"
-          echo "Workflow run head_branch: ${{ github.event.workflow_run.head_branch }}"
-          echo "Current ref: ${{ github.ref }}"
+          echo "Branch: ${{ github.event.workflow_run.head_branch || github.ref }}"
           echo "Repository: ${{ github.repository }}"
           echo "Actor: ${{ github.actor }}"
-          echo "Workflow run ID: ${{ github.event.workflow_run.id }}"
-          echo "Workflow run status: ${{ github.event.workflow_run.status }}"
           
-  build-and-deploy:
-    runs-on: self-hosted
+  build-and-deploy-azure:
+    runs-on: [self-hosted, 204_runner]
     needs: debug-info
-    # Simplificando a condição - só verifica se CI teve sucesso
+    # Só executa se CI passou ou se for manual
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
@@ -39,101 +43,133 @@ jobs:
           clean: true
           fetch-depth: 0
       
-      - name: Debug - Show workflow trigger
+      - name: Debug - Show deployment info
         run: |
+          echo "🚀 Iniciando deployment para Azure"
           echo "Event: ${{ github.event_name }}"
-          echo "Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
           echo "Branch: ${{ github.event.workflow_run.head_branch || github.ref }}"
-          echo "Current commit: $(git rev-parse HEAD)"
+          echo "Commit: $(git rev-parse HEAD)"
           git log --oneline -1
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      
-      # Build frontend (sem testes - já executados no CI)
-      - name: Instalar dependências frontend
-        run: npm install --legacy-peer-deps
-        working-directory: ./react-frontend/frontend
-      
-      - name: Build frontend
-        run: npm run build
-        working-directory: ./react-frontend/frontend
+      # ==========================================
+      # AZURE AUTHENTICATION
+      # ==========================================
+      - name: Login no Azure com Managed Identity
+        run: |
+          echo "🔐 Autenticando no Azure com Managed Identity..."
+          az login --identity
+          az account show
 
-      # Setup backend (sem testes - já executados no CI)
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      
-      - name: Install Maven
+      - name: Login no Azure Container Registry
         run: |
-          sudo apt-get update
-          sudo apt-get install -y maven
-          mvn --version
-        continue-on-error: false
-      
-      # Build backend (sem testes)
-      - name: Build user_service
-        run: mvn clean package -DskipTests --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-      
-      # Docker Build and Push
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push Docker image (backend)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./slms-backend/user_service
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
-      - name: Build and push Docker image (frontend)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./react-frontend/frontend
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
-      # Deploy direto no runner auto-hospedado
-      - name: Cleanup existing containers and networks
-        if: runner.os == 'Linux' || runner.os == 'Windows'
+          echo "🔐 Autenticando no ACR..."
+          az acr login --name ${{ secrets.ACR_NAME }} --identity
+
+      # ==========================================
+      # BUILD & PUSH DOCKER IMAGES
+      # ==========================================
+      - name: Build e Push - Backend (user_service)
         run: |
-          echo "Stopping all running containers..."
-          CONTAINERS=$(docker ps -q)
-          if [ ! -z "$CONTAINERS" ]; then
-            docker stop $CONTAINERS || true
-          else
-            echo "No containers to stop"
-          fi
-          echo "Removing all stopped containers..."
-          docker container prune -f || true
-          echo "Removing unused networks..."
-          docker network prune -f || true
-        shell: bash
-        continue-on-error: true
+          echo "🏗️ Building Backend (user_service)..."
+          cd slms-backend/user_service
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          docker build -t ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} .
+          docker build -t ${ACR_LOGIN_SERVER}/slms-backend:latest .
+          
+          echo "📤 Pushing Backend to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-backend:latest
       
-      - name: Deploy no runner auto-hospedado
-        if: runner.os == 'Linux' || runner.os == 'Windows'
+      - name: Build e Push - Carrier Service
         run: |
-          echo "Fazendo pull das imagens Docker mais recentes..."
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest || true
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest || true
-          echo "Reiniciando containers com docker-compose..."
-          cd slms-backend
-          docker-compose down -v || true
-          docker-compose up -d
-          cd ../react-frontend/frontend
-          docker-compose down -v || true
-          docker-compose up -d || true
-        shell: bash
+          echo "🏗️ Building Carrier Service..."
+          cd slms-backend/carrier_service/carrier_service
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          docker build -t ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }} .
+          docker build -t ${ACR_LOGIN_SERVER}/slms-carrier-service:latest .
+          
+          echo "📤 Pushing Carrier Service to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-carrier-service:latest
       
-      # Download dos resultados Allure do CI
+      - name: Build e Push - Order Service
+        run: |
+          echo "🏗️ Building Order Service..."
+          cd slms-backend/order_service/demo
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          docker build -t ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} .
+          docker build -t ${ACR_LOGIN_SERVER}/slms-order-service:latest .
+          
+          echo "📤 Pushing Order Service to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-order-service:latest
+
+      - name: Build e Push - Frontend
+        run: |
+          echo "🏗️ Building Frontend..."
+          cd react-frontend/frontend
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          docker build -t ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} .
+          docker build -t ${ACR_LOGIN_SERVER}/slms-frontend:latest .
+          
+          echo "📤 Pushing Frontend to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-frontend:latest
+
+      # ==========================================
+      # TERRAFORM DEPLOYMENT
+      # ==========================================
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init
+
+      - name: Terraform Plan
+        env:
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
+        run: |
+          cd terraform
+          terraform plan
+
+      - name: Terraform Apply
+        env:
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+
+      - name: Obter URLs dos serviços
+        run: |
+          cd terraform
+          FRONTEND_URL=$(terraform output -raw frontend_url_https)
+          KEYCLOAK_URL=$(terraform output -raw keycloak_url)
+          echo "✅ Deployment completo!"
+          echo "🌐 Frontend URL: $FRONTEND_URL"
+          echo "🔑 Keycloak URL: $KEYCLOAK_URL"
+          echo "FRONTEND_URL=$FRONTEND_URL" >> $GITHUB_ENV
+          echo "KEYCLOAK_URL=$KEYCLOAK_URL" >> $GITHUB_ENV
+
+      # ==========================================
+      # ALLURE REPORTS (DOWNLOAD FROM CI)
+      # ==========================================
+      # ==========================================
+      # ALLURE REPORTS (DOWNLOAD FROM CI)
+      # ==========================================
       - name: Download Allure results (user_service)
         uses: actions/download-artifact@v4
         if: github.event_name == 'workflow_run'
@@ -175,12 +211,42 @@ jobs:
         continue-on-error: true
       
       - name: Deploy Allure Reports Container
-        if: runner.os == 'Linux' || runner.os == 'Windows'
         run: |
-          echo "Reiniciando container de relatórios Allure..."
+          echo "📊 Iniciando container de relatórios Allure..."
           cd slms-backend
           docker-compose -f docker-compose.allure.yml down || true
           docker-compose -f docker-compose.allure.yml up -d --build
-          echo "✅ Container Allure disponível em http://localhost:8080"
-        shell: bash
+          echo "✅ Container Allure disponível localmente no runner"
         continue-on-error: true
+
+      # ==========================================
+      # DEPLOYMENT SUMMARY
+      # ==========================================
+      - name: Criar comentário com resultado
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const frontendUrl = process.env.FRONTEND_URL || 'N/A';
+            const keycloakUrl = process.env.KEYCLOAK_URL || 'N/A';
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? '✅' : '❌';
+            
+            const comment = `## ${emoji} Azure Deployment ${status}
+            
+            **Frontend URL:** ${frontendUrl}
+            **Keycloak URL:** ${keycloakUrl}
+            **Commit:** \`${{ github.sha }}\`
+            **Branch:** \`${{ github.ref_name }}\`
+            **Triggered by:** @${{ github.actor }}
+            
+            ### Services Deployed:
+            - 🌐 Frontend (Nginx)
+            - 🔧 Backend (user_service)
+            - 📦 Carrier Service
+            - 📋 Order Service
+            - 🔑 Keycloak (Auth)
+            - 🗄️ PostgreSQL Database
+            `;
+            
+            console.log(comment);

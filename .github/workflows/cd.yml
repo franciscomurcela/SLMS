@@ -12,9 +12,10 @@ env:
   RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
 jobs:
-  # Job de debug
+  # Job de debug - SEMPRE executa quando CD é triggered
   debug-info:
     runs-on: [self-hosted, 204_runner]
+    if: always()  # DEBUG: Força execução para ver se CD é triggered
     steps:
       - name: Debug workflow trigger
         run: |
@@ -34,11 +35,12 @@ jobs:
             echo "✅ CI passou - CD pode executar"
           else
             echo "❌ CI não passou - CD será pulado"
+            echo "Conclusion was: ${{ github.event.workflow_run.conclusion }}"
           fi
           
   build-and-deploy-azure:
     runs-on: [self-hosted, 204_runner]
-    needs: debug-info
+    # REMOVIDO needs: debug-info - deixa os jobs correrem em paralelo
     # Só executa se CI passou ou se for manual
     if: |
       github.event_name == 'workflow_dispatch' || 

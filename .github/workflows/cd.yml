@@ -17,9 +17,7 @@ env:
 jobs:
   # Job de debug
   debug-info:
-    runs-on: self-hosted
-    # Sempre executa para debug
-    if: always()
+    runs-on: [self-hosted, 204_runner]
     steps:
       - name: Debug workflow trigger
         run: |
@@ -41,7 +39,7 @@ jobs:
           fi
           
   build-and-deploy-azure:
-    runs-on: self-hosted
+    runs-on: [self-hosted, 204_runner]
     needs: debug-info
     # Só executa se CI passou ou se for manual
     if: |

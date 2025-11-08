@@ -43,15 +43,6 @@ jobs:
   build-and-deploy-azure:
     runs-on: self-hosted
     needs: debug-info
-    # Só executa se CI passou ou se for manual E se for Linux (Azure runner)
-    if: |
-      (github.event_name == 'workflow_dispatch' || 
-       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')) &&
-      runner.os == 'Linux'
-          
-  build-and-deploy-azure:
-    runs-on: [self-hosted, 204_runner]
-    needs: debug-info
     # Só executa se CI passou ou se for manual
     if: |
       github.event_name == 'workflow_dispatch' || 

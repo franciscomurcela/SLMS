@@ -5,9 +5,6 @@ on:
     workflows: ["CI"]
     types:
       - completed
-    branches:
-      - cd-test
-      - master
   workflow_dispatch:
 
 env:
@@ -17,7 +14,7 @@ env:
 jobs:
   # Job de debug
   debug-info:
-    runs-on: [self-hosted, 204_runner]
+    runs-on: self-hosted
     steps:
       - name: Debug workflow trigger
         run: |
@@ -30,6 +27,7 @@ jobs:
           echo "Actor: ${{ github.actor }}"
           echo "Runner OS: $RUNNER_OS"
           echo "Runner Name: $RUNNER_NAME"
+          echo "Runner Labels: ${{ toJSON(runner.labels) }}"
           echo ""
           echo "Checking if CI succeeded..."
           if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
@@ -39,13 +37,36 @@ jobs:
           fi
           
   build-and-deploy-azure:
-    runs-on: [self-hosted, 204_runner]
+    runs-on: self-hosted
     needs: debug-info
     # Só executa se CI passou ou se for manual
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     steps:
+      - name: Verificar se é o runner correto
+        run: |
+          echo "🔍 Runner Name: $RUNNER_NAME"
+          echo "🔍 Runner OS: $RUNNER_OS"
+          echo "🔍 Verificando se tem Azure CLI, Docker e Terraform..."
+          
+          HAS_AZURE_CLI=$(command -v az >/dev/null 2>&1 && echo "yes" || echo "no")
+          HAS_DOCKER=$(command -v docker >/dev/null 2>&1 && echo "yes" || echo "no")
+          HAS_TERRAFORM=$(command -v terraform >/dev/null 2>&1 && echo "yes" || echo "no")
+          
+          echo "Azure CLI: $HAS_AZURE_CLI"
+          echo "Docker: $HAS_DOCKER"
+          echo "Terraform: $HAS_TERRAFORM"
+          
+          if [ "$HAS_AZURE_CLI" != "yes" ] || [ "$HAS_DOCKER" != "yes" ]; then
+            echo "❌ Este runner não tem as ferramentas necessárias!"
+            echo "💡 O CD precisa de correr no runner 204_runner (Azure VM)"
+            echo "Por favor, garante que o runner 204_runner está online e com a label correta"
+            exit 1
+          fi
+          
+          echo "✅ Runner válido para deployment Azure!"
+      
       - name: Checkout code
         uses: actions/checkout@v4
         with:

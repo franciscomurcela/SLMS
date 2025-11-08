@@ -180,6 +180,31 @@ jobs:
           name: allure-report-order_service-ci-java${{ matrix.java }}
           path: slms-backend/order_service/demo/target/site/allure-maven-plugin
           if-no-files-found: ignore
+      
+      # Upload allure-results para uso no container
+      - name: Upload Allure results (user_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-results-user_service
+          path: slms-backend/user_service/allure-results
+          if-no-files-found: ignore
+      
+      - name: Upload Allure results (carrier_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-results-carrier_service
+          path: slms-backend/carrier_service/carrier_service/allure-results
+          if-no-files-found: ignore
+      
+      - name: Upload Allure results (order_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 21
+        with:
+          name: allure-results-order_service
+          path: slms-backend/order_service/demo/allure-results
+          if-no-files-found: ignore
 
   frontend:
     name: Build & Test Frontend
@@ -227,3 +252,12 @@ jobs:
         with:
           name: allure-report-frontend-ci
           path: react-frontend/frontend/allure-report
+      
+      # Upload allure-results para uso no container
+      - name: Upload Allure results (frontend)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-frontend
+          path: react-frontend/frontend/allure-results
+          if-no-files-found: ignore

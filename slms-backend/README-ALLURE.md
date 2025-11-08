@@ -1,13 +1,13 @@
-# 📊 Allure Report Container - SLMS Backend
+# 📊 Allure Report Container - SLMS Full Stack
 
-Container Docker para gerar e visualizar relatórios Allure dos testes de **todos os serviços** do backend.
+Container Docker para gerar e visualizar relatórios Allure dos testes de **backend e frontend**.
 
 ## 🚀 Como Usar
 
 ### 1. Executar Testes de Todos os Serviços
 
 ```bash
-# Na raiz do slms-backend/
+# Backend - Na raiz do slms-backend/
 
 # User Service
 cd user_service && mvn clean test && cd ..
@@ -17,6 +17,12 @@ cd order_service/demo && mvn clean test && cd ../..
 
 # Carrier Service
 cd carrier_service/carrier_service && mvn clean test && cd ../..
+
+# Frontend - Na raiz do react-frontend/frontend/
+cd ../react-frontend/frontend
+npm run test:unit
+npm run allure:generate
+cd ../../slms-backend
 ```
 
 ### 2. Ver Relatórios Consolidados
@@ -43,11 +49,14 @@ slms-backend/
 ├── README-ALLURE.md              ← Este ficheiro
 ├── allure-report/                ← Relatório consolidado (gerado)
 ├── user_service/
-│   └── allure-results/           ← Resultados dos testes
+│   └── allure-results/           ← Resultados dos testes backend
 ├── order_service/demo/
-│   └── allure-results/           ← Resultados dos testes
+│   └── allure-results/           ← Resultados dos testes backend
 └── carrier_service/carrier_service/
-    └── allure-results/           ← Resultados dos testes
+    └── allure-results/           ← Resultados dos testes backend
+
+react-frontend/frontend/
+└── allure-results/               ← Resultados dos testes frontend
 ```
 
 ## 🔧 Comandos Úteis
@@ -86,9 +95,10 @@ docker-compose -f docker-compose.allure.yml up -d
 
 ```bash
 docker run --rm \
-  -v ${PWD}/user_service/allure-results:/app/allure-results/user_service:ro \
-  -v ${PWD}/order_service/demo/allure-results:/app/allure-results/order_service:ro \
-  -v ${PWD}/carrier_service/carrier_service/allure-results:/app/allure-results/carrier_service:ro \
+  -v ${PWD}/user_service/allure-results:/app/allure-results/backend/user_service:ro \
+  -v ${PWD}/order_service/demo/allure-results:/app/allure-results/backend/order_service:ro \
+  -v ${PWD}/carrier_service/carrier_service/allure-results:/app/allure-results/backend/carrier_service:ro \
+  -v ${PWD}/../react-frontend/frontend/allure-results:/app/allure-results/frontend:ro \
   -v ${PWD}/allure-report:/app/allure-report \
   $(docker build -q -f Dockerfile.allure .) \
   generate allure-results -o allure-report --clean
@@ -96,11 +106,12 @@ docker run --rm \
 
 ## 🎯 Vantagens
 
-✅ **Consolidado**: Um único relatório com todos os serviços  
+✅ **Consolidado**: Um único relatório com backend + frontend  
 ✅ **Sem instalação local**: Não precisa instalar Allure  
 ✅ **Consistente**: Mesmo ambiente para toda a equipa  
 ✅ **Interativo**: Acesso via browser ao relatório  
 ✅ **CI/CD Ready**: Fácil integração nos workflows  
+✅ **Full Stack**: Visão completa de todos os testes do projeto  
 
 ## 📝 Notas
 

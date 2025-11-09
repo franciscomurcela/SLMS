@@ -205,6 +205,11 @@ jobs:
       # ==========================================
       # TERRAFORM DEPLOYMENT
       # ==========================================
+      - name: Setup Node.js for Terraform wrapper
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
       - name: Install dependencies for Terraform
         run: |
           echo "📦 Installing unzip..."

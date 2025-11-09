@@ -9,7 +9,7 @@ terraform {
   # Remote State Backend - guarda o state persistentemente no Azure Storage
   backend "azurerm" {
     resource_group_name  = "tfstate-rg"
-    storage_account_name = "tfstateslms204"  # Atualizado para o nome correto
+    storage_account_name = "tfstateslms204"   # walter white
     container_name       = "tfstate"
     key                  = "slms.tfstate"
     use_azuread_auth     = true  # Usa Managed Identity para autenticar

@@ -546,17 +546,5 @@ data "azurerm_network_security_group" "nsg" {
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
-# Network Interface (existente)
-data "azurerm_network_interface" "runner_nic" {
-  name                = "slms-runner-nic"
-  resource_group_name = data.azurerm_resource_group.rg.name
-}
-
-# Linux Virtual Machine (existente)
-data "azurerm_linux_virtual_machine" "vm_runner" {
-  name                = "slms-runner-vm"
-  resource_group_name = data.azurerm_resource_group.rg.name
-}
-
 
 

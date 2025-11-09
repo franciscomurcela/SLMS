@@ -21,16 +21,13 @@ provider "azurerm" {
 }
 
 # Resource Group
-resource "azurerm_resource_group" "rg" {
-  name     = "slms-rg"
-  location = "francecentral"  # France Central (Paris) - Próximo de Portugal, geralmente permitido
-}
+data "azurerm_resource_group" "rg" {  name = "slms-rg"}
 
 # Storage Account (para Blob Storage)
 resource "azurerm_storage_account" "storage" {
   name                     = "slmsstorage${random_string.suffix.result}"
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
+  resource_group_name      = data.azurerm_resource_group.rg.name
+  location                 = data.azurerm_resource_group.rg.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
@@ -44,8 +41,8 @@ resource "random_string" "suffix" {
 # Azure Container Registry
 resource "azurerm_container_registry" "acr" {
   name                = "slmsacr${random_string.suffix.result}"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
   sku                 = "Basic"
   admin_enabled       = true
 }
@@ -53,8 +50,8 @@ resource "azurerm_container_registry" "acr" {
 # PostgreSQL Flexible Server
 resource "azurerm_postgresql_flexible_server" "db" {
   name                   = "slms-postgresql-${random_string.suffix.result}"
-  resource_group_name    = azurerm_resource_group.rg.name
-  location               = azurerm_resource_group.rg.location
+  resource_group_name    = data.azurerm_resource_group.rg.name
+  location               = data.azurerm_resource_group.rg.location
   version                = "15"
   administrator_login    = "slmsadmin"
   administrator_password = var.db_password
@@ -87,16 +84,16 @@ resource "azurerm_postgresql_flexible_server_database" "slms_db" {
 # Container App Environment
 resource "azurerm_container_app_environment" "env" {
   name                       = "slms-container-env"
-  resource_group_name        = azurerm_resource_group.rg.name
-  location                   = azurerm_resource_group.rg.location
+  resource_group_name        = data.azurerm_resource_group.rg.name
+  location                   = data.azurerm_resource_group.rg.location
   log_analytics_workspace_id = azurerm_log_analytics_workspace.logs.id
 }
 
 # Log Analytics Workspace (necessário para Container Apps)
 resource "azurerm_log_analytics_workspace" "logs" {
   name                = "slms-logs-${random_string.suffix.result}"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
@@ -105,7 +102,7 @@ resource "azurerm_log_analytics_workspace" "logs" {
 resource "azurerm_container_app" "backend" {
   name                         = "slms-backend"
   container_app_environment_id = azurerm_container_app_environment.env.id
-  resource_group_name          = azurerm_resource_group.rg.name
+  resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   template {
@@ -170,7 +167,7 @@ resource "azurerm_container_app" "backend" {
 resource "azurerm_container_app" "carrier_service" {
   name                         = "slms-carrier-service"
   container_app_environment_id = azurerm_container_app_environment.env.id
-  resource_group_name          = azurerm_resource_group.rg.name
+  resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   template {
@@ -263,7 +260,7 @@ resource "azurerm_container_app" "carrier_service" {
 resource "azurerm_container_app" "order_service" {
   name                         = "slms-order-service"
   container_app_environment_id = azurerm_container_app_environment.env.id
-  resource_group_name          = azurerm_resource_group.rg.name
+  resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   template {
@@ -355,7 +352,7 @@ resource "azurerm_container_app" "order_service" {
 resource "azurerm_container_app" "keycloak" {
   name                         = "slms-keycloak"
   container_app_environment_id = azurerm_container_app_environment.env.id
-  resource_group_name          = azurerm_resource_group.rg.name
+  resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   template {
@@ -465,7 +462,7 @@ resource "azurerm_container_app" "keycloak" {
 resource "azurerm_container_app" "frontend" {
   name                         = "slms-frontend"
   container_app_environment_id = azurerm_container_app_environment.env.id
-  resource_group_name          = azurerm_resource_group.rg.name
+  resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
   template {
@@ -515,14 +512,14 @@ resource "azurerm_container_app" "frontend" {
 resource "azurerm_virtual_network" "vnet" {
   name                = "slms-vnet"
   address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
 }
 
 # Subnet
 resource "azurerm_subnet" "subnet" {
   name                 = "slms-subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
+  resource_group_name  = data.azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
@@ -530,8 +527,8 @@ resource "azurerm_subnet" "subnet" {
 # Public IP (estático)
 resource "azurerm_public_ip" "runner_ip" {
   name                = "slms-runner-ip"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
 }
@@ -539,8 +536,8 @@ resource "azurerm_public_ip" "runner_ip" {
 # Network Security Group
 resource "azurerm_network_security_group" "nsg" {
   name                = "slms-runner-nsg"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   security_rule {
     name                       = "SSH"
@@ -558,8 +555,8 @@ resource "azurerm_network_security_group" "nsg" {
 # Network Interface
 resource "azurerm_network_interface" "runner_nic" {
   name                = "slms-runner-nic"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
 
   ip_configuration {
     name                          = "internal"
@@ -578,8 +575,8 @@ resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
 # Linux Virtual Machine (GitHub Runner)
 resource "azurerm_linux_virtual_machine" "vm_runner" {
   name                = "slms-runner-vm"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
   size                = "Standard_B2s"  # 2 vCPUs, 4GB RAM (antes: Standard_B1s com 1GB)
   admin_username      = "azureuser"
   admin_password      = var.runner_admin_password
@@ -640,7 +637,7 @@ resource "azurerm_linux_virtual_machine" "vm_runner" {
 
 # IMPORTANTE: Role Assignment - Contributor no Resource Group
 resource "azurerm_role_assignment" "vm_contributor" {
-  scope                = azurerm_resource_group.rg.id
+  scope                = data.azurerm_resource_group.rg.id
   role_definition_name = "Contributor"
   principal_id         = azurerm_linux_virtual_machine.vm_runner.identity[0].principal_id
 }
@@ -651,3 +648,4 @@ resource "azurerm_role_assignment" "vm_acr_push" {
   role_definition_name = "AcrPush"
   principal_id         = azurerm_linux_virtual_machine.vm_runner.identity[0].principal_id
 }
+

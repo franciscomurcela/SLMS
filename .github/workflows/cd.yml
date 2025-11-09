@@ -297,6 +297,12 @@ jobs:
       
       - name: Deploy Allure Reports Container
         run: |
+          echo "📊 Verificando docker-compose..."
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Instalando docker-compose..."
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
           echo "📊 Iniciando container de relatórios Allure..."
           cd slms-backend
           docker-compose -f docker-compose.allure.yml down || true

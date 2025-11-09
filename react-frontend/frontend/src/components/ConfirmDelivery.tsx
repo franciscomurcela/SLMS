@@ -1,20 +1,35 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import "./ConfirmDelivery.css";
+import { useKeycloak } from "../context/KeycloakContext";
+import { API_ENDPOINTS } from "../config/api.config";
 
 interface ConfirmDeliveryProps {}
+
+interface OrderDetails {
+  orderId: string;
+  destinationAddress: string;
+  customerName?: string;
+  customerId?: string;
+  orderDate: string;
+  weight: number;
+}
 
 const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { keycloak } = useKeycloak();
   const orderId = searchParams.get("orderId") || "N/A";
-  
+
   // Estados para upload de imagem e assinatura
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Estados para order details
+  const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Estados para anomalias
   const [showAnomalyModal, setShowAnomalyModal] = useState(false);
@@ -29,16 +44,66 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     "Produto danificado",
     "Acesso negado ao local",
     "Problemas de segurança",
-    "Outras (especificar)"
+    "Outras (especificar)",
   ];
 
-  // Dados mock do destinatário - em produção viriam do backend
-  const recipientData = {
-    name: "João Silva",
-    phone: "+351 912 345 678",
-    street: "Rua das Flores, 123",
-    postalCode: "3800-123 Aveiro"
-  };
+  // Fetch order details
+  useEffect(() => {
+    const loadOrderDetails = async () => {
+      if (!keycloak?.token || !orderId || orderId === "N/A") {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const shipmentsResponse = await fetch(
+          `${API_ENDPOINTS.SHIPMENTS}/driver`,
+          {
+            headers: {
+              Authorization: `Bearer ${keycloak.token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!shipmentsResponse.ok) {
+          throw new Error("Failed to fetch shipments");
+        }
+
+        const shipments = await shipmentsResponse.json();
+
+        let foundOrder = null;
+        for (const shipment of shipments) {
+          const order = shipment.orders?.find(
+            (o: any) => o.orderId === orderId
+          );
+          if (order) {
+            foundOrder = order;
+            break;
+          }
+        }
+
+        if (!foundOrder) {
+          throw new Error("Order not found");
+        }
+
+        setOrderDetails({
+          orderId: foundOrder.orderId,
+          destinationAddress: foundOrder.destinationAddress,
+          customerName: foundOrder.customerName || "Cliente",
+          customerId: foundOrder.customerId,
+          orderDate: foundOrder.orderDate,
+          weight: foundOrder.weight,
+        });
+        setLoading(false);
+      } catch (err) {
+        console.error("Error loading order details:", err);
+        setLoading(false);
+      }
+    };
+
+    loadOrderDetails();
+  }, [keycloak?.token, orderId]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -97,7 +162,9 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     if (canvas) {
       const dataURL = canvas.toDataURL();
       console.log("Assinatura salva:", dataURL);
-      const signatureSavedMessage = document.getElementById("signature-saved-message");
+      const signatureSavedMessage = document.getElementById(
+        "signature-saved-message"
+      );
       if (signatureSavedMessage) {
         signatureSavedMessage.style.display = "block";
       }
@@ -144,6 +211,44 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     }
   }, []);
 
+  if (loading) {
+    return (
+      <>
+        <Header role="Driver" href="/confirm-delivery" />
+        <div className="container mt-4 mb-5">
+          <div className="text-center">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Carregando...</span>
+            </div>
+            <h4 style={{ marginTop: "20px" }}>
+              Carregando detalhes da entrega...
+            </h4>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!orderDetails) {
+    return (
+      <>
+        <Header role="Driver" href="/confirm-delivery" />
+        <div className="container mt-4 mb-5">
+          <div className="alert alert-warning" role="alert">
+            <h4>Encomenda não encontrada</h4>
+            <p>ID: {orderId}</p>
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate("/driver/manifest")}
+          >
+            Voltar ao Manifesto
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Header role="Driver" href="/confirm-delivery" />
@@ -152,6 +257,20 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
           <div className="col-12 col-lg-10">
             {/* Título e Botão de Anomalias */}
             <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-lg px-4 py-3"
+                  onClick={() => navigate(`/driver-route/${orderId}`)}
+                  style={{ fontSize: "1.1rem", fontWeight: "bold" }}
+                >
+                  <i
+                    className="bi bi-arrow-left me-2"
+                    style={{ fontSize: "1.3rem" }}
+                  ></i>
+                  Voltar à Rota
+                </button>
+              </div>
               <div className="text-center flex-grow-1">
                 <h2 className="display-6 fw-bold text-primary">
                   Confirmar Entrega
@@ -165,7 +284,10 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                   onClick={handleReportAnomaly}
                   style={{ fontSize: "1.1rem", fontWeight: "bold" }}
                 >
-                  <i className="bi bi-exclamation-triangle-fill me-2" style={{ fontSize: "1.3rem" }}></i>
+                  <i
+                    className="bi bi-exclamation-triangle-fill me-2"
+                    style={{ fontSize: "1.3rem" }}
+                  ></i>
                   Registrar Anomalia
                 </button>
               </div>
@@ -182,23 +304,40 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
               <div className="card-body">
                 <div className="row">
                   <div className="col-md-6">
-                    <p className="mb-2" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                    <p
+                      className="mb-2"
+                      style={{ fontSize: "1.2rem", fontWeight: "bold" }}
+                    >
                       <i className="bi bi-person-badge me-2 text-primary"></i>
-                      <strong>Nome:</strong> {recipientData.name}
+                      <strong>Nome:</strong>{" "}
+                      {orderDetails.customerName || "N/A"}
                     </p>
-                    <p className="mb-2" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                      <i className="bi bi-telephone-fill me-2 text-primary"></i>
-                      <strong>Telefone:</strong> {recipientData.phone}
+                    <p
+                      className="mb-2"
+                      style={{ fontSize: "1.2rem", fontWeight: "bold" }}
+                    >
+                      <i className="bi bi-calendar-fill me-2 text-primary"></i>
+                      <strong>Data:</strong>{" "}
+                      {new Date(orderDetails.orderDate).toLocaleDateString(
+                        "pt-PT"
+                      )}
                     </p>
                   </div>
                   <div className="col-md-6">
-                    <p className="mb-2" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                    <p
+                      className="mb-2"
+                      style={{ fontSize: "1.2rem", fontWeight: "bold" }}
+                    >
                       <i className="bi bi-house-fill me-2 text-success"></i>
-                      <strong>Rua:</strong> {recipientData.street}
+                      <strong>Endereço:</strong>{" "}
+                      {orderDetails.destinationAddress}
                     </p>
-                    <p className="mb-0" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                      <i className="bi bi-mailbox me-2 text-success"></i>
-                      <strong>Código Postal:</strong> {recipientData.postalCode}
+                    <p
+                      className="mb-0"
+                      style={{ fontSize: "1.2rem", fontWeight: "bold" }}
+                    >
+                      <i className="bi bi-box-seam me-2 text-success"></i>
+                      <strong>Peso:</strong> {orderDetails.weight} kg
                     </p>
                   </div>
                 </div>
@@ -242,7 +381,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                             onChange={handleImageUpload}
                           />
                         </div>
-                        
+
                         {uploadedImage ? (
                           <div className="mt-3">
                             <div className="alert alert-success" role="alert">
@@ -259,7 +398,9 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                         ) : (
                           <div
                             className="border border-2 border-dashed rounded p-4 bg-light"
-                            onClick={() => document.getElementById("imageUpload")?.click()}
+                            onClick={() =>
+                              document.getElementById("imageUpload")?.click()
+                            }
                             style={{ cursor: "pointer" }}
                           >
                             <i className="bi bi-cloud-upload display-4 text-info"></i>
@@ -287,17 +428,17 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                           <i className="bi bi-person-check me-2 text-warning"></i>
                           Solicite ao destinatário que assine na área abaixo:
                         </p>
-                        
+
                         <div className="signature-container mb-3">
                           <canvas
                             ref={canvasRef}
                             width={500}
                             height={200}
                             className="border border-2 rounded bg-white"
-                            style={{ 
+                            style={{
                               cursor: "crosshair",
                               maxWidth: "100%",
-                              height: "auto"
+                              height: "auto",
                             }}
                             onMouseDown={startDrawing}
                             onMouseMove={draw}
@@ -305,7 +446,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                             onMouseLeave={stopDrawing}
                           />
                         </div>
-                        
+
                         <div className="d-flex gap-2 justify-content-center">
                           <button
                             type="button"
@@ -357,7 +498,10 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
 
       {/* Modal de Anomalias */}
       {showAnomalyModal && (
-        <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header bg-warning text-dark">
@@ -390,7 +534,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                     ))}
                   </select>
                 </div>
-                
+
                 {selectedAnomaly === "Outras (especificar)" && (
                   <div className="mb-3">
                     <label htmlFor="anomalyDescription" className="form-label">
@@ -406,10 +550,11 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                     />
                   </div>
                 )}
-                
+
                 <div className="alert alert-info">
                   <i className="bi bi-info-circle-fill me-2"></i>
-                  <strong>Nota:</strong> Ao registrar uma anomalia, a entrega não será confirmada e você retornará ao manifesto de carga.
+                  <strong>Nota:</strong> Ao registrar uma anomalia, a entrega
+                  não será confirmada e você retornará ao manifesto de carga.
                 </div>
               </div>
               <div className="modal-footer">

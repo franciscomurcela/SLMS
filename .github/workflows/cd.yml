@@ -222,12 +222,17 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Terraform Init
+        env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
           terraform init
 
       - name: Terraform Plan
         env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
           TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
         run: |
@@ -236,6 +241,8 @@ jobs:
 
       - name: Terraform Apply
         env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
           TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
         run: |

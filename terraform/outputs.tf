@@ -37,7 +37,7 @@ output "postgresql_fqdn" {
 
 output "resource_group_name" {
   description = "Nome do Resource Group criado"
-  value       = azurerm_resource_group.rg.name
+  value       = data.azurerm_resource_group.rg.name
 }
 
 output "vm_runner_ssh_command" {

@@ -250,10 +250,14 @@ jobs:
           terraform apply -auto-approve
 
       - name: Obter URLs dos serviços
+        continue-on-error: true
+        env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
-          FRONTEND_URL=$(terraform output -raw frontend_url_https)
-          KEYCLOAK_URL=$(terraform output -raw keycloak_url)
+          FRONTEND_URL=$(terraform output -raw frontend_url_https 2>/dev/null || echo "N/A")
+          KEYCLOAK_URL=$(terraform output -raw keycloak_url 2>/dev/null || echo "N/A")
           echo "✅ Deployment completo!"
           echo "🌐 Frontend URL: $FRONTEND_URL"
           echo "🔑 Keycloak URL: $KEYCLOAK_URL"

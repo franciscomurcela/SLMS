@@ -20,8 +20,10 @@ provider "azurerm" {
   features {}
 }
 
-# Resource Group
-data "azurerm_resource_group" "rg" {  name = "slms-rg"}
+# Resource Group (existente)
+data "azurerm_resource_group" "rg" {
+  name = "slms-rg"
+}
 
 # Storage Account (para Blob Storage)
 resource "azurerm_storage_account" "storage" {
@@ -81,12 +83,21 @@ resource "azurerm_postgresql_flexible_server_database" "slms_db" {
   charset   = "UTF8"
 }
 
-# Container App Environment
+# Container App Environment (já existe - criado manualmente)
+# Comentado para evitar conflito
+/*
 resource "azurerm_container_app_environment" "env" {
   name                       = "slms-container-env"
   resource_group_name        = data.azurerm_resource_group.rg.name
   location                   = data.azurerm_resource_group.rg.location
   log_analytics_workspace_id = azurerm_log_analytics_workspace.logs.id
+}
+*/
+
+# Usar o Container App Environment existente
+data "azurerm_container_app_environment" "env" {
+  name                = "slms-container-env"
+  resource_group_name = data.azurerm_resource_group.rg.name
 }
 
 # Log Analytics Workspace (necessário para Container Apps)
@@ -101,7 +112,7 @@ resource "azurerm_log_analytics_workspace" "logs" {
 # Container App - Backend (Spring Boot)
 resource "azurerm_container_app" "backend" {
   name                         = "slms-backend"
-  container_app_environment_id = azurerm_container_app_environment.env.id
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
   resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
@@ -166,7 +177,7 @@ resource "azurerm_container_app" "backend" {
 # Container App - Carrier Service (porta 8080)
 resource "azurerm_container_app" "carrier_service" {
   name                         = "slms-carrier-service"
-  container_app_environment_id = azurerm_container_app_environment.env.id
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
   resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
@@ -259,7 +270,7 @@ resource "azurerm_container_app" "carrier_service" {
 # Container App - Order Service (porta 8080 interno)
 resource "azurerm_container_app" "order_service" {
   name                         = "slms-order-service"
-  container_app_environment_id = azurerm_container_app_environment.env.id
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
   resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
@@ -351,7 +362,7 @@ resource "azurerm_container_app" "order_service" {
 # Container App - Keycloak (Authentication)
 resource "azurerm_container_app" "keycloak" {
   name                         = "slms-keycloak"
-  container_app_environment_id = azurerm_container_app_environment.env.id
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
   resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
@@ -461,7 +472,7 @@ resource "azurerm_container_app" "keycloak" {
 # Container App - Frontend (Nginx)
 resource "azurerm_container_app" "frontend" {
   name                         = "slms-frontend"
-  container_app_environment_id = azurerm_container_app_environment.env.id
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
   resource_group_name          = data.azurerm_resource_group.rg.name
   revision_mode                = "Single"
 
@@ -507,145 +518,45 @@ resource "azurerm_container_app" "frontend" {
 # ==========================================
 # VM Runner Stack (Self-Hosted GitHub Runner)
 # ==========================================
+# NOTA: VM e recursos de rede já foram criados manualmente
+# Usando data sources para referenciar recursos existentes
 
-# Virtual Network
-resource "azurerm_virtual_network" "vnet" {
+# Virtual Network (existente)
+data "azurerm_virtual_network" "vnet" {
   name                = "slms-vnet"
-  address_space       = ["10.0.0.0/16"]
-  location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
 }
 
-# Subnet
-resource "azurerm_subnet" "subnet" {
+# Subnet (existente)
+data "azurerm_subnet" "subnet" {
   name                 = "slms-subnet"
   resource_group_name  = data.azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
+  virtual_network_name = data.azurerm_virtual_network.vnet.name
 }
 
-# Public IP (estático)
-resource "azurerm_public_ip" "runner_ip" {
+# Public IP (existente)
+data "azurerm_public_ip" "runner_ip" {
   name                = "slms-runner-ip"
-  location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-  allocation_method   = "Static"
-  sku                 = "Standard"
 }
 
-# Network Security Group
-resource "azurerm_network_security_group" "nsg" {
+# Network Security Group (existente)
+data "azurerm_network_security_group" "nsg" {
   name                = "slms-runner-nsg"
-  location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-
-  security_rule {
-    name                       = "SSH"
-    priority                   = 1001
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
 }
 
-# Network Interface
-resource "azurerm_network_interface" "runner_nic" {
+# Network Interface (existente)
+data "azurerm_network_interface" "runner_nic" {
   name                = "slms-runner-nic"
-  location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.runner_ip.id
-  }
 }
 
-# Associate NSG with NIC
-resource "azurerm_network_interface_security_group_association" "nsg_assoc" {
-  network_interface_id      = azurerm_network_interface.runner_nic.id
-  network_security_group_id = azurerm_network_security_group.nsg.id
-}
-
-# Linux Virtual Machine (GitHub Runner)
-resource "azurerm_linux_virtual_machine" "vm_runner" {
+# Linux Virtual Machine (existente)
+data "azurerm_linux_virtual_machine" "vm_runner" {
   name                = "slms-runner-vm"
   resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
-  size                = "Standard_B2s"  # 2 vCPUs, 4GB RAM (antes: Standard_B1s com 1GB)
-  admin_username      = "azureuser"
-  admin_password      = var.runner_admin_password
-
-  disable_password_authentication = false
-
-  network_interface_ids = [
-    azurerm_network_interface.runner_nic.id,
-  ]
-
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
-
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts-gen2"
-    version   = "latest"
-  }
-
-  # IMPORTANTE: System-Assigned Managed Identity
-  identity {
-    type = "SystemAssigned"
-  }
-
-  # Custom data para instalar dependências necessárias
-  custom_data = base64encode(<<-EOF
-    #!/bin/bash
-    set -e
-    
-    # Atualizar sistema
-    apt-get update
-    apt-get upgrade -y
-    
-    # Instalar Docker
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
-    usermod -aG docker azureuser
-    
-    # Instalar Azure CLI
-    curl -sL https://aka.ms/InstallAzureCLIDeb | bash
-    
-    # Instalar Terraform
-    wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-    apt-get update
-    apt-get install -y terraform
-    
-    # Instalar Git
-    apt-get install -y git
-    
-    echo "VM setup complete!" > /var/log/vm-setup.log
-  EOF
-  )
 }
 
-# IMPORTANTE: Role Assignment - Contributor no Resource Group
-resource "azurerm_role_assignment" "vm_contributor" {
-  scope                = data.azurerm_resource_group.rg.id
-  role_definition_name = "Contributor"
-  principal_id         = azurerm_linux_virtual_machine.vm_runner.identity[0].principal_id
-}
 
-# Role Assignment adicional - AcrPush (para push de imagens)
-resource "azurerm_role_assignment" "vm_acr_push" {
-  scope                = azurerm_container_registry.acr.id
-  role_definition_name = "AcrPush"
-  principal_id         = azurerm_linux_virtual_machine.vm_runner.identity[0].principal_id
-}
 

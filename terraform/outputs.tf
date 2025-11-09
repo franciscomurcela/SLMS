@@ -10,7 +10,7 @@ output "backend_internal_url" {
 
 output "runner_vm_public_ip" {
   description = "IP público da VM do GitHub Runner (usar para SSH)"
-  value       = azurerm_public_ip.runner_ip.ip_address
+  value       = data.azurerm_public_ip.runner_ip.ip_address
 }
 
 output "acr_login_server" {
@@ -42,7 +42,7 @@ output "resource_group_name" {
 
 output "vm_runner_ssh_command" {
   description = "Comando para conectar à VM via SSH"
-  value       = "ssh azureuser@${azurerm_public_ip.runner_ip.ip_address}"
+  value       = "ssh azureuser@${data.azurerm_public_ip.runner_ip.ip_address}"
 }
 
 # Microservices URLs

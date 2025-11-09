@@ -571,7 +571,7 @@ resource "azurerm_linux_virtual_machine" "vm_runner" {
   name                = "slms-runner-vm"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = "Standard_B1s"
+  size                = "Standard_B2s"  # 2 vCPUs, 4GB RAM (antes: Standard_B1s com 1GB)
   admin_username      = "azureuser"
   admin_password      = var.runner_admin_password
 

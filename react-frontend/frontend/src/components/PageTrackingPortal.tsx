@@ -315,7 +315,30 @@ function TrackingPortal() {
                     <i className="bi bi-file-earmark-check me-2"></i>Comprovativo de Entrega
                   </h5>
                   <div className="alert alert-success">
-                    <p className="mb-0">{trackingResult.proofOfDelivery}</p>
+                    <div className="d-flex flex-column align-items-center">
+                      <img 
+                        src={`data:image/png;base64,${trackingResult.proofOfDelivery}`}
+                        alt="Comprovativo de Entrega"
+                        className="img-fluid rounded border"
+                        style={{ maxWidth: '400px', maxHeight: '300px' }}
+                        onError={(e) => {
+                          // If image fails to load, show as text (fallback)
+                          e.currentTarget.style.display = 'none';
+                          const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (nextElement) nextElement.style.display = 'block';
+                        }}
+                      />
+                      <p 
+                        className="mb-0 mt-2" 
+                        style={{ display: 'none', fontSize: '0.8em', color: '#666' }}
+                      >
+                        {trackingResult.proofOfDelivery.substring(0, 100)}...
+                      </p>
+                      <small className="text-muted mt-2">
+                        <i className="bi bi-info-circle me-1"></i>
+                        Comprovativo registado pelo motorista
+                      </small>
+                    </div>
                   </div>
                 </div>
               )}

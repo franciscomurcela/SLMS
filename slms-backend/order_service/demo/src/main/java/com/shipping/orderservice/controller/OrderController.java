@@ -158,7 +158,17 @@ public class OrderController {
                 return ResponseEntity.notFound().build();
             }
             
-            return ResponseEntity.ok(results.get(0));
+            Map<String, Object> result = results.get(0);
+            
+            // Convert POD bytea to base64 string if it exists
+            if (result.get("proofOfDelivery") != null) {
+                byte[] podBytes = (byte[]) result.get("proofOfDelivery");
+                String base64Pod = java.util.Base64.getEncoder().encodeToString(podBytes);
+                result.put("proofOfDelivery", base64Pod);
+                System.out.println("=== Converted POD to base64, size: " + base64Pod.length() + " chars");
+            }
+            
+            return ResponseEntity.ok(result);
             
         } catch (Exception e) {
             throw new RuntimeException("Error tracking order: " + e.getMessage());
@@ -362,6 +372,84 @@ public class OrderController {
             return ResponseEntity.status(500).body(Map.of(
                 "error", e.getClass().getSimpleName(),
                 "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
+        }
+    }
+
+    @PostMapping("/confirm-delivery")
+    public ResponseEntity<?> confirmDelivery(@RequestBody com.shipping.orderservice.dto.ConfirmDeliveryRequest request) {
+        try {
+            System.out.println("=== Confirming delivery for order: " + request.getOrderId());
+            
+            // Validar dados de entrada
+            if (request.getOrderId() == null || request.getProofData() == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Missing required fields",
+                    "message", "orderId and proofData are required"
+                ));
+            }
+            
+            // Verificar se a ordem existe
+            String checkOrderSql = "SELECT COUNT(*) FROM \"Orders\" WHERE order_id::text = ?";
+            Integer count = jdbcTemplate.queryForObject(checkOrderSql, Integer.class, request.getOrderId());
+            
+            if (count == null || count == 0) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Decodificar os dados base64
+            byte[] proofOfDelivery;
+            try {
+                proofOfDelivery = java.util.Base64.getDecoder().decode(request.getProofData());
+                System.out.println("=== Decoded proof data size: " + proofOfDelivery.length + " bytes");
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid base64 data",
+                    "message", "proofData must be valid base64 encoded data"
+                ));
+            }
+            
+            // Atualizar a ordem com a prova de entrega
+            String updateSql = """
+                UPDATE "Orders" 
+                SET pod = ?, 
+                    actual_delivery_time = CURRENT_TIMESTAMP,
+                    status = 'Delivered'
+                WHERE order_id::text = ?
+                """;
+            
+            int updated = jdbcTemplate.update(updateSql, proofOfDelivery, request.getOrderId());
+            
+            if (updated > 0) {
+                System.out.println("=== Successfully confirmed delivery for order: " + request.getOrderId());
+                
+                // Log adicional se temos localização
+                if (request.getLocation() != null) {
+                    System.out.println("=== Delivery location: " + 
+                        request.getLocation().getLatitude() + ", " + 
+                        request.getLocation().getLongitude());
+                }
+                
+                return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Delivery confirmed successfully",
+                    "orderId", request.getOrderId(),
+                    "proofType", request.getProofType(),
+                    "timestamp", request.getTimestamp()
+                ));
+            } else {
+                return ResponseEntity.status(500).body(Map.of(
+                    "error", "Update failed",
+                    "message", "Failed to update order with delivery confirmation"
+                ));
+            }
+            
+        } catch (Exception e) {
+            System.err.println("=== ERROR confirming delivery: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                "error", e.getClass().getSimpleName(),
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error occurred"
             ));
         }
     }

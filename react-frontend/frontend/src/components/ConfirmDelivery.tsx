@@ -25,7 +25,13 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   // Estados para upload de imagem e assinatura
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const captureCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Estados para order details
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
@@ -145,6 +151,61 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const dataURL = canvas.toDataURL('image/png');
+      setSignatureData(dataURL);
+    }
+  };
+
+  // Funções para câmera
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment', // Usar câmera traseira se disponível
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+      alert('Erro ao acessar a câmera. Verifique as permissões.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !captureCanvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = captureCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) return;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    
+    const photoData = canvas.toDataURL('image/jpeg', 0.8);
+    setCapturedPhoto(photoData);
+    stopCamera();
+  };
+
+  const retakePhoto = () => {
+    setCapturedPhoto(null);
+    startCamera();
   };
 
   const clearSignature = () => {
@@ -171,10 +232,67 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     }
   };
 
-  const handleConfirmDelivery = () => {
-    // Aqui seria implementada a lógica para confirmar a entrega
-    alert("Entrega confirmada com sucesso!");
-    navigate("/driver/manifest");
+  const handleConfirmDelivery = async () => {
+    // Verificar se temos alguma prova de entrega
+    const proofData = capturedPhoto || signatureData || uploadedImage;
+    
+    if (!proofData) {
+      alert('Por favor, forneça uma prova de entrega (foto ou assinatura)');
+      return;
+    }
+
+    try {
+      // Obter localização atual (opcional)
+      let location;
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+          });
+        });
+        location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+      } catch (locationError) {
+        console.warn('Could not get location:', locationError);
+      }
+
+      // Determinar o tipo de prova
+      let proofType: 'photo' | 'signature';
+      if (capturedPhoto) proofType = 'photo';
+      else if (signatureData) proofType = 'signature';
+      else proofType = 'photo'; // upload de arquivo também é tratado como photo
+
+      const confirmationData = {
+        orderId,
+        proofType,
+        proofData: proofData.split(',')[1], // Remove data:image/... prefix
+        timestamp: new Date().toISOString(),
+        location
+      };
+
+      const response = await fetch(API_ENDPOINTS.CONFIRM_DELIVERY, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${keycloak?.token}`
+        },
+        body: JSON.stringify(confirmationData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      }
+
+      alert("Entrega confirmada com sucesso!");
+      navigate("/driver/manifest");
+    } catch (error) {
+      console.error('Error confirming delivery:', error);
+      alert('Erro ao confirmar entrega. Tente novamente.');
+    }
   };
 
   const handleReportAnomaly = () => {
@@ -210,6 +328,24 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
       }
     }
   }, []);
+
+  // Cleanup da câmera quando componente for desmontado
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // Função cleanup da câmera (deve ser definida antes do useEffect)
+  useEffect(() => {
+    const cleanup = () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+    
+    return cleanup;
+  }, [stream]);
 
   if (loading) {
     return (
@@ -381,6 +517,75 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                             onChange={handleImageUpload}
                           />
                         </div>
+
+                        {/* Botão para capturar com câmera */}
+                        <div className="mb-3">
+                          <button
+                            type="button"
+                            className="btn btn-success me-2"
+                            onClick={startCamera}
+                            disabled={stream !== null || capturedPhoto !== null}
+                          >
+                            <i className="bi bi-camera me-2"></i>
+                            Usar Câmera
+                          </button>
+                        </div>
+
+                        {/* Interface da câmera */}
+                        {stream && !capturedPhoto && (
+                          <div className="mt-3">
+                            <video
+                              ref={videoRef}
+                              autoPlay
+                              playsInline
+                              className="img-thumbnail mb-2"
+                              style={{ width: "100%", maxWidth: "300px" }}
+                            />
+                            <div>
+                              <button
+                                type="button"
+                                className="btn btn-primary me-2"
+                                onClick={capturePhoto}
+                              >
+                                <i className="bi bi-camera-fill me-2"></i>
+                                Capturar
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={stopCamera}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Foto capturada */}
+                        {capturedPhoto && (
+                          <div className="mt-3">
+                            <div className="alert alert-success" role="alert">
+                              <i className="bi bi-check-circle-fill me-2"></i>
+                              <strong>Foto capturada com sucesso</strong>
+                            </div>
+                            <img
+                              src={capturedPhoto}
+                              alt="Foto capturada"
+                              className="img-thumbnail"
+                              style={{ maxWidth: "300px", maxHeight: "200px" }}
+                            />
+                            <div className="mt-2">
+                              <button
+                                type="button"
+                                className="btn btn-warning"
+                                onClick={retakePhoto}
+                              >
+                                <i className="bi bi-arrow-clockwise me-2"></i>
+                                Tirar Nova Foto
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
                         {uploadedImage ? (
                           <div className="mt-3">
@@ -578,6 +783,12 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
           </div>
         </div>
       )}
+
+      {/* Canvas oculto para captura de foto */}
+      <canvas
+        ref={captureCanvasRef}
+        style={{ display: 'none' }}
+      />
     </>
   );
 };

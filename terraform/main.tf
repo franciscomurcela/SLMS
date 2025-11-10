@@ -57,7 +57,7 @@ resource "random_string" "logs_suffix" {
   upper   = false
 }
 
-# Storage Account (para Blob Storage) yoyoyo mr.white
+# Storage Account (para Blob Storage) yoyoyo mr.white~mista white
 resource "azurerm_storage_account" "storage" {
   name                     = "slmsstorage${random_string.storage_suffix.result}"
   resource_group_name      = azurerm_resource_group.rg.name

@@ -66,7 +66,7 @@ resource "azurerm_storage_account" "storage" {
   account_replication_type = "LRS"
 }
 
-# Azure Container Registry
+# Azure Container Registry walter white
 resource "azurerm_container_registry" "acr" {
   name                = "slmsacr${random_string.acr_suffix.result}"
   resource_group_name = azurerm_resource_group.rg.name

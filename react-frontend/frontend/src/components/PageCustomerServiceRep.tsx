@@ -1,6 +1,5 @@
 import Header from "./Header";
-import BiaxialLineChart from "./BiaaxialChart";
-import SimpleCharts from "./SimpleCharts";
+import TrackingPortalCSR from "./TrackingPortalCSR";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 
@@ -11,10 +10,7 @@ function CustomerServiceRep() {
   return (
     <>
       <Header role={role} href={href} />
-      <div className="d-grid gap-2 col-6 mx-auto">
-        <SimpleCharts />
-        <BiaxialLineChart />
-      </div>
+      <TrackingPortalCSR />
     </>
   );
 }

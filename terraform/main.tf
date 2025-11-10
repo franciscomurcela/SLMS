@@ -32,24 +32,43 @@ resource "azurerm_resource_group" "rg" {
   }
 }
 
+# Generate unique suffixes for each resource to avoid conflicts and race conditions
+resource "random_string" "acr_suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
+resource "random_string" "db_suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
+resource "random_string" "storage_suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
+resource "random_string" "logs_suffix" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
 # Storage Account (para Blob Storage)
 resource "azurerm_storage_account" "storage" {
-  name                     = "slmsstorage${random_string.suffix.result}"
+  name                     = "slmsstorage${random_string.storage_suffix.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
 
-resource "random_string" "suffix" {
-  length  = 8
-  special = false
-  upper   = false
-}
-
 # Azure Container Registry
 resource "azurerm_container_registry" "acr" {
-  name                = "slmsacr${random_string.suffix.result}"
+  name                = "slmsacr${random_string.acr_suffix.result}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   sku                 = "Basic"
@@ -58,7 +77,7 @@ resource "azurerm_container_registry" "acr" {
 
 # PostgreSQL Flexible Server
 resource "azurerm_postgresql_flexible_server" "db" {
-  name                   = "slms-postgresql-${random_string.suffix.result}"
+  name                   = "slms-postgresql-${random_string.db_suffix.result}"
   resource_group_name    = azurerm_resource_group.rg.name
   location               = azurerm_resource_group.rg.location
   version                = "15"
@@ -96,15 +115,23 @@ resource "azurerm_postgresql_flexible_server_database" "slms_db" {
 data "azurerm_container_app_environment" "env" {
   name                = "slms-container-env"
   resource_group_name = azurerm_resource_group.rg.name
+  depends_on          = [time_sleep.wait_for_env]
 }
 
 # Log Analytics Workspace (necessário para Container Apps)
 resource "azurerm_log_analytics_workspace" "logs" {
-  name                = "slms-logs-${random_string.suffix.result}"
+  name                = "slms-logs-${random_string.logs_suffix.result}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   sku                 = "PerGB2018"
   retention_in_days   = 30
+}
+
+# Wait for Container App Environment to be available
+# This prevents race conditions when fetching the existing environment
+resource "time_sleep" "wait_for_env" {
+  depends_on = [azurerm_resource_group.rg]
+  create_duration = "15s"
 }
 
 # Container Apps (usando recursos existentes como data sources)

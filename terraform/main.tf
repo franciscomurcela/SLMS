@@ -20,16 +20,23 @@ provider "azurerm" {
   features {}
 }
 
-# Resource Group (existente)
-data "azurerm_resource_group" "rg" {
-  name = "slms-rg"
+# Resource Group - Gerido pelo Terraform
+resource "azurerm_resource_group" "rg" {
+  name     = "slms-rg"
+  location = "francecentral"
+  
+  tags = {
+    Environment = "Production"
+    ManagedBy   = "Terraform"
+    Project     = "SLMS"
+  }
 }
 
 # Storage Account (para Blob Storage)
 resource "azurerm_storage_account" "storage" {
   name                     = "slmsstorage${random_string.suffix.result}"
-  resource_group_name      = data.azurerm_resource_group.rg.name
-  location                 = data.azurerm_resource_group.rg.location
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
 }
@@ -43,8 +50,8 @@ resource "random_string" "suffix" {
 # Azure Container Registry
 resource "azurerm_container_registry" "acr" {
   name                = "slmsacr${random_string.suffix.result}"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
   sku                 = "Basic"
   admin_enabled       = true
 }
@@ -52,8 +59,8 @@ resource "azurerm_container_registry" "acr" {
 # PostgreSQL Flexible Server
 resource "azurerm_postgresql_flexible_server" "db" {
   name                   = "slms-postgresql-${random_string.suffix.result}"
-  resource_group_name    = data.azurerm_resource_group.rg.name
-  location               = data.azurerm_resource_group.rg.location
+  resource_group_name    = azurerm_resource_group.rg.name
+  location               = azurerm_resource_group.rg.location
   version                = "15"
   administrator_login    = "slmsadmin"
   administrator_password = var.db_password
@@ -83,61 +90,346 @@ resource "azurerm_postgresql_flexible_server_database" "slms_db" {
   charset   = "UTF8"
 }
 
-# Container App Environment (já existe - criado manualmente)
-# Comentado para evitar conflito
-/*
-resource "azurerm_container_app_environment" "env" {
-  name                       = "slms-container-env"
-  resource_group_name        = data.azurerm_resource_group.rg.name
-  location                   = data.azurerm_resource_group.rg.location
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.logs.id
-}
-*/
-
-# Usar o Container App Environment existente
+# Container App Environment (existente - deixar como data source)
+# NOTA: Não converter para resource porque requer log_analytics_workspace_id
+# que força replacement (destroy + create), o que deletaria todas as Container Apps!
 data "azurerm_container_app_environment" "env" {
   name                = "slms-container-env"
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
 # Log Analytics Workspace (necessário para Container Apps)
 resource "azurerm_log_analytics_workspace" "logs" {
   name                = "slms-logs-${random_string.suffix.result}"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = data.azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
 
 # Container Apps (usando recursos existentes como data sources)
-# Backend (existente)
-data "azurerm_container_app" "backend" {
-  name                = "slms-backend"
-  resource_group_name = data.azurerm_resource_group.rg.name
+# Backend - Gerido pelo Terraform
+resource "azurerm_container_app" "backend" {
+  name                         = "slms-backend"
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
+  resource_group_name          = azurerm_resource_group.rg.name
+  revision_mode                = "Single"
+
+  template {
+    container {
+      name   = "backend"
+      image  = "${azurerm_container_registry.acr.login_server}/slms-backend:${var.image_tag}"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name  = "DB_URL"
+        value = "jdbc:postgresql://${azurerm_postgresql_flexible_server.db.fqdn}:5432/${azurerm_postgresql_flexible_server_database.slms_db.name}"
+      }
+      
+      env {
+        name  = "DB_USERNAME"
+        value = "slmsadmin"
+      }
+      
+      env {
+        name        = "DB_PASSWORD"
+        secret_name = "db-password"
+      }
+      
+      env {
+        name  = "SPRING_PROFILES_ACTIVE"
+        value = "prod"
+      }
+    }
+
+    min_replicas = 1
+    max_replicas = 2
+  }
+
+  secret {
+    name  = "db-password"
+    value = var.db_password
+  }
+  
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.acr.admin_password
+  }
+
+  registry {
+    server               = azurerm_container_registry.acr.login_server
+    username             = azurerm_container_registry.acr.admin_username
+    password_secret_name = "acr-password"
+  }
+
+  ingress {
+    external_enabled = false  # Internal only
+    target_port      = 8082  # Backend runs on port 8082
+    
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  tags = {
+    Service     = "Backend"
+    ManagedBy   = "Terraform"
+    Environment = "Production"
+  }
 }
 
-# Carrier Service (existente)
-data "azurerm_container_app" "carrier_service" {
-  name                = "slms-carrier-service"
-  resource_group_name = data.azurerm_resource_group.rg.name
+# Carrier Service
+resource "azurerm_container_app" "carrier_service" {
+  name                         = "slms-carrier-service"
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
+  resource_group_name          = azurerm_resource_group.rg.name
+  revision_mode                = "Single"
+
+  template {
+    container {
+      name   = "carrier-service"
+      image  = "${azurerm_container_registry.acr.login_server}/slms-carrier-service:${var.image_tag}"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name  = "SPRING_APPLICATION_NAME"
+        value = "carrier_service"
+      }
+
+      env {
+        name  = "SERVER_PORT"
+        value = "8080"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_URL"
+        value = "jdbc:postgresql://${azurerm_postgresql_flexible_server.db.fqdn}:5432/${azurerm_postgresql_flexible_server_database.slms_db.name}"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_USERNAME"
+        value = "slmsadmin"
+      }
+
+      env {
+        name        = "SPRING_DATASOURCE_PASSWORD"
+        secret_name = "db-password"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE"
+        value = "3"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE"
+        value = "1"
+      }
+
+      env {
+        name  = "KEYCLOAK_JWK_SET_URI"
+        value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204/protocol/openid-connect/certs"
+      }
+
+      env {
+        name  = "KEYCLOAK_ISSUER_URI"
+        value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204"
+      }
+    }
+
+    min_replicas = 1
+    max_replicas = 2
+  }
+
+  secret {
+    name  = "db-password"
+    value = var.db_password
+  }
+  
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.acr.admin_password
+  }
+
+  registry {
+    server               = azurerm_container_registry.acr.login_server
+    username             = azurerm_container_registry.acr.admin_username
+    password_secret_name = "acr-password"
+  }
+
+  ingress {
+    external_enabled = false
+    target_port      = 8080
+    
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  tags = {
+    Service     = "CarrierService"
+    ManagedBy   = "Terraform"
+    Environment = "Production"
+  }
 }
 
-# Order Service (existente)
-data "azurerm_container_app" "order_service" {
-  name                = "slms-order-service"
-  resource_group_name = data.azurerm_resource_group.rg.name
+# Order Service
+resource "azurerm_container_app" "order_service" {
+  name                         = "slms-order-service"
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
+  resource_group_name          = azurerm_resource_group.rg.name
+  revision_mode                = "Single"
+
+  template {
+    container {
+      name   = "order-service"
+      image  = "${azurerm_container_registry.acr.login_server}/slms-order-service:${var.image_tag}"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name  = "SPRING_APPLICATION_NAME"
+        value = "order_service"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_URL"
+        value = "jdbc:postgresql://${azurerm_postgresql_flexible_server.db.fqdn}:5432/${azurerm_postgresql_flexible_server_database.slms_db.name}"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_USERNAME"
+        value = "slmsadmin"
+      }
+
+      env {
+        name        = "SPRING_DATASOURCE_PASSWORD"
+        secret_name = "db-password"
+      }
+
+      env {
+        name  = "SPRING_JPA_HIBERNATE_DDL_AUTO"
+        value = "none"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE"
+        value = "3"
+      }
+
+      env {
+        name  = "SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE"
+        value = "1"
+      }
+
+      env {
+        name  = "KEYCLOAK_JWK_SET_URI"
+        value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204/protocol/openid-connect/certs"
+      }
+
+      env {
+        name  = "KEYCLOAK_ISSUER_URI"
+        value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204"
+      }
+    }
+
+    min_replicas = 1
+    max_replicas = 2
+  }
+
+  secret {
+    name  = "db-password"
+    value = var.db_password
+  }
+  
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.acr.admin_password
+  }
+
+  registry {
+    server               = azurerm_container_registry.acr.login_server
+    username             = azurerm_container_registry.acr.admin_username
+    password_secret_name = "acr-password"
+  }
+
+  ingress {
+    external_enabled = false
+    target_port      = 8080
+    
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  tags = {
+    Service     = "OrderService"
+    ManagedBy   = "Terraform"
+    Environment = "Production"
+  }
 }
 
 # Keycloak (existente)
 data "azurerm_container_app" "keycloak" {
   name                = "slms-keycloak"
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
-# Frontend (existente)
-data "azurerm_container_app" "frontend" {
-  name                = "slms-frontend"
-  resource_group_name = data.azurerm_resource_group.rg.name
+# Frontend
+resource "azurerm_container_app" "frontend" {
+  name                         = "slms-frontend"
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
+  resource_group_name          = azurerm_resource_group.rg.name
+  revision_mode                = "Single"
+
+  template {
+    container {
+      name   = "frontend"
+      image  = "${azurerm_container_registry.acr.login_server}/slms-frontend:${var.image_tag}"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name  = "API_URL"
+        value = "https://slms-backend.internal.calmglacier-aaa99a56.francecentral.azurecontainerapps.io"
+      }
+    }
+
+    min_replicas = 1
+    max_replicas = 2
+  }
+  
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.acr.admin_password
+  }
+
+  registry {
+    server               = azurerm_container_registry.acr.login_server
+    username             = azurerm_container_registry.acr.admin_username
+    password_secret_name = "acr-password"
+  }
+
+  ingress {
+    external_enabled = true  # Publicly accessible
+    target_port      = 80
+    
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  tags = {
+    Service     = "Frontend"
+    ManagedBy   = "Terraform"
+    Environment = "Production"
+  }
 }
 
 # ==========================================
@@ -149,26 +441,26 @@ data "azurerm_container_app" "frontend" {
 # Virtual Network (existente)
 data "azurerm_virtual_network" "vnet" {
   name                = "slms-vnet"
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
 # Subnet (existente)
 data "azurerm_subnet" "subnet" {
   name                 = "slms-subnet"
-  resource_group_name  = data.azurerm_resource_group.rg.name
+  resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = data.azurerm_virtual_network.vnet.name
 }
 
 # Public IP (existente)
 data "azurerm_public_ip" "runner_ip" {
   name                = "slms-runner-ip"
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
 # Network Security Group (existente)
 data "azurerm_network_security_group" "nsg" {
   name                = "slms-runner-nsg"
-  resource_group_name = data.azurerm_resource_group.rg.name
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
 

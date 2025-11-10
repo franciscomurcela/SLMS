@@ -1,11 +1,11 @@
 output "frontend_url_https" {
   description = "URL HTTPS pública do Frontend (Container App)"
-  value       = "https://${data.azurerm_container_app.frontend.ingress[0].fqdn}"
+  value       = "https://${azurerm_container_app.frontend.ingress[0].fqdn}"
 }
 
 output "backend_internal_url" {
   description = "URL interna do Backend (apenas acessível dentro do Azure)"
-  value       = "https://${data.azurerm_container_app.backend.ingress[0].fqdn}"
+  value       = "https://${azurerm_container_app.backend.ingress[0].fqdn}"
 }
 
 output "runner_vm_public_ip" {
@@ -37,7 +37,7 @@ output "postgresql_fqdn" {
 
 output "resource_group_name" {
   description = "Nome do Resource Group criado"
-  value       = data.azurerm_resource_group.rg.name
+  value       = azurerm_resource_group.rg.name
 }
 
 output "vm_runner_ssh_command" {
@@ -58,11 +58,11 @@ output "keycloak_internal_url" {
 
 output "carrier_service_internal_url" {
   description = "URL interno do Carrier Service"
-  value       = "https://${data.azurerm_container_app.carrier_service.ingress[0].fqdn}"
+  value       = "https://${azurerm_container_app.carrier_service.ingress[0].fqdn}"
 }
 
 output "order_service_internal_url" {
   description = "URL interno do Order Service"
-  value       = "https://${data.azurerm_container_app.order_service.ingress[0].fqdn}"
+  value       = "https://${azurerm_container_app.order_service.ingress[0].fqdn}"
 }
 

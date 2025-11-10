@@ -22,13 +22,15 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   const { keycloak } = useKeycloak();
   const orderId = searchParams.get("orderId") || "N/A";
 
+  console.log("ConfirmDelivery component loaded");
+
   // Estados para upload de imagem e assinatura
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [signatureData, setSignatureData] = useState<string | null>(null);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -153,7 +155,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     setIsDrawing(false);
     const canvas = canvasRef.current;
     if (canvas) {
-      const dataURL = canvas.toDataURL('image/png');
+      const dataURL = canvas.toDataURL("image/png");
       setSignatureData(dataURL);
     }
   };
@@ -161,44 +163,86 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   // Funções para câmera
   const startCamera = async () => {
     try {
+      console.log("Starting camera...");
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment', // Usar câmera traseira se disponível
+        video: {
+          facingMode: "environment", // Usar câmera traseira se disponível
           width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+          height: { ideal: 720 },
+        },
       });
+
+      console.log("Media stream obtained:", mediaStream);
+      console.log("Stream active:", mediaStream.active);
+      console.log("Video tracks:", mediaStream.getVideoTracks());
+
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+
+      // Wait a bit for state to update
+      setTimeout(() => {
+        if (videoRef.current) {
+          console.log("Video element found:", videoRef.current);
+          videoRef.current.srcObject = mediaStream;
+
+          // Try to play immediately
+          videoRef.current
+            .play()
+            .then(() => {
+              console.log("Video playing successfully");
+            })
+            .catch((err) => {
+              console.error("Error playing video:", err);
+            });
+        } else {
+          console.error("Video ref is null");
+        }
+      }, 100);
     } catch (err) {
-      console.error('Camera error:', err);
-      alert('Erro ao acessar a câmera. Verifique as permissões.');
+      console.error("Camera error:", err);
+      alert("Erro ao acessar a câmera. Verifique as permissões.");
     }
   };
 
   const stopCamera = () => {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
     }
   };
 
   const capturePhoto = () => {
-    if (!videoRef.current || !captureCanvasRef.current) return;
-    
+    console.log("Capturado");
+    if (!videoRef.current || !captureCanvasRef.current) {
+      console.error("Video or canvas ref not available");
+      return;
+    }
+
     const video = videoRef.current;
     const canvas = captureCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) return;
-    
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      console.error("Canvas context not available");
+      return;
+    }
+
+    // Check if video has valid dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error(
+        "Video dimensions are invalid:",
+        video.videoWidth,
+        video.videoHeight
+      );
+      alert("Aguarde o vídeo carregar completamente antes de capturar.");
+      return;
+    }
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    
-    const photoData = canvas.toDataURL('image/jpeg', 0.8);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const photoData = canvas.toDataURL("image/jpeg", 0.8);
+    console.log("Photo captured, data length:", photoData.length);
     setCapturedPhoto(photoData);
     stopCamera();
   };
@@ -235,9 +279,9 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   const handleConfirmDelivery = async () => {
     // Verificar se temos alguma prova de entrega
     const proofData = capturedPhoto || signatureData || uploadedImage;
-    
+
     if (!proofData) {
-      alert('Por favor, forneça uma prova de entrega (foto ou assinatura)');
+      alert("Por favor, forneça uma prova de entrega (foto ou assinatura)");
       return;
     }
 
@@ -245,42 +289,44 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
       // Obter localização atual (opcional)
       let location;
       try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
-          });
-        });
+        const position = await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 60000,
+            });
+          }
+        );
         location = {
           latitude: position.coords.latitude,
-          longitude: position.coords.longitude
+          longitude: position.coords.longitude,
         };
       } catch (locationError) {
-        console.warn('Could not get location:', locationError);
+        console.warn("Could not get location:", locationError);
       }
 
       // Determinar o tipo de prova
-      let proofType: 'photo' | 'signature';
-      if (capturedPhoto) proofType = 'photo';
-      else if (signatureData) proofType = 'signature';
-      else proofType = 'photo'; // upload de arquivo também é tratado como photo
+      let proofType: "photo" | "signature";
+      if (capturedPhoto) proofType = "photo";
+      else if (signatureData) proofType = "signature";
+      else proofType = "photo"; // upload de arquivo também é tratado como photo
 
       const confirmationData = {
         orderId,
         proofType,
-        proofData: proofData.split(',')[1], // Remove data:image/... prefix
+        proofData: proofData.split(",")[1], // Remove data:image/... prefix
         timestamp: new Date().toISOString(),
-        location
+        location,
       };
 
       const response = await fetch(API_ENDPOINTS.CONFIRM_DELIVERY, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${keycloak?.token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${keycloak?.token}`,
         },
-        body: JSON.stringify(confirmationData)
+        body: JSON.stringify(confirmationData),
       });
 
       if (!response.ok) {
@@ -290,8 +336,8 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
       alert("Entrega confirmada com sucesso!");
       navigate("/driver/manifest");
     } catch (error) {
-      console.error('Error confirming delivery:', error);
-      alert('Erro ao confirmar entrega. Tente novamente.');
+      console.error("Error confirming delivery:", error);
+      alert("Erro ao confirmar entrega. Tente novamente.");
     }
   };
 
@@ -329,6 +375,22 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     }
   }, []);
 
+  // Effect to handle video stream assignment
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      console.log("Assigning stream to video element in useEffect");
+      videoRef.current.srcObject = stream;
+      videoRef.current
+        .play()
+        .then(() => {
+          console.log("Video started playing");
+        })
+        .catch((err) => {
+          console.error("Failed to play video in useEffect:", err);
+        });
+    }
+  }, [stream]);
+
   // Cleanup da câmera quando componente for desmontado
   useEffect(() => {
     return () => {
@@ -340,14 +402,15 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   useEffect(() => {
     const cleanup = () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
-    
+
     return cleanup;
   }, [stream]);
 
   if (loading) {
+    console.log("ConfirmDelivery: Showing loading state");
     return (
       <>
         <Header role="Driver" href="/confirm-delivery" />
@@ -366,6 +429,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   }
 
   if (!orderDetails) {
+    console.log("ConfirmDelivery: No order details found");
     return (
       <>
         <Header role="Driver" href="/confirm-delivery" />
@@ -384,6 +448,10 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
       </>
     );
   }
+
+  console.log("ConfirmDelivery: Rendering main component");
+  console.log("Stream state before render:", stream);
+  console.log("VideoRef current before render:", videoRef.current);
 
   return (
     <>
@@ -523,7 +591,15 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                           <button
                             type="button"
                             className="btn btn-success me-2"
-                            onClick={startCamera}
+                            onClick={() => {
+                              console.log("Button clicked!");
+                              console.log("Stream state:", stream);
+                              console.log(
+                                "CapturedPhoto state:",
+                                capturedPhoto
+                              );
+                              startCamera();
+                            }}
                             disabled={stream !== null || capturedPhoto !== null}
                           >
                             <i className="bi bi-camera me-2"></i>
@@ -538,6 +614,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                               ref={videoRef}
                               autoPlay
                               playsInline
+                              muted
                               className="img-thumbnail mb-2"
                               style={{ width: "100%", maxWidth: "300px" }}
                             />
@@ -785,10 +862,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
       )}
 
       {/* Canvas oculto para captura de foto */}
-      <canvas
-        ref={captureCanvasRef}
-        style={{ display: 'none' }}
-      />
+      <canvas ref={captureCanvasRef} style={{ display: "none" }} />
     </>
   );
 };

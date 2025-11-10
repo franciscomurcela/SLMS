@@ -93,8 +93,11 @@ function TrackingPortalCSR() {
   const getStatusBadge = (status: string) => {
     const statusMap: { [key: string]: { class: string; text: string } } = {
       Pending: { class: "bg-warning", text: "Pendente" },
-      InTransit: { class: "bg-info", text: "Em Trânsito" },
+      Assigned: { class: "bg-info", text: "Despachado" },
+      Dispatched: { class: "bg-info", text: "Despachado" },
+      InTransit: { class: "bg-primary", text: "Em Trânsito" },
       Delivered: { class: "bg-success", text: "Entregue" },
+      Failed: { class: "bg-danger", text: "Falhada" },
       Cancelled: { class: "bg-danger", text: "Cancelada" },
     };
 
@@ -103,43 +106,64 @@ function TrackingPortalCSR() {
   };
 
   const getOrderSteps = (status: string, orderDate: string, actualDeliveryTime: string | null): OrderStep[] => {
+    // If order failed/cancelled, show different timeline
+    if (status === 'Failed' || status === 'Cancelled') {
+      return [
+        {
+          id: 1,
+          label: "Pedido Criado",
+          icon: "bi-box-seam",
+          status: "completed",
+          date: formatDate(orderDate),
+        },
+        {
+          id: 2,
+          label: status === 'Failed' ? "Falhou" : "Cancelada",
+          icon: "bi-x-circle",
+          status: "completed",
+          date: status === 'Failed' ? "Entrega falhada" : "Pedido cancelado",
+        },
+      ];
+    }
+
+    // Determine step statuses based on current order status
+    // Note: "Assigned" is equivalent to "Dispatched" in the schema
+    const isPending = status === 'Pending';
+    const isDispatched = status === 'Dispatched' || status === 'Assigned';
+    const isInTransit = status === 'InTransit';
+    const isDelivered = status === 'Delivered';
+
+    // Normal timeline with all steps
     const steps: OrderStep[] = [
       {
         id: 1,
-        label: "Pedido Enviado",
+        label: "Pedido Criado",
         icon: "bi-box-seam",
-        status: "completed",
+        status: isPending ? "active" : "completed",
         date: formatDate(orderDate),
       },
       {
         id: 2,
-        label: "Em Trânsito",
-        icon: "bi-truck",
-        status: status === "Pending" ? "pending" : "completed",
-        date: status !== "Pending" ? "Em transporte" : undefined,
+        label: "Despachado",
+        icon: "bi-send-check",
+        status: isPending ? "pending" : isDispatched ? "active" : "completed",
+        date: !isPending ? "Preparado para envio" : undefined,
       },
       {
         id: 3,
+        label: "Em Trânsito",
+        icon: "bi-truck",
+        status: (isPending || isDispatched) ? "pending" : isInTransit ? "active" : "completed",
+        date: (isInTransit || isDelivered) ? "A caminho do destino" : undefined,
+      },
+      {
+        id: 4,
         label: "Entregue",
         icon: "bi-check-circle",
-        status: status === "Delivered" ? "completed" : status === "InTransit" ? "active" : "pending",
+        status: isDelivered ? "completed" : "pending",
         date: actualDeliveryTime ? formatDate(actualDeliveryTime) : undefined,
       },
     ];
-
-    // Handle cancelled orders
-    if (status === "Cancelled") {
-      return [
-        steps[0],
-        {
-          id: 2,
-          label: "Cancelada",
-          icon: "bi-x-circle",
-          status: "completed",
-          date: "Pedido cancelado",
-        },
-      ];
-    }
 
     return steps;
   };
@@ -230,7 +254,10 @@ function TrackingPortalCSR() {
                           <i className={`bi ${step.icon}`}></i>
                         </div>
                         {index < array.length - 1 && (
-                          <div className={`step-line ${array[index + 1].status !== 'pending' ? 'completed' : ''}`}></div>
+                          <div className={`step-line ${
+                            trackingResult.status === 'Failed' && step.label === 'Pedido Criado' ? 'failed' :
+                            array[index + 1].status !== 'pending' ? 'completed' : ''
+                          }`}></div>
                         )}
                       </div>
                       <div className="step-content">

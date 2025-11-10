@@ -334,6 +334,12 @@
   border: 3px dashed #dee2e6;
 }
 
+.step-icon.failed {
+  background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+  color: white;
+  animation: shake 0.5s ease-in-out;
+}
+
 .step-line {
   position: absolute;
   left: calc(50% + 35px);
@@ -348,6 +354,11 @@
 
 .step-line.completed {
   background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  animation: lineGrow 0.5s ease-out;
+}
+
+.step-line.failed {
+  background: linear-gradient(90deg, #ff6b6b 0%, #c92a2a 100%);
   animation: lineGrow 0.5s ease-out;
 }
 
@@ -380,6 +391,12 @@
     transform: scale(1.05);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
   }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
 @keyframes lineGrow {

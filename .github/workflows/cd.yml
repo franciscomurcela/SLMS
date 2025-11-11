@@ -230,20 +230,22 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      - name: Limpar state lock (se existir)
+      - name: Cleanup e Unlock
         env:
           ARM_USE_MSI: "true"
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
-          echo "� Verificando se existe lock no state..."
-          # Usar Azure CLI para remover lock diretamente do blob storage
+          echo "Removendo ficheiros de state local (nao devem existir)..."
+          rm -f terraform.tfstate* .terraform/terraform.tfstate 2>/dev/null || true
+          
+          echo "Removendo lock do state remoto (se existir)..."
           az storage blob lease break \
             --account-name tfstateslms204 \
             --container-name tfstate \
             --blob-name slms.tfstate \
             --auth-mode login \
-            2>/dev/null || echo "✅ Nenhum lock encontrado ou já removido"
+            2>/dev/null || echo "OK"
 
       - name: Terraform Init
         env:
@@ -251,9 +253,7 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
-          echo "🔄 Iniciando Terraform com migração automática de state..."
-          terraform init -migrate-state -input=false
-          echo "✅ Terraform init concluído"
+          terraform init
 
       - name: Terraform Plan
         env:

@@ -236,9 +236,10 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
-          # Force unlock if state is locked
+          # Force unlock if state is locked (ignora erro se não estiver locked)
           terraform force-unlock -force 329f1996-5a8b-4579-2989-22ce7f9d99ba 2>/dev/null || true
-          terraform init -migrate-state -input=false -reconfigure
+          # Init sem migrate (state já deve estar no backend)
+          terraform init -input=false
 
       - name: Terraform Plan
         env:

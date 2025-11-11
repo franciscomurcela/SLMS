@@ -13,8 +13,8 @@ export const keycloakConfig = {
 };
 
 export const keycloakInitOptions = {
-  // Don't auto-login, just check if there's an existing session
-  onLoad: 'check-sso' as const,
+  // Force login required - avoids SSO check infinite loop
+  onLoad: 'login-required' as const,
   checkLoginIframe: false,
   // Disable silent check SSO to avoid CORS issues
   silentCheckSsoRedirectUri: undefined,
@@ -22,13 +22,6 @@ export const keycloakInitOptions = {
   responseMode: 'fragment' as const,
   // Disable iframe checking completely to avoid timeouts
   checkLoginIframeInterval: undefined,
-  // Explicit timeout
-  initOptions: {
-    onLoad: 'check-sso' as const,
-    checkLoginIframe: false,
-    silentCheckSsoRedirectUri: undefined,
-    responseMode: 'fragment' as const,
-  },
 };
 
 // Backend API base URL - user_service handles authentication

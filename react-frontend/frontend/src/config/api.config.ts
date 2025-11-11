@@ -37,6 +37,9 @@ export const API_ENDPOINTS = {
   CONFIRM_DELIVERY: isDevelopment 
     ? `${API_BASE_URL}:8081/api/orders/confirm-delivery`
     : `${API_BASE_URL}/api/orders/confirm-delivery`,
+  REPORT_ANOMALY: isDevelopment 
+    ? `${API_BASE_URL}:8081/api/orders/report-anomaly`
+    : `${API_BASE_URL}/api/orders/report-anomaly`,
   
   // Users API
   USERS: isDevelopment 

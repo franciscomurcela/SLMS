@@ -108,12 +108,14 @@ function DriverCargoManifest() {
     const badges = {
       Pending: 'bg-warning text-dark',
       InTransit: 'bg-primary',
-      Delivered: 'bg-success'
+      Delivered: 'bg-success',
+      Failed: 'bg-danger'
     };
     const statusText = {
       Pending: 'Pendente',
       InTransit: 'Em Trânsito',
-      Delivered: 'Entregue'
+      Delivered: 'Entregue',
+      Failed: 'Falhada'
     };
     return <span className={`badge ${badges[status as keyof typeof badges]}`}>{statusText[status as keyof typeof statusText] || status}</span>;
   };

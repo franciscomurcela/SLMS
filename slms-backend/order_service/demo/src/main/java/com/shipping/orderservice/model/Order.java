@@ -53,6 +53,9 @@ public class Order {
     @Column(name = "pod")
     private byte[] pod; // Proof of Delivery (binary data - image/PDF)
 
+    @Column(name = "error_message")
+    private String errorMessage; // Error message for failed deliveries
+
     // Getters e Setters
     public UUID getOrderId() { return orderId; }
     public void setOrderId(UUID orderId) { this.orderId = orderId; }
@@ -89,4 +92,7 @@ public class Order {
 
     public byte[] getPod() { return pod; }
     public void setPod(byte[] pod) { this.pod = pod; }
+
+    public String getErrorMessage() { return errorMessage; }
+    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 }

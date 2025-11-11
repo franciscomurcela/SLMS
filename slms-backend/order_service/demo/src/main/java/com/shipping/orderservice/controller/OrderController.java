@@ -37,6 +37,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 
 import com.shipping.orderservice.model.Order;
 import com.shipping.orderservice.repository.OrderRepository;
+import com.shipping.orderservice.dto.ReportAnomalyRequest;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -145,6 +146,7 @@ public class OrderController {
                     o.shipment_id::text as "shipmentId",
                     o.actual_delivery_time as "actualDeliveryTime",
                     o.pod as "proofOfDelivery",
+                    o.error_message as "errorMessage",
                     c.name as "carrierName",
                     c.carrier_id::text as "carrierId"
                 FROM "Orders" o
@@ -446,6 +448,70 @@ public class OrderController {
             
         } catch (Exception e) {
             System.err.println("=== ERROR confirming delivery: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                "error", e.getClass().getSimpleName(),
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error occurred"
+            ));
+        }
+    }
+
+    @PostMapping("/report-anomaly")
+    public ResponseEntity<Map<String, Object>> reportAnomaly(@RequestBody ReportAnomalyRequest request) {
+        try {
+            System.out.println("=== REPORTING ANOMALY ===");
+            System.out.println("Order ID: " + request.getOrderId());
+            System.out.println("Error Message: " + request.getErrorMessage());
+
+            // Validate input
+            if (request.getOrderId() == null || request.getOrderId().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "ValidationError",
+                    "message", "Order ID is required"
+                ));
+            }
+
+            if (request.getErrorMessage() == null || request.getErrorMessage().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "ValidationError", 
+                    "message", "Error message is required"
+                ));
+            }
+
+            // Check if order exists
+            String checkSql = "SELECT COUNT(*) FROM \"Orders\" WHERE order_id = ?::uuid";
+            Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, request.getOrderId());
+            
+            if (count == null || count == 0) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "OrderNotFound",
+                    "message", "Order not found with order ID: " + request.getOrderId()
+                ));
+            }
+
+            // Update order status to Failed and set error message
+            String updateSql = "UPDATE \"Orders\" SET status = 'Failed', error_message = ? WHERE order_id = ?::uuid";
+            int rowsAffected = jdbcTemplate.update(updateSql, request.getErrorMessage(), request.getOrderId());
+
+            if (rowsAffected > 0) {
+                System.out.println("Successfully reported anomaly for order: " + request.getOrderId());
+                
+                return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Anomaly reported successfully",
+                    "orderId", request.getOrderId(),
+                    "errorMessage", request.getErrorMessage(),
+                    "newStatus", "Failed"
+                ));
+            } else {
+                return ResponseEntity.status(500).body(Map.of(
+                    "error", "Update failed",
+                    "message", "Failed to update order with anomaly report"
+                ));
+            }
+            
+        } catch (Exception e) {
+            System.err.println("=== ERROR reporting anomaly: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
                 "error", e.getClass().getSimpleName(),

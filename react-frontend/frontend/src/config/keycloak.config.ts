@@ -1,9 +1,8 @@
 // Keycloak configuration
-// Use same-origin URL through Nginx proxy to avoid CORS and secure context issues
+// Point directly to Keycloak public URL with /auth path
 const getKeycloakUrl = () => {
-  // Always use relative path / when behind Nginx
-  // This makes it same-origin and works without HTTPS
-  return `${window.location.protocol}//${window.location.host}`;
+  // Use Keycloak FQDN directly (not same-origin anymore)
+  return 'https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth';
 };
 
 export const keycloakConfig = {

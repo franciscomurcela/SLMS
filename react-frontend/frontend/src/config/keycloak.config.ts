@@ -1,4 +1,17 @@
 // Keycloak configuration
+// Adapts to current environment automatically
+const getKeycloakUrl = () => {
+  // Check if we're in development (localhost:3000 or localhost:5173)
+  const isDevelopment = window.location.hostname === 'localhost' && 
+                       (window.location.port === '3000' || window.location.port === '5173');
+  
+  if (isDevelopment) {
+    // In development, Keycloak runs directly on localhost:8083
+    return 'http://localhost:8083/auth';
+  } else {
+    // In production, use nginx proxy path
+    return `${window.location.protocol}//${window.location.host}/auth`;
+  }
 // Point directly to Keycloak public URL with /auth path
 const getKeycloakUrl = () => {
   // Use Keycloak FQDN directly (not same-origin anymore)
@@ -24,11 +37,18 @@ export const keycloakInitOptions = {
   checkLoginIframeInterval: undefined,
 };
 
-// Backend API base URL - user_service handles authentication
-// Use same-origin URL through Nginx proxy
+// Backend API base URL - adapts to environment
 const getBackendUrl = () => {
-  // Always use relative path /api when behind Nginx
-  return `${window.location.protocol}//${window.location.host}/api`;
+  const isDevelopment = window.location.hostname === 'localhost' && 
+                       (window.location.port === '3000' || window.location.port === '5173');
+  
+  if (isDevelopment) {
+    // In development, services run on direct ports
+    return 'http://localhost'; // Will use :8080, :8081, :8082 as needed
+  } else {
+    // In production, use nginx proxy
+    return `${window.location.protocol}//${window.location.host}/api`;
+  }
 };
 
 export const BACKEND_URL = getBackendUrl();

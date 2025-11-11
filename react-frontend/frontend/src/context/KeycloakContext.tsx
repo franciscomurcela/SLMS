@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { KeycloakContext } from './KeycloakContextDef';
 import type { ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
-import { keycloakConfig, keycloakInitOptions, BACKEND_URL } from '../config/keycloak.config';
+import { keycloakConfig, keycloakInitOptions } from '../config/keycloak.config';
+import { API_ENDPOINTS } from '../config/api.config';
 
 export interface KeycloakContextType {
   keycloak: Keycloak | null;
@@ -39,6 +40,7 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<Record<string, unknown> | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [primaryRole, setPrimaryRole] = useState<string | undefined>(undefined);
   const initializingRef = useRef(false);
   const initializedRef = useRef(false);
 
@@ -68,18 +70,20 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
         setLoading(false);
 
         if (auth) {
-          // Debug: Log the entire token to see structure
-          console.log('🔍 Full token parsed:', keycloakInstance.tokenParsed);
-          console.log('🔍 Realm access:', keycloakInstance.tokenParsed?.realm_access);
-          console.log('🔍 Resource access:', keycloakInstance.tokenParsed?.resource_access);
-          
           // Extract roles from token
           const userRoles = keycloakInstance.tokenParsed?.realm_access?.roles || [];
+          console.log('User roles from token:', userRoles);
+          
           const appRoles = userRoles.filter((role: string) => 
             ROLE_PRIORITY.includes(role as typeof ROLE_PRIORITY[number])
           );
           setRoles(appRoles);
-          console.log('User roles:', appRoles);
+          console.log('Filtered app roles:', appRoles);
+
+          // Calculate primaryRole
+          const calculatedPrimaryRole = ROLE_PRIORITY.slice().reverse().find(role => appRoles.includes(role));
+          console.log('Calculated primaryRole:', calculatedPrimaryRole);
+          setPrimaryRole(calculatedPrimaryRole || undefined);
 
           // 🔄 SYNC USER TO SUPABASE AUTOMATICALLY
           // Call /user/whoami to trigger UserSyncFilter on backend
@@ -87,7 +91,7 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
           const syncUserToSupabase = async () => {
             try {
               console.log('🔄 Syncing user to Supabase...');
-              const response = await fetch(`${BACKEND_URL}/users/whoami`, {
+              const response = await fetch(API_ENDPOINTS.WHOAMI, {
                 headers: {
                   'Authorization': `Bearer ${keycloakInstance.token}`,
                   'Content-Type': 'application/json',
@@ -181,12 +185,6 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const hasRole = (role: string): boolean => {
     return roles.includes(role);
   };
-
-  // Get the highest priority role
-  const primaryRole = ROLE_PRIORITY
-    .slice()
-    .reverse()
-    .find(role => roles.includes(role));
 
   return (
     <KeycloakContext.Provider

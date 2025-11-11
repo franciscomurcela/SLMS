@@ -27,8 +27,8 @@
     "bootstrap": "^5.3.8",
     "flagsmith": "^9.3.2",
     "keycloak-js": "^21.1.2",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "react": "^18.2.1",
+    "react-dom": "^18.2.1",
     "react-pro-sidebar": "^1.1.0",
     "react-router-dom": "^7.9.3"
   },

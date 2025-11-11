@@ -27,6 +27,7 @@ function getStatusBadge(status: string) {
     Pending: "warning",
     InTransit: "primary",
     Delivered: "success",
+    Failed: "danger",
   };
   const variant = statusMap[status] || "secondary";
   return `badge bg-${variant}`;

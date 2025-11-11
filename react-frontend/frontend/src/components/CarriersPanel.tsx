@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "../config/api.config";
+import { useKeycloak } from "../context/KeycloakContext";
 
 type Row = Record<string, unknown>;
 
 export default function CarriersPanel() {
+  const { keycloak } = useKeycloak();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -12,10 +14,24 @@ export default function CarriersPanel() {
   const [showRaw, setShowRaw] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     async function load() {
+      // Wait for Keycloak to be ready
+      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
+        console.log("[CarriersPanel] Waiting for Keycloak...");
+        setLoading(true);
+        return;
+      }
+
+      console.log("[CarriersPanel] Keycloak ready, fetching carriers with token");
+      setLoading(true);
+      setError(null);
       try {
-        const r = await fetch(API_ENDPOINTS.CARRIERS);
+        const r = await fetch(API_ENDPOINTS.CARRIERS, {
+          headers: {
+            'Authorization': `Bearer ${keycloak.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         const text = await r.text();
         setRawResponse(text);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -23,18 +39,20 @@ export default function CarriersPanel() {
         if (Array.isArray(data) && data.length > 0) {
           setRows(data);
           setError(null);
-          setLoading(false);
-          return;
+        } else {
+          setRows([]);
+          setError('No carriers data available');
         }
       } catch (err) {
         console.warn("carriers fetch failed:", err);
         setError(String(err));
+      } finally {
         setLoading(false);
       }
     }
 
     load();
-  }, []);
+  }, [keycloak?.authenticated, keycloak?.token]);
 
   const friendlyNames: Record<string, string> = {
     id: "ID",

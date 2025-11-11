@@ -20,6 +20,15 @@ export const keycloakInitOptions = {
   silentCheckSsoRedirectUri: undefined,
   // Enable response mode to handle callback properly
   responseMode: 'fragment' as const,
+  // Disable iframe checking completely to avoid timeouts
+  checkLoginIframeInterval: undefined,
+  // Explicit timeout
+  initOptions: {
+    onLoad: 'check-sso' as const,
+    checkLoginIframe: false,
+    silentCheckSsoRedirectUri: undefined,
+    responseMode: 'fragment' as const,
+  },
 };
 
 // Backend API base URL - user_service handles authentication

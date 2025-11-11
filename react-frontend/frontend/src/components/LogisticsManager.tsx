@@ -59,6 +59,7 @@ function LogisticsManager() {
     }
 
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keycloak?.authenticated, keycloak?.token]);
 
   // friendly labels for common DB columns

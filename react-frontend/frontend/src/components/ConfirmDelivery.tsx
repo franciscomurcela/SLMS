@@ -83,7 +83,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
         let foundOrder = null;
         for (const shipment of shipments) {
           const order = shipment.orders?.find(
-            (o: any) => o.orderId === orderId
+            (o: { orderId: string }) => o.orderId === orderId
           );
           if (order) {
             foundOrder = order;
@@ -422,6 +422,7 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Função cleanup da câmera (deve ser definida antes do useEffect)

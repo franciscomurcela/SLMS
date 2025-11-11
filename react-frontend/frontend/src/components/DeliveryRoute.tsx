@@ -168,7 +168,7 @@ const DeliveryRoute: React.FC = () => {
         let foundOrder = null;
         for (const shipment of shipments) {
           const order = shipment.orders?.find(
-            (o: any) => o.orderId === orderId
+            (o: { orderId: string }) => o.orderId === orderId
           );
           if (order) {
             foundOrder = order;
@@ -244,9 +244,10 @@ const DeliveryRoute: React.FC = () => {
             lng: position.coords.longitude,
           };
           console.log("Localização GPS obtida:", currentPos);
-        } catch (gpsError) {
+        } catch (error) {
           console.warn(
-            "GPS não disponível, usando localização padrão (Aveiro)"
+            "GPS não disponível, usando localização padrão (Aveiro)",
+            error
           );
           currentPos = {
             lat: 40.6333,

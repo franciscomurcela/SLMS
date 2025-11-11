@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "../config/api.config";
 import { useKeycloak } from "../context/KeycloakContext";
 
-type Row = Record<string, any>;
+type Row = Record<string, unknown>;
 
 export default function CarriersPanel() {
   const { keycloak } = useKeycloak();
@@ -105,7 +105,7 @@ export default function CarriersPanel() {
 
   const columns = columnsOrdered.length ? columnsOrdered : rows.length ? Object.keys(rows[0]) : [];
 
-  function renderCell(key: string, value: any) {
+  function renderCell(key: string, value: unknown) {
     if (value == null) return "";
     if (/rating|score/i.test(key)) {
       const n = Number(value);

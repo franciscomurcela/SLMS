@@ -12,6 +12,10 @@ const getKeycloakUrl = () => {
     // In production, use nginx proxy path
     return `${window.location.protocol}//${window.location.host}/auth`;
   }
+// Point directly to Keycloak public URL with /auth path
+const getKeycloakUrl = () => {
+  // Use Keycloak FQDN directly (not same-origin anymore)
+  return 'https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth';
 };
 
 export const keycloakConfig = {
@@ -21,13 +25,16 @@ export const keycloakConfig = {
 };
 
 export const keycloakInitOptions = {
-  // Don't auto-login, just check if there's an existing session
-  onLoad: 'check-sso' as const,
+  // Don't force login - let page load without authentication
+  // User can manually login if needed
+  onLoad: undefined,
   checkLoginIframe: false,
   // Disable silent check SSO to avoid CORS issues
   silentCheckSsoRedirectUri: undefined,
   // Enable response mode to handle callback properly
   responseMode: 'fragment' as const,
+  // Disable iframe checking completely to avoid timeouts
+  checkLoginIframeInterval: undefined,
 };
 
 // Backend API base URL - adapts to environment

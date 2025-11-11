@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useState } from "react";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 
 function Header({ 
   role, 

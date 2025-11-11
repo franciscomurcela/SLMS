@@ -1,0 +1,123 @@
+{
+  "id": "/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/containerapps/slms-backend",
+  "identity": {
+    "type": "None"
+  },
+  "location": "France Central",
+  "name": "slms-backend",
+  "properties": {
+    "configuration": {
+      "activeRevisionsMode": "Single",
+      "dapr": null,
+      "identitySettings": [],
+      "ingress": {
+        "additionalPortMappings": null,
+        "allowInsecure": false,
+        "clientCertificateMode": null,
+        "corsPolicy": null,
+        "customDomains": null,
+        "exposedPort": 0,
+        "external": false,
+        "fqdn": "slms-backend.internal.calmglacier-aaa99a56.francecentral.azurecontainerapps.io",
+        "ipSecurityRestrictions": null,
+        "stickySessions": null,
+        "targetPort": 8080,
+        "traffic": [
+          {
+            "latestRevision": true,
+            "weight": 100
+          }
+        ],
+        "transport": "Auto"
+      },
+      "maxInactiveRevisions": 100,
+      "registries": [
+        {
+          "identity": "",
+          "passwordSecretRef": "acr-password",
+          "server": "slmsacrezod5cbu.azurecr.io",
+          "username": "slmsacrezod5cbu"
+        }
+      ],
+      "runtime": null,
+      "secrets": [
+        {
+          "name": "acr-password"
+        },
+        {
+          "name": "db-password"
+        }
+      ],
+      "service": null
+    },
+    "customDomainVerificationId": "54F7E089D5922551FFD4570DD1BA2B67FD4B73D515DD3A67C94948EF67B8C20E",
+    "delegatedIdentities": [],
+    "environmentId": "/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/managedEnvironments/slms-container-env",
+    "eventStreamEndpoint": "https://francecentral.azurecontainerapps.dev/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/containerApps/slms-backend/eventstream",
+    "latestReadyRevisionName": "slms-backend--fhps05d",
+    "latestRevisionFqdn": "slms-backend--fhps05d.internal.calmglacier-aaa99a56.francecentral.azurecontainerapps.io",
+    "latestRevisionName": "slms-backend--fhps05d",
+    "managedEnvironmentId": "/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/managedEnvironments/slms-container-env",
+    "outboundIpAddresses": [
+      "4.251.139.8"
+    ],
+    "provisioningState": "Succeeded",
+    "runningStatus": "Running",
+    "template": {
+      "containers": [
+        {
+          "env": [
+            {
+              "name": "DB_URL",
+              "value": "jdbc:postgresql://slms-postgresql-ezod5cbu.postgres.database.azure.com:5432/slms_database"
+            },
+            {
+              "name": "DB_USERNAME",
+              "value": "slmsadmin"
+            },
+            {
+              "name": "DB_PASSWORD",
+              "secretRef": "db-password"
+            },
+            {
+              "name": "SPRING_PROFILES_ACTIVE",
+              "value": "prod"
+            }
+          ],
+          "image": "slmsacrezod5cbu.azurecr.io/slms-backend:latest",
+          "name": "backend",
+          "probes": [],
+          "resources": {
+            "cpu": 0.25,
+            "ephemeralStorage": "1Gi",
+            "memory": "0.5Gi"
+          }
+        }
+      ],
+      "initContainers": null,
+      "revisionSuffix": "",
+      "scale": {
+        "cooldownPeriod": 300,
+        "maxReplicas": 2,
+        "minReplicas": 1,
+        "pollingInterval": 30,
+        "rules": null
+      },
+      "serviceBinds": null,
+      "terminationGracePeriodSeconds": null,
+      "volumes": []
+    },
+    "workloadProfileName": null
+  },
+  "resourceGroup": "slms-rg",
+  "systemData": {
+    "createdAt": "2025-11-09T16:47:59.5822281",
+    "createdBy": "franciscomurcela@ua.pt",
+    "createdByType": "User",
+    "lastModifiedAt": "2025-11-09T16:47:59.5822281",
+    "lastModifiedBy": "franciscomurcela@ua.pt",
+    "lastModifiedByType": "User"
+  },
+  "tags": {},
+  "type": "Microsoft.App/containerApps"
+}

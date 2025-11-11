@@ -18,6 +18,7 @@ class UserDTOTest {
         user.setLastName("User");
         user.setEmail("test@example.com");
         user.setKeycloakId(keycloakId);
+        user.setLastLogin(java.time.Instant.now());
 
         assertEquals(id, user.getId());
         assertEquals("Test User", user.getName());

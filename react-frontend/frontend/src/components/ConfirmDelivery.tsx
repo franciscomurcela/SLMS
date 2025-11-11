@@ -5,7 +5,7 @@ import "./ConfirmDelivery.css";
 import { useKeycloak } from "../context/KeycloakContext";
 import { API_ENDPOINTS } from "../config/api.config";
 
-interface ConfirmDeliveryProps {}
+type ConfirmDeliveryProps = Record<string, never>;
 
 interface OrderDetails {
   orderId: string;

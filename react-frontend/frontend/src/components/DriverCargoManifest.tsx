@@ -47,6 +47,7 @@ function DriverCargoManifest() {
     if (userInfo?.sub) {
       loadShipments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo]);
 
   const loadShipments = async () => {

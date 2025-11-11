@@ -10,7 +10,7 @@ output "backend_internal_url" {
 
 output "runner_vm_public_ip" {
   description = "IP público da VM do GitHub Runner (usar para SSH)"
-  value       = azurerm_public_ip.runner_ip.ip_address
+  value       = data.azurerm_public_ip.runner_ip.ip_address
 }
 
 output "acr_login_server" {
@@ -42,18 +42,18 @@ output "resource_group_name" {
 
 output "vm_runner_ssh_command" {
   description = "Comando para conectar à VM via SSH"
-  value       = "ssh azureuser@${azurerm_public_ip.runner_ip.ip_address}"
+  value       = "ssh azureuser@${data.azurerm_public_ip.runner_ip.ip_address}"
 }
 
 # Microservices URLs
 output "keycloak_url" {
   description = "URL público do Keycloak"
-  value       = "https://${azurerm_container_app.keycloak.ingress[0].fqdn}/auth"
+  value       = "https://${data.azurerm_container_app.keycloak.ingress[0].fqdn}/auth"
 }
 
 output "keycloak_internal_url" {
   description = "URL interno do Keycloak (para comunicação entre Container Apps)"
-  value       = "http://${azurerm_container_app.keycloak.ingress[0].fqdn}:8080/auth"
+  value       = "http://${data.azurerm_container_app.keycloak.ingress[0].fqdn}:8080/auth"
 }
 
 output "carrier_service_internal_url" {
@@ -65,3 +65,4 @@ output "order_service_internal_url" {
   description = "URL interno do Order Service"
   value       = "https://${azurerm_container_app.order_service.ingress[0].fqdn}"
 }
+

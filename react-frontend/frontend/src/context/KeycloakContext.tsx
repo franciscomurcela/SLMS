@@ -1,36 +1,25 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { KeycloakContext } from './KeycloakContextDef';
 import type { ReactNode } from 'react';
 import Keycloak from 'keycloak-js';
 import { keycloakConfig, keycloakInitOptions } from '../config/keycloak.config';
 import { API_ENDPOINTS } from '../config/api.config';
 
-interface KeycloakContextType {
+export interface KeycloakContextType {
   keycloak: Keycloak | null;
   authenticated: boolean;
   loading: boolean;
   login: () => void;
   logout: () => void;
   token: string | undefined;
-  userInfo: any;
+  userInfo: Record<string, unknown> | null;
   roles: string[];
   hasRole: (role: string) => boolean;
   primaryRole: string | undefined;
 }
 
-const KeycloakContext = createContext<KeycloakContextType>({
-  keycloak: null,
-  authenticated: false,
-  loading: true,
-  login: () => {},
-  logout: () => {},
-  token: undefined,
-  userInfo: null,
-  roles: [],
-  hasRole: () => false,
-  primaryRole: undefined,
-});
 
-export const useKeycloak = () => useContext(KeycloakContext);
+// Hook utilitário movido para 'keycloakHooks.ts'
 
 interface KeycloakProviderProps {
   children: ReactNode;
@@ -49,7 +38,7 @@ export const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
   const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<Record<string, unknown> | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [primaryRole, setPrimaryRole] = useState<string | undefined>(undefined);
   const initializingRef = useRef(false);

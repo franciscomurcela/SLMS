@@ -13,8 +13,9 @@ export const keycloakConfig = {
 };
 
 export const keycloakInitOptions = {
-  // Force login required - avoids SSO check infinite loop
-  onLoad: 'login-required' as const,
+  // Allow if authenticated, don't force login
+  // This prevents redirect loop while still checking for existing sessions
+  onLoad: 'allow-if-authenticated' as const,
   checkLoginIframe: false,
   // Disable silent check SSO to avoid CORS issues
   silentCheckSsoRedirectUri: undefined,

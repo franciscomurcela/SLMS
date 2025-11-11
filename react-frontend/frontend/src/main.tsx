@@ -3,17 +3,15 @@ import { createRoot } from "react-dom/client";
 import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import App from "./App.tsx";
-// TODO: Fix Keycloak redirect loop before re-enabling KeycloakProvider
-// import { KeycloakProvider } from "./context/KeycloakContext";
+import { KeycloakProvider } from "./context/KeycloakContext";
 import { FeatureFlagsProvider } from "./context/FeatureFlagsContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {/* Temporarily disabled KeycloakProvider to fix redirect loop */}
-    {/* <KeycloakProvider> */}
-    <FeatureFlagsProvider>
-      <App />
-    </FeatureFlagsProvider>
-    {/* </KeycloakProvider> */}
+    <KeycloakProvider>
+      <FeatureFlagsProvider>
+        <App />
+      </FeatureFlagsProvider>
+    </KeycloakProvider>
   </StrictMode>
 );

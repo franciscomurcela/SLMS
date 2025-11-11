@@ -251,8 +251,8 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
-          echo "🔄 Iniciando Terraform..."
-          terraform init -reconfigure -input=false
+          echo "🔄 Iniciando Terraform com migração automática de state..."
+          terraform init -migrate-state -input=false
           echo "✅ Terraform init concluído"
 
       - name: Terraform Plan

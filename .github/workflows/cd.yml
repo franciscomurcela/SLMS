@@ -236,10 +236,30 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
-          # Force unlock if state is locked (ignora erro se não estiver locked)
-          terraform force-unlock -force 329f1996-5a8b-4579-2989-22ce7f9d99ba 2>/dev/null || true
-          # Init sem migrate (state já deve estar no backend)
-          terraform init -input=false
+          
+          # Tentar init normal primeiro
+          if ! terraform init -input=false 2>&1 | tee init.log; then
+            echo "⚠️ Init falhou, verificando se é problema de lock..."
+            
+            # Verificar se é erro de lock
+            if grep -q "state blob is already locked" init.log; then
+              echo "🔓 State está locked, tentando unlock..."
+              LOCK_ID=$(grep "ID:" init.log | awk '{print $2}')
+              echo "Lock ID encontrado: $LOCK_ID"
+              
+              # Fazer unlock com backend já parcialmente inicializado
+              terraform force-unlock -force "$LOCK_ID" || echo "⚠️ Unlock falhou, mas continuando..."
+              
+              # Retry init
+              echo "🔄 Retry terraform init..."
+              terraform init -input=false -reconfigure
+            else
+              echo "❌ Erro diferente de lock, a abortar"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ Terraform init concluído com sucesso"
 
       - name: Terraform Plan
         env:

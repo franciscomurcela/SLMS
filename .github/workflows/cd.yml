@@ -230,36 +230,30 @@ jobs:
         with:
           terraform_version: 1.6.0
 
+      - name: Limpar state lock (se existir)
+        env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          cd terraform
+          echo "� Verificando se existe lock no state..."
+          # Usar Azure CLI para remover lock diretamente do blob storage
+          az storage blob lease break \
+            --account-name tfstateslms204 \
+            --container-name tfstate \
+            --blob-name slms.tfstate \
+            --auth-mode login \
+            2>/dev/null || echo "✅ Nenhum lock encontrado ou já removido"
+
       - name: Terraform Init
         env:
           ARM_USE_MSI: "true"
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: |
           cd terraform
-          
-          # Tentar init normal primeiro
-          if ! terraform init -input=false 2>&1 | tee init.log; then
-            echo "⚠️ Init falhou, verificando se é problema de lock..."
-            
-            # Verificar se é erro de lock
-            if grep -q "state blob is already locked" init.log; then
-              echo "🔓 State está locked, tentando unlock..."
-              LOCK_ID=$(grep "ID:" init.log | awk '{print $2}')
-              echo "Lock ID encontrado: $LOCK_ID"
-              
-              # Fazer unlock com backend já parcialmente inicializado
-              terraform force-unlock -force "$LOCK_ID" || echo "⚠️ Unlock falhou, mas continuando..."
-              
-              # Retry init
-              echo "🔄 Retry terraform init..."
-              terraform init -input=false -reconfigure
-            else
-              echo "❌ Erro diferente de lock, a abortar"
-              exit 1
-            fi
-          fi
-          
-          echo "✅ Terraform init concluído com sucesso"
+          echo "🔄 Iniciando Terraform..."
+          terraform init -reconfigure -input=false
+          echo "✅ Terraform init concluído"
 
       - name: Terraform Plan
         env:

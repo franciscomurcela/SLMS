@@ -1,9 +1,9 @@
 // Keycloak configuration
 // Use same-origin URL through Nginx proxy to avoid CORS and secure context issues
 const getKeycloakUrl = () => {
-  // Always use relative path /auth when behind Nginx
+  // Always use relative path / when behind Nginx
   // This makes it same-origin and works without HTTPS
-  return `${window.location.protocol}//${window.location.host}/auth`;
+  return `${window.location.protocol}//${window.location.host}`;
 };
 
 export const keycloakConfig = {

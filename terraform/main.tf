@@ -193,6 +193,7 @@ resource "azurerm_container_app" "backend" {
   ingress {
     external_enabled = false  # Internal only
     target_port      = 8082  # Backend runs on port 8082
+    exposed_port     = 8082  # Expose on internal network
     
     traffic_weight {
       latest_revision = true

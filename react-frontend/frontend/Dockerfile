@@ -18,6 +18,7 @@ RUN npm run build -- --logLevel info
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
 COPY --from=build /app/dist .
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Use nginx.azure.conf para produção (Azure Container Apps)
+COPY nginx.azure.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

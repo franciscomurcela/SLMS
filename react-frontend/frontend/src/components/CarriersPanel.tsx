@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "../config/api.config";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 
 type Row = Record<string, unknown>;
 

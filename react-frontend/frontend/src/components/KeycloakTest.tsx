@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useKeycloak } from '../context/keycloakHooks';
-import { BACKEND_URL } from '../config/keycloak.config';
+import { BACKEND_URL, keycloakConfig } from '../config/keycloak.config';
 import './KeycloakTest.css';
 
 interface WhoAmIResponse {
@@ -176,9 +176,9 @@ const KeycloakTest = () => {
           <h2>Configuration</h2>
           <div className="info-box">
             <p><strong>Backend URL:</strong> {BACKEND_URL}</p>
-            <p><strong>Keycloak URL:</strong> http://localhost:8081</p>
-            <p><strong>Realm:</strong> ESg204</p>
-            <p><strong>Client ID:</strong> frontend</p>
+            <p><strong>Keycloak URL:</strong> {keycloakConfig.url}</p>
+            <p><strong>Realm:</strong> {keycloakConfig.realm}</p>
+            <p><strong>Client ID:</strong> {keycloakConfig.clientId}</p>
           </div>
         </div>
 

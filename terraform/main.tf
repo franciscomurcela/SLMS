@@ -425,6 +425,12 @@ resource "azurerm_container_app" "frontend" {
         name  = "API_URL"
         value = "https://slms-backend.internal.calmglacier-aaa99a56.francecentral.azurecontainerapps.io"
       }
+
+      # Google Maps API Key for delivery route features
+      env {
+        name  = "VITE_GOOGLE_MAPS_API_KEY"
+        value = var.google_maps_api_key
+      }
     }
 
     min_replicas = 1

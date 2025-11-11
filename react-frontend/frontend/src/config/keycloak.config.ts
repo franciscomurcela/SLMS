@@ -9,13 +9,9 @@ const getKeycloakUrl = () => {
     // In development, Keycloak runs directly on localhost:8083
     return 'http://localhost:8083/auth';
   } else {
-    // In production, use nginx proxy path
-    return `${window.location.protocol}//${window.location.host}/auth`;
+    // In production (Azure), use Keycloak FQDN directly
+    return 'https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth';
   }
-// Point directly to Keycloak public URL with /auth path
-const getKeycloakUrl = () => {
-  // Use Keycloak FQDN directly (not same-origin anymore)
-  return 'https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth';
 };
 
 export const keycloakConfig = {

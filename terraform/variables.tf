@@ -15,3 +15,10 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
+
+variable "google_maps_api_key" {
+  description = "Google Maps API Key para funcionalidade de rotas de entrega"
+  type        = string
+  sensitive   = true
+  default     = ""  # Optional - feature will be disabled if not provided
+}

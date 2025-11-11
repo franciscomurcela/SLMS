@@ -3,6 +3,7 @@ name: CD Pipeline - Azure Deployment
 on:
   push:
     branches:
+      - migration-merge
       - cd-test
       - main
   workflow_dispatch:
@@ -244,6 +245,7 @@ jobs:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
           TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
           TF_VAR_image_tag: ${{ github.sha }}
+          TF_VAR_google_maps_api_key: ${{ secrets.TF_VAR_GOOGLE_MAPS_API_KEY }}
         run: |
           cd terraform
           terraform plan
@@ -255,6 +257,7 @@ jobs:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
           TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
           TF_VAR_image_tag: ${{ github.sha }}
+          TF_VAR_google_maps_api_key: ${{ secrets.TF_VAR_GOOGLE_MAPS_API_KEY }}
         run: |
           cd terraform
           terraform apply -auto-approve

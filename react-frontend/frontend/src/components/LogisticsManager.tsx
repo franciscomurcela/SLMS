@@ -4,7 +4,7 @@ import SimpleCharts from "./SimpleCharts";
 import { Sidebar } from "react-pro-sidebar";
 import { useEffect, useState } from "react";
 import { API_ENDPOINTS } from "../config/api.config";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 
 const role: string = "Logistics Manager";
 

@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Filter to automatically sync authenticated Keycloak users with Supabase
+ * Filter to automatically sync authenticated Keycloak users with PostgreSQL
  * Runs on every authenticated request to ensure user exists in database
  */
 @Component
@@ -24,9 +24,9 @@ public class UserSyncFilter implements Filter {
 
     private static final Logger log = LoggerFactory.getLogger(UserSyncFilter.class);
 
-    private final UserSyncService userSyncService;
+    private final UserSyncServiceNew userSyncService;
 
-    public UserSyncFilter(UserSyncService userSyncService) {
+    public UserSyncFilter(UserSyncServiceNew userSyncService) {
         this.userSyncService = userSyncService;
     }
 

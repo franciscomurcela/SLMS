@@ -150,7 +150,7 @@ const DeliveryRoute: React.FC = () => {
 
         // Use same-origin request through Nginx proxy
         const shipmentsResponse = await fetch(
-          `${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`,
+          `${API_ENDPOINTS.ORDERS}/my-shipments/${keycloakId}`,
           {
             headers: {
               Authorization: `Bearer ${keycloak.token}`,

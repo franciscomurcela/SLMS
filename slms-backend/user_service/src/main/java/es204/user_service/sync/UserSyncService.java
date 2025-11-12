@@ -1,49 +1,30 @@
 package es204.user_service.sync;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import es204.user_service.model.UserDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.dao.DataAccessException;
 
-import java.time.Instant;
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
- * Service to sync Keycloak users with Supabase Users table
+ * Service to sync Keycloak users with PostgreSQL Users table
  */
 @Service
 public class UserSyncService {
 
     private static final Logger log = LoggerFactory.getLogger(UserSyncService.class);
 
-    @Value("${supabase.url}")
-    private String supabaseUrl;
-
-    @Value("${supabase.service-role-key}")
-    private String supabaseKey;
-
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper objectMapper;
-
-    public UserSyncService() {
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
-        // Configure to handle Supabase's microsecond precision timestamps
-        this.objectMapper.configure(DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE, false);
-        this.objectMapper.configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false);
-    }
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
-     * Sync user from Keycloak JWT claims to Supabase
+     * Sync user from Keycloak JWT claims to PostgreSQL
      * Creates user if not exists, updates last_login if exists
      * Also creates entry in role-specific table (Costumer, Driver, etc.)
      * 
@@ -110,13 +91,222 @@ public class UserSyncService {
     }
 
     /**
-     * Find user by Keycloak ID
+     * Find user by Keycloak ID using PostgreSQL
      */
     private UserDTO findUserByKeycloakId(UUID keycloakId) {
         try {
-            String url = supabaseUrl + "/rest/v1/Users?keycloak_id=eq." + keycloakId + "&select=*";
+            String sql = "SELECT * FROM \"Users\" WHERE keycloak_id = ?";
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, keycloakId);
+            
+            if (!rows.isEmpty()) {
+                Map<String, Object> row = rows.get(0);
+                return mapRowToUserDTO(row);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Error finding user by keycloak_id {}: {}", keycloakId, e.getMessage());
+            return null;
+        }
+    }
 
-            HttpHeaders headers = new HttpHeaders();
+    /**
+     * Find user by username using PostgreSQL
+     */
+    private UserDTO findUserByName(String name) {
+        try {
+            String sql = "SELECT * FROM \"Users\" WHERE name = ?";
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, name);
+            
+            if (!rows.isEmpty()) {
+                Map<String, Object> row = rows.get(0);
+                return mapRowToUserDTO(row);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Error finding user by name {}: {}", name, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Update keycloak_id for existing user
+     */
+    private void updateKeycloakId(UUID userId, UUID newKeycloakId) {
+        try {
+            String sql = "UPDATE \"Users\" SET keycloak_id = ? WHERE id = ?";
+            jdbcTemplate.update(sql, newKeycloakId, userId);
+            log.info("Updated keycloak_id for user {} to {}", userId, newKeycloakId);
+        } catch (Exception e) {
+            log.error("Error updating keycloak_id for user {}: {}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * Update user information
+     */
+    private UserDTO updateUserInfo(UUID userId, String firstName, String lastName) {
+        try {
+            String sql = "UPDATE \"Users\" SET first_name = ?, last_name = ?, last_login = CURRENT_TIMESTAMP WHERE id = ?";
+            jdbcTemplate.update(sql, firstName, lastName, userId);
+            
+            // Fetch updated user
+            return findUserById(userId);
+        } catch (Exception e) {
+            log.error("Error updating user info for {}: {}", userId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Create new user
+     */
+    private UserDTO createUser(UUID keycloakId, String email, String name, String firstName, String lastName) {
+        try {
+            UUID newUserId = UUID.randomUUID();
+            String sql = "INSERT INTO \"Users\" (id, keycloak_id, email, name, first_name, last_name, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+            
+            jdbcTemplate.update(sql, newUserId, keycloakId, email, name, firstName, lastName);
+            
+            return findUserById(newUserId);
+        } catch (Exception e) {
+            log.error("Error creating user: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Find user by ID
+     */
+    private UserDTO findUserById(UUID userId) {
+        try {
+            String sql = "SELECT * FROM \"Users\" WHERE id = ?";
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql, userId);
+            
+            if (!rows.isEmpty()) {
+                return mapRowToUserDTO(rows.get(0));
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("Error finding user by id {}: {}", userId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Map database row to UserDTO
+     */
+    private UserDTO mapRowToUserDTO(Map<String, Object> row) {
+        UserDTO user = new UserDTO();
+        user.setId((UUID) row.get("id"));
+        user.setKeycloakId((UUID) row.get("keycloak_id"));
+        user.setEmail((String) row.get("email"));
+        user.setName((String) row.get("name"));
+        user.setFirstName((String) row.get("first_name"));
+        user.setLastName((String) row.get("last_name"));
+        
+        // Handle timestamps
+        if (row.get("created_at") != null) {
+            user.setCreatedAt(Instant.parse(row.get("created_at").toString()));
+        }
+        if (row.get("last_login") != null) {
+            user.setLastLogin(Instant.parse(row.get("last_login").toString()));
+        }
+        
+        return user;
+    }
+
+    /**
+     * Sync user to role-specific tables
+     */
+    private void syncUserToRoleTable(UUID userId, List<String> roles) {
+        for (String role : roles) {
+            try {
+                switch (role.toLowerCase()) {
+                    case "driver":
+                        syncToDriverTable(userId);
+                        break;
+                    case "costumer":
+                    case "customer":
+                        syncToCostumerTable(userId);
+                        break;
+                    case "csr":
+                        syncToCsrTable(userId);
+                        break;
+                    case "logisticsmanager":
+                        syncToLogisticsManagerTable(userId);
+                        break;
+                    case "warehousestaff":
+                        syncToWarehouseStaffTable(userId);
+                        break;
+                    default:
+                        log.warn("Unknown role: {}", role);
+                }
+            } catch (Exception e) {
+                log.error("Error syncing user {} to role table {}: {}", userId, role, e.getMessage());
+            }
+        }
+    }
+
+    private void syncToDriverTable(UUID userId) {
+        String checkSql = "SELECT COUNT(*) FROM \"Driver\" WHERE user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId);
+        
+        if (count == 0) {
+            String insertSql = "INSERT INTO \"Driver\" (user_id) VALUES (?)";
+            jdbcTemplate.update(insertSql, userId);
+            log.info("Created Driver entry for user {}", userId);
+        }
+    }
+
+    private void syncToCostumerTable(UUID userId) {
+        String checkSql = "SELECT COUNT(*) FROM \"Costumer\" WHERE user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId);
+        
+        if (count == 0) {
+            String insertSql = "INSERT INTO \"Costumer\" (user_id) VALUES (?)";
+            jdbcTemplate.update(insertSql, userId);
+            log.info("Created Costumer entry for user {}", userId);
+        }
+    }
+
+    private void syncToCsrTable(UUID userId) {
+        String checkSql = "SELECT COUNT(*) FROM \"Csr\" WHERE user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId);
+        
+        if (count == 0) {
+            String insertSql = "INSERT INTO \"Csr\" (user_id) VALUES (?)";
+            jdbcTemplate.update(insertSql, userId);
+            log.info("Created Csr entry for user {}", userId);
+        }
+    }
+
+    private void syncToLogisticsManagerTable(UUID userId) {
+        String checkSql = "SELECT COUNT(*) FROM \"LogisticsManager\" WHERE user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId);
+        
+        if (count == 0) {
+            String insertSql = "INSERT INTO \"LogisticsManager\" (user_id) VALUES (?)";
+            jdbcTemplate.update(insertSql, userId);
+            log.info("Created LogisticsManager entry for user {}", userId);
+        }
+    }
+
+    private void syncToWarehouseStaffTable(UUID userId) {
+        String checkSql = "SELECT COUNT(*) FROM \"WarehouseStaff\" WHERE user_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId);
+        
+        if (count == 0) {
+            String insertSql = "INSERT INTO \"WarehouseStaff\" (user_id) VALUES (?)";
+            jdbcTemplate.update(insertSql, userId);
+            log.info("Created WarehouseStaff entry for user {}", userId);
+        }
+    }
+
+    // Additional methods can be added here for other user operations
+}
             headers.set("apikey", supabaseKey);
             headers.set("Authorization", "Bearer " + supabaseKey);
             headers.setContentType(MediaType.APPLICATION_JSON);

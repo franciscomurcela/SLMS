@@ -1,5 +1,7 @@
 package com.example.demo.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,7 +10,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.List;
 
 /**
  * Security configuration for Order Service
@@ -49,7 +50,8 @@ public class SecurityConfig {
             "http://localhost:3000",
             "http://192.168.160.9:3000",
             "https://192.168.160.9",
-            "https://deti-engsoft-09.ua.pt"
+            "https://deti-engsoft-09.ua.pt",
+            "https://slms-frontend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));

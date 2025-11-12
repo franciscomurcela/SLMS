@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useKeycloak } from '../context/KeycloakContext';
+import { useKeycloak } from '../context/keycloakHooks';
 import './KeycloakLogin.css';
 
 const KeycloakLogin = () => {
@@ -48,8 +48,8 @@ const KeycloakLogin = () => {
         ) : (
           <>
             <p>You are already logged in</p>
-            <p>Username: {userInfo?.preferred_username}</p>
-            <p>Email: {userInfo?.email}</p>
+            <p>Username: {String(userInfo?.preferred_username || 'N/A')}</p>
+            <p>Email: {String(userInfo?.email || 'N/A')}</p>
           </>
         )}
       </div>

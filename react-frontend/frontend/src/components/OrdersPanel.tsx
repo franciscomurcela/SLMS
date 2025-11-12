@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
@@ -27,6 +27,7 @@ function getStatusBadge(status: string) {
     Pending: "warning",
     InTransit: "primary",
     Delivered: "success",
+    Failed: "danger",
   };
   const variant = statusMap[status] || "secondary";
   return `badge bg-${variant}`;

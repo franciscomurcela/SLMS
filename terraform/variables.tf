@@ -9,3 +9,9 @@ variable "runner_admin_password" {
   type        = string
   sensitive   = true
 }
+
+variable "image_tag" {
+  description = "Tag da imagem Docker (normalmente o commit SHA do GitHub)"
+  type        = string
+  default     = "latest"
+}

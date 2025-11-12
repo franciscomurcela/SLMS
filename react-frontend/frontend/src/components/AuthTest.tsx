@@ -1,10 +1,10 @@
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { BACKEND_URL } from "../config/keycloak.config";
 import { useState, useEffect } from "react";
 
 function AuthTest() {
   const { authenticated, loading, userInfo, token, logout } = useKeycloak();
-  const [backendResponse, setBackendResponse] = useState<any>(null);
+  const [backendResponse, setBackendResponse] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
@@ -38,8 +38,12 @@ function AuthTest() {
 
       const data = await response.json();
       setBackendResponse(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erro desconhecido');
+      }
     }
   };
 

@@ -1,7 +1,7 @@
 import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { useEffect, useState } from "react";
 
 const role: string = Roles.ROLE_CUSTOMER;
@@ -27,6 +27,7 @@ function getStatusBadge(status: string) {
     Pending: "warning",
     InTransit: "primary",
     Delivered: "success",
+    Failed: "danger",
   };
   const variant = statusMap[status] || "secondary";
   return `badge bg-${variant}`;
@@ -96,8 +97,9 @@ function Customer() {
   }, [isCustomer, showOrderHistory, keycloak]);
 
   // Get the user's name from Keycloak, with fallbacks
-  const displayName =
-    userInfo?.name || userInfo?.preferred_username || "Utilizador";
+  const displayName = String(
+    userInfo?.name || userInfo?.preferred_username || "Utilizador"
+  );
 
   return (
     <>
@@ -113,12 +115,12 @@ function Customer() {
               </h5>
               <h4 className="text-end fw-bold text-dark">{displayName}</h4>
               <p className="text-end text-muted mb-1">
-                {userInfo?.email && (
+                {userInfo?.email ? (
                   <small>
                     <i className="bi bi-envelope me-1"></i>
-                    {userInfo.email}
+                    {String(userInfo.email)}
                   </small>
-                )}
+                ) : null}
               </p>
             </div>
           </div>

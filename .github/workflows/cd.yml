@@ -1,124 +1,410 @@
-name: CD Pipeline
+name: CD Pipeline - Azure Deployment
 
 on:
   push:
     branches:
-      - master
+      - cd-test
+      - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  pull-requests: write
+
+env:
+  ACR_NAME: ${{ secrets.ACR_NAME }}
+  RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+
 jobs:
-  build-and-deploy:
+  # Espera pelo CI antes de fazer deploy yayayaya
+  wait-for-ci:
     runs-on: ubuntu-latest
     steps:
+      - name: Wait for CI workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            console.log(`Waiting for CI workflow to complete for commit ${sha}...`);
+            
+            const maxAttempts = 60; // 30 minutos (30 segundos * 60)
+            let attempt = 0;
+            
+            while (attempt < maxAttempts) {
+              // Get all workflow runs for this commit
+              const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
+                owner,
+                repo,
+                event: 'push',
+                head_sha: sha,
+              });
+              
+              // Find the CI workflow
+              const ciRun = runs.workflow_runs.find(run => run.name === 'CI');
+              
+              if (ciRun) {
+                console.log(`CI workflow status: ${ciRun.status}, conclusion: ${ciRun.conclusion}`);
+                
+                if (ciRun.status === 'completed') {
+                  if (ciRun.conclusion === 'success') {
+                    console.log('✅ CI passed! Proceeding with deployment...');
+                    return;
+                  } else {
+                    core.setFailed(`❌ CI failed with conclusion: ${ciRun.conclusion}`);
+                    return;
+                  }
+                }
+              }
+              
+              console.log(`Attempt ${attempt + 1}/${maxAttempts}: CI still running, waiting 30 seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 30000));
+              attempt++;
+            }
+            
+            core.setFailed('❌ Timeout waiting for CI to complete');
+          
+  build-and-deploy-azure:
+    runs-on: [self-hosted, Linux, X64, es2526-204]
+    needs: wait-for-ci
+    steps:
+      - name: Verificar se é o runner correto
+        run: |
+          echo "🔍 Runner Name: $RUNNER_NAME"
+          echo "🔍 Runner OS: $RUNNER_OS"
+          echo "🔍 Verificando se tem Azure CLI, Docker e Terraform..."
+          
+          HAS_AZURE_CLI=$(command -v az >/dev/null 2>&1 && echo "yes" || echo "no")
+          HAS_DOCKER=$(command -v docker >/dev/null 2>&1 && echo "yes" || echo "no")
+          HAS_TERRAFORM=$(command -v terraform >/dev/null 2>&1 && echo "yes" || echo "no")
+          HAS_GIT=$(command -v git >/dev/null 2>&1 && echo "yes" || echo "no")
+          
+          echo "Azure CLI: $HAS_AZURE_CLI"
+          echo "Docker: $HAS_DOCKER"
+          echo "Terraform: $HAS_TERRAFORM"
+          echo "Git: $HAS_GIT"
+          
+          if [ "$HAS_AZURE_CLI" != "yes" ] || [ "$HAS_DOCKER" != "yes" ]; then
+            echo "❌ Este runner não tem as ferramentas necessárias!"
+            echo "💡 O CD precisa de correr no runner 204_runner (Azure VM)"
+            echo "Por favor, garante que o runner 204_runner está online e com a label correta"
+            exit 1
+          fi
+          
+          if [ "$HAS_GIT" != "yes" ]; then
+            echo "⚠️  Git não encontrado! Instalando..."
+            sudo apt-get update -qq
+            sudo apt-get install -y git
+          fi
+          
+          echo "✅ Runner válido para deployment Azure!"
+      
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
+          fetch-depth: 0
+      
+      - name: Debug - Show deployment info
+        run: |
+          echo "🚀 Iniciando deployment para Azure"
+          echo "Event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Commit: $(git rev-parse HEAD)"
+          git log --oneline -1
 
-      - name: Set up Node.js
+      # ==========================================
+      # AZURE AUTHENTICATION
+      # ==========================================
+      - name: Login no Azure com Managed Identity
+        run: |
+          echo "🔐 Autenticando no Azure com Managed Identity..."
+          az login --identity
+          az account show
+
+      - name: Login no Azure Container Registry
+        run: |
+          echo "🔐 Autenticando no ACR..."
+          az acr login --name ${{ secrets.ACR_NAME }}
+          echo "✅ Autenticado no ACR com sucesso!"
+
+      # ==========================================
+      # BUILD & PUSH DOCKER IMAGES
+      # ==========================================
+      - name: Build e Push - Backend (user_service)
+        run: |
+          echo "🏗️ Building Backend (user_service)..."
+          cd slms-backend/user_service
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          # Build uma vez e tag duas vezes
+          docker build -t ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} .
+          docker tag ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-backend:latest
+          
+          echo "📤 Pushing Backend to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-backend:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-backend:latest || true
+      
+      - name: Build e Push - Carrier Service
+        run: |
+          echo "🏗️ Building Carrier Service..."
+          cd slms-backend/carrier_service/carrier_service
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          docker build -t ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }} .
+          docker tag ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-carrier-service:latest
+          
+          echo "📤 Pushing Carrier Service to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-carrier-service:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-carrier-service:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-carrier-service:latest || true
+      
+      - name: Build e Push - Order Service
+        run: |
+          echo "🏗️ Building Order Service..."
+          cd slms-backend/order_service/demo
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          docker build -t ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} .
+          docker tag ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-order-service:latest
+          
+          echo "📤 Pushing Order Service to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-order-service:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-order-service:latest || true
+
+      - name: Build e Push - Frontend
+        timeout-minutes: 30
+        run: |
+          echo "🏗️ Building Frontend..."
+          cd react-frontend/frontend
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          echo "Building with progress output..."
+          docker build --progress=plain -t ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} .
+          docker tag ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-frontend:latest
+          
+          echo "📤 Pushing Frontend to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-frontend:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:latest || true
+
+      # ==========================================
+      # TERRAFORM DEPLOYMENT
+      # ==========================================
+      - name: Setup Node.js for Terraform wrapper
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-    # (linha removida, estava fora do bloco steps)
-      # Teste estático frontend (lint)
-      - name: Lint frontend (Static Analysis)
-        run: npm run lint
-        working-directory: ./react-frontend/frontend
-      # Teste unitário frontend
-      - name: Testes unitários frontend
-        run: npm run test:unit
-        working-directory: ./react-frontend/frontend
-
-      # Teste E2E frontend (Cypress)
-      - name: Testes E2E frontend (Cypress)
-        run: npm run test:e2e || echo "E2E tests skipped (configure Cypress if needed)"
-        working-directory: ./react-frontend/frontend
-
-      - name: Gerar relatório Allure (frontend)
-        run: npx allure generate --clean ./allure-results -o ./allure-report
-        working-directory: ./react-frontend/frontend
-      - name: Publicar relatório Allure (frontend)
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-frontend
-          path: ./react-frontend/frontend/allure-report
-      - run: npm run build
-
-      # Teste estático backend (Checkstyle)
-      - name: Checkstyle backend
-        run: mvn checkstyle:check --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-
-      # Testes backend Java
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      - name: Testar user_service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-
-      - name: Gerar relatório Allure (user_service)
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/user_service
-      - name: Publicar relatório Allure (user_service)
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-user_service
-          path: ./slms-backend/user_service/target/site/allure-maven-plugin
-      - name: Testar order_service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/order_service/demo
-      - name: Gerar relatório Allure (order_service)
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/order_service/demo
-      - name: Publicar relatório Allure (order_service)
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-order_service
-          path: ./slms-backend/order_service/demo/target/site/allure-maven-plugin
-      - name: Testar carrier_service
-        run: mvn test --no-transfer-progress
-        working-directory: ./slms-backend/carrier_service/carrier_service
-      - name: Gerar relatório Allure (carrier_service)
-        run: mvn allure:report --no-transfer-progress
-        working-directory: ./slms-backend/carrier_service/carrier_service
-      - name: Publicar relatório Allure (carrier_service)
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report-carrier_service
-          path: ./slms-backend/carrier_service/carrier_service/target/site/allure-maven-plugin
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push Docker image (backend)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./slms-backend/user_service
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
-      - name: Build and push Docker image (frontend)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./react-frontend/frontend
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
-      # Deploy direto no runner auto-hospedado
-      - name: Deploy no runner auto-hospedado
-        if: runner.os == 'Linux' || runner.os == 'Windows'
+          
+      - name: Install dependencies for Terraform
         run: |
-          echo "Fazendo pull das imagens Docker mais recentes..."
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/slms-frontend:latest
-          echo "Reiniciando containers com docker-compose..."
+          echo "📦 Installing unzip..."
+          sudo apt-get update -qq
+          sudo apt-get install -y unzip
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          cd terraform
+          terraform init
+
+      - name: Terraform Plan
+        env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
+          TF_VAR_image_tag: ${{ github.sha }}
+        run: |
+          cd terraform
+          terraform plan
+
+      - name: Terraform Apply
+        env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
+          TF_VAR_image_tag: ${{ github.sha }}
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+
+      - name: Obter URLs dos serviços
+        continue-on-error: true
+        env:
+          ARM_USE_MSI: "true"
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          cd terraform
+          FRONTEND_URL=$(terraform output -raw frontend_url_https 2>/dev/null || echo "N/A")
+          KEYCLOAK_URL=$(terraform output -raw keycloak_url 2>/dev/null || echo "N/A")
+          echo "✅ Deployment completo!"
+          echo "🌐 Frontend URL: $FRONTEND_URL"
+          echo "🔑 Keycloak URL: $KEYCLOAK_URL"
+          echo "FRONTEND_URL=$FRONTEND_URL" >> $GITHUB_ENV
+          echo "KEYCLOAK_URL=$KEYCLOAK_URL" >> $GITHUB_ENV
+
+      # ==========================================
+      # ALLURE REPORTS (DOWNLOAD FROM CI)
+      # ==========================================
+      - name: Verificar se artifacts de Allure existem
+        id: check-artifacts
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find CI workflow runs for this commit
+            const sha = context.sha;
+            const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event: 'push',
+              head_sha: sha,
+            });
+            
+            // Get the CI workflow run that completed
+            const ciRun = runs.workflow_runs.find(run => run.name === 'CI' && run.status === 'completed');
+            
+            if (!ciRun) {
+              console.log('❌ CI workflow não encontrado para este commit');
+              core.setOutput('has-artifacts', 'false');
+              return;
+            }
+            
+            console.log(`CI workflow ID: ${ciRun.id}`);
+            
+            // Get artifacts from CI workflow
+            const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ciRun.id
+            });
+            
+            const artifactNames = artifacts.artifacts.map(a => a.name);
+            console.log('✅ Artifacts do CI encontrados:', artifactNames);
+            core.setOutput('ci-run-id', ciRun.id);
+            core.setOutput('has-artifacts', artifactNames.length > 0 ? 'true' : 'false');
+      
+      - name: Download Allure results (user_service)
+        if: steps.check-artifacts.outputs.has-artifacts == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results-user_service
+          path: slms-backend/user_service/allure-results
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.check-artifacts.outputs.ci-run-id }}
+        continue-on-error: true
+      
+      - name: Download Allure results (carrier_service)
+        if: steps.check-artifacts.outputs.has-artifacts == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results-carrier_service
+          path: slms-backend/carrier_service/carrier_service/allure-results
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.check-artifacts.outputs.ci-run-id }}
+        continue-on-error: true
+      
+      - name: Download Allure results (order_service)
+        if: steps.check-artifacts.outputs.has-artifacts == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results-order_service
+          path: slms-backend/order_service/demo/allure-results
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.check-artifacts.outputs.ci-run-id }}
+        continue-on-error: true
+      
+      - name: Download Allure results (frontend)
+        if: steps.check-artifacts.outputs.has-artifacts == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results-frontend
+          path: react-frontend/frontend/allure-results
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.check-artifacts.outputs.ci-run-id }}
+        continue-on-error: true
+      
+      - name: Deploy Allure Reports Container
+        if: steps.check-artifacts.outputs.has-artifacts == 'true'
+        run: |
+          echo "📊 Verificando docker-compose..."
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Instalando docker-compose..."
+            # Verificar se curl existe
+            if ! command -v curl &> /dev/null; then
+              echo "⚠️  curl não encontrado! Instalando..."
+              sudo apt-get update -qq
+              sudo apt-get install -y curl
+            fi
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          echo "📊 Iniciando container de relatórios Allure..."
           cd slms-backend
-          docker-compose down
-          docker-compose up -d
-          cd ../react-frontend/frontend
-          docker-compose down || true
-          docker-compose up -d || true
-        shell: bash
+          docker-compose -f docker-compose.allure.yml down || true
+          docker-compose -f docker-compose.allure.yml up -d --build
+          echo "✅ Container Allure disponível localmente no runner"
+        continue-on-error: true
+
+      # ==========================================
+      # DEPLOYMENT SUMMARY
+      # ==========================================
+      - name: Criar comentário com resultado
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const frontendUrl = process.env.FRONTEND_URL || 'N/A';
+            const keycloakUrl = process.env.KEYCLOAK_URL || 'N/A';
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? '✅' : '❌';
+            
+            const comment = `## ${emoji} Azure Deployment ${status}
+            
+            **Frontend URL:** ${frontendUrl}
+            **Keycloak URL:** ${keycloakUrl}
+            **Commit:** \`${{ github.sha }}\`
+            **Branch:** \`${{ github.ref_name }}\`
+            **Triggered by:** @${{ github.actor }}
+            
+            ### Services Deployed:
+            - 🌐 Frontend (Nginx)
+            - 🔧 Backend (user_service)
+            - 📦 Carrier Service
+            - 📋 Order Service
+            - 🔑 Keycloak (Auth)
+            - 🗄️ PostgreSQL Database
+            `;
+            
+            console.log(comment);

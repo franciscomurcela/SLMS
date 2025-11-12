@@ -1,0 +1,31 @@
+# Dockerfile para gerar relatórios Allure
+FROM eclipse-temurin:17-jre-alpine
+
+# Instalar dependências
+RUN apk add --no-cache \
+    curl \
+    unzip \
+    bash
+
+# Instalar Allure
+ARG ALLURE_VERSION=2.30.0
+RUN curl -o allure-commandline-${ALLURE_VERSION}.zip -L https://repo.maven.apache.org/maven2/io/qameta/allure/allure-commandline/${ALLURE_VERSION}/allure-commandline-${ALLURE_VERSION}.zip && \
+    unzip allure-commandline-${ALLURE_VERSION}.zip -d /opt/ && \
+    ln -s /opt/allure-${ALLURE_VERSION}/bin/allure /usr/bin/allure && \
+    rm allure-commandline-${ALLURE_VERSION}.zip
+
+# Diretórios de trabalho
+WORKDIR /app
+
+# Criar script para consolidar resultados
+RUN echo '#!/bin/bash' > /consolidate.sh && \
+    echo 'mkdir -p /app/consolidated-results' >> /consolidate.sh && \
+    echo 'find /app/allure-results -type f \( -name "*.json" -o -name "*.txt" -o -name "*.properties" \) -exec cp {} /app/consolidated-results/ \;' >> /consolidate.sh && \
+    echo 'allure serve /app/consolidated-results --port 8080 --host 0.0.0.0' >> /consolidate.sh && \
+    chmod +x /consolidate.sh
+
+# Expor porta para visualizar relatórios
+EXPOSE 8080
+
+# Comando padrão: consolidar e servir
+ENTRYPOINT ["/consolidate.sh"]

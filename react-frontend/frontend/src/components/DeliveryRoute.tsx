@@ -197,7 +197,7 @@ const DeliveryRoute: React.FC = () => {
     };
 
     loadOrderDetails();
-  }, [keycloak?.token, orderId]);
+  }, [keycloak?.token, keycloak?.tokenParsed?.sub, orderId]);
 
   useEffect(() => {
     console.log("🗺️ useEffect do mapa executado:", {
@@ -616,7 +616,7 @@ const DeliveryRoute: React.FC = () => {
       }
       navigationStartedRef.current = false;
     };
-  }, [navigationActive, orderDetails]);
+  }, [navigationActive, orderDetails, currentStepIndex, navigationSteps]);
 
   const handleStartNavigation = () => {
     setNavigationActive(true);
@@ -634,14 +634,40 @@ const DeliveryRoute: React.FC = () => {
     setShowAnomalyModal(true);
   };
 
-  const handleAnomalySubmit = () => {
-    if (selectedAnomaly) {
-      // Aqui seria implementada a lógica para registrar a anomalia
-      console.log("Anomalia registrada:", selectedAnomaly, anomalyDescription);
-      alert(`Anomalia registrada: ${selectedAnomaly}`);
-      navigate("/driver/manifest");
-    } else {
+  const handleAnomalySubmit = async () => {
+    if (!selectedAnomaly) {
       alert("Por favor, selecione um tipo de anomalia.");
+      return;
+    }
+
+    try {
+      const errorMessage = selectedAnomaly === "Outras (especificar)" ? anomalyDescription : selectedAnomaly;
+      
+      const token = keycloak?.token;
+      const response = await fetch(API_ENDPOINTS.REPORT_ANOMALY, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          orderId: orderId,
+          errorMessage: errorMessage
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert(`Anomalia registrada com sucesso: ${errorMessage}`);
+        navigate("/driver/manifest");
+      } else {
+        console.error('Erro ao registrar anomalia:', data);
+        alert(`Erro ao registrar anomalia: ${data.message || 'Erro desconhecido'}`);
+      }
+    } catch (error) {
+      console.error('Erro ao registrar anomalia:', error);
+      alert('Erro ao registrar anomalia. Tente novamente.');
     }
   };
 

@@ -3,7 +3,7 @@ import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import { useNavigate } from "react-router-dom";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { getRouteForRole } from "../config/roles.config";
 import { API_ENDPOINTS } from "../config/api.config";
 import "./TrackingPortal.css";
@@ -23,6 +23,7 @@ interface TrackingResult {
   proofOfDelivery: string | null;
   carrierName: string | null;
   carrierId: string | null;
+  errorMessage: string | null;
 }
 
 function TrackingPortal() {
@@ -106,6 +107,7 @@ function TrackingPortal() {
       InTransit: { class: "bg-info", text: "Em Trânsito" },
       Delivered: { class: "bg-success", text: "Entregue" },
       Cancelled: { class: "bg-danger", text: "Cancelada" },
+      Failed: { class: "bg-danger", text: "Falhada" },
     };
 
     const statusInfo = statusMap[status] || { class: "bg-secondary", text: status };
@@ -307,6 +309,21 @@ function TrackingPortal() {
                   </div>
                 </div>
               </div>
+
+              {/* Error Message for Failed Status */}
+              {trackingResult.status === 'Failed' && trackingResult.errorMessage && (
+                <div className="error-section mt-4">
+                  <h5 className="mb-3">
+                    <i className="bi bi-exclamation-triangle me-2"></i>Motivo da Falha
+                  </h5>
+                  <div className="alert alert-danger">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-x-circle-fill me-2"></i>
+                      <strong>{trackingResult.errorMessage}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Proof of Delivery */}
               {trackingResult.proofOfDelivery && (

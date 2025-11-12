@@ -1,7 +1,6 @@
 import TrackingPortal from "./components/PageTrackingPortal";
 import LogisticsManager from "./components/PageLogisticsManager";
 import Driver from "./components/Driver";
-import DriverProofOfDelivery from "./components/DriverProofOfDelivery";
 import DriverCargoManifest from "./components/DriverCargoManifest";
 import ConfirmDelivery from "./components/ConfirmDelivery";
 import Customer from "./components/PageCustomer";
@@ -32,14 +31,6 @@ function App() {
             element={
               <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
                 <Driver />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={Paths.PATH_DRIVER_PROOF_OF_DELIVERY}
-            element={
-              <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
-                <DriverProofOfDelivery />
               </ProtectedRoute>
             }
           />

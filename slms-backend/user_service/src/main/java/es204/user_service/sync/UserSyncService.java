@@ -111,6 +111,7 @@ public class UserSyncService {
             return null;
         } catch (Exception e) {
             log.error("Error finding user by keycloak_id {}: {}", keycloakId, e.getMessage());
+            // Return null instead of throwing exception to prevent service startup failure
             return null;
         }
     }

@@ -24,9 +24,9 @@ public class UserSyncFilter implements Filter {
 
     private static final Logger log = LoggerFactory.getLogger(UserSyncFilter.class);
 
-    private final UserSyncServiceNew userSyncService;
+    private final UserSyncService userSyncService;
 
-    public UserSyncFilter(UserSyncServiceNew userSyncService) {
+    public UserSyncFilter(UserSyncService userSyncService) {
         this.userSyncService = userSyncService;
     }
 

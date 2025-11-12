@@ -28,9 +28,12 @@ public class SecurityConfig {
             .authorizeHttpRequests((authz) -> authz
                 // Public endpoints
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/user/health").permitAll()  // Debug endpoint
                 // All order endpoints require authentication
                 .requestMatchers("/api/orders/**").authenticated()
                 .requestMatchers("/api/shipments/**").authenticated()
+                // User endpoints require authentication
+                .requestMatchers("/user/**").authenticated()
                 .anyRequest().authenticated()
             )
             // Enable OAuth2 Resource Server (JWT validation against Keycloak)

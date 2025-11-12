@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useKeycloak } from "../context/KeycloakContext";
+import { useFeatureFlags } from "../context/FeatureFlagsContext";
 import { API_ENDPOINTS } from "../config/api.config";
 import "./TrackingPortal.css";
 
@@ -27,10 +28,14 @@ interface OrderStep {
 
 function TrackingPortalCSR() {
   const { keycloak } = useKeycloak();
+  const { isFeatureEnabled } = useFeatureFlags();
   const [trackingId, setTrackingId] = useState("");
   const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Feature flag para histórico de pedidos
+  const showOrderHistory = isFeatureEnabled('csr-order-history');
 
   const handleSearch = async () => {
     if (!trackingId.trim()) {
@@ -236,44 +241,46 @@ function TrackingPortalCSR() {
               {getStatusBadge(trackingResult.status)}
             </div>
 
-            {/* Order Timeline - FIRST */}
-            <div className="order-timeline-section mb-4">
-              <h5 className="mb-4">
-                <i className="bi bi-clock-history me-2"></i>Histórico do Pedido
-              </h5>
-              <div className="timeline-container">
-                {getOrderSteps(
-                  trackingResult.status,
-                  trackingResult.orderDate,
-                  trackingResult.actualDeliveryTime
-                ).map((step, index, array) => (
-                  <div key={step.id} className="timeline-step-wrapper">
-                    <div className={`timeline-step ${step.status}`}>
-                      <div className="step-icon-wrapper">
-                        <div className={`step-icon ${step.status}`}>
-                          <i className={`bi ${step.icon}`}></i>
+            {/* Order Timeline - FIRST (only if feature flag is enabled) */}
+            {showOrderHistory && (
+              <div className="order-timeline-section mb-4">
+                <h5 className="mb-4">
+                  <i className="bi bi-clock-history me-2"></i>Histórico do Pedido
+                </h5>
+                <div className="timeline-container">
+                  {getOrderSteps(
+                    trackingResult.status,
+                    trackingResult.orderDate,
+                    trackingResult.actualDeliveryTime
+                  ).map((step, index, array) => (
+                    <div key={step.id} className="timeline-step-wrapper">
+                      <div className={`timeline-step ${step.status}`}>
+                        <div className="step-icon-wrapper">
+                          <div className={`step-icon ${step.status}`}>
+                            <i className={`bi ${step.icon}`}></i>
+                          </div>
+                          {index < array.length - 1 && (
+                            <div className={`step-line ${
+                              trackingResult.status === 'Failed' && step.label === 'Pedido Criado' ? 'failed' :
+                              array[index + 1].status !== 'pending' ? 'completed' : ''
+                            }`}></div>
+                          )}
                         </div>
-                        {index < array.length - 1 && (
-                          <div className={`step-line ${
-                            trackingResult.status === 'Failed' && step.label === 'Pedido Criado' ? 'failed' :
-                            array[index + 1].status !== 'pending' ? 'completed' : ''
-                          }`}></div>
-                        )}
-                      </div>
-                      <div className="step-content">
-                        <h6 className="step-label">{step.label}</h6>
-                        {step.date && (
-                          <small className="step-date text-muted">
-                            <i className="bi bi-calendar-event me-1"></i>
-                            {step.date}
-                          </small>
-                        )}
+                        <div className="step-content">
+                          <h6 className="step-label">{step.label}</h6>
+                          {step.date && (
+                            <small className="step-date text-muted">
+                              <i className="bi bi-calendar-event me-1"></i>
+                              {step.date}
+                            </small>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Informações da Encomenda */}
             <h5 className="mb-3 mt-4">

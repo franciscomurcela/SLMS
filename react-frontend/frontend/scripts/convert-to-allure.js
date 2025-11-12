@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const allureDir = path.join(__dirname, '../allure-results');
 if (!fs.existsSync(allureDir)) {
   fs.mkdirSync(allureDir, { recursive: true });
+  console.log('✓ Created allure-results directory');
 }
 
 // Ler resultados dos testes Vitest
@@ -19,6 +20,11 @@ const testResultsPath = path.join(__dirname, '../test-results/test-results.json'
 const cypressResultsDir = path.join(__dirname, '../allure-results');
 const hasCypressResults = fs.existsSync(cypressResultsDir) && 
                           fs.readdirSync(cypressResultsDir).some(file => file.endsWith('.json'));
+
+console.log('🔍 Checking for test results...');
+console.log('   Vitest results path:', testResultsPath);
+console.log('   Vitest results exist:', fs.existsSync(testResultsPath));
+console.log('   Cypress results exist:', hasCypressResults);
 
 if (!fs.existsSync(testResultsPath) && !hasCypressResults) {
   console.log('⚠️  Nenhum resultado de teste encontrado. Criando resultados vazios.');

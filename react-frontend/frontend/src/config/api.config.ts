@@ -1,58 +1,30 @@
 // API Configuration
-// Adapts to current environment automatically
+// Always use nginx proxy routes (no direct service access)
 
 /**
- * Determine the current environment and set appropriate base URL
+ * Base URL - always uses current host (nginx proxy handles routing)
  */
-const isDevelopment = window.location.hostname === 'localhost' && 
-                     (window.location.port === '3000' || window.location.port === '5173');
+export const API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
 
 /**
- * Base URL for the application
- * - Development: Direct service URLs on localhost
- * - Production: Uses nginx proxy with current host
- */
-export const API_BASE_URL = isDevelopment 
-  ? 'http://localhost' 
-  : `${window.location.protocol}//${window.location.host}`;
-
-/**
- * Backend API endpoints
- * - Development: Direct service ports
- * - Production: Through Nginx proxy
+ * Backend API endpoints through Nginx proxy
  */
 export const API_ENDPOINTS = {
   // Carriers API
-  CARRIERS: isDevelopment 
-    ? `${API_BASE_URL}:8080/carriers`
-    : `${API_BASE_URL}/carriers`,
+  CARRIERS: `${API_BASE_URL}/carriers`,
   
-  // Orders API
-  ORDERS: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders`
-    : `${API_BASE_URL}/api/orders`,
-  SHIPMENTS: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/shipments`
-    : `${API_BASE_URL}/api/shipments`,
-  CONFIRM_DELIVERY: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders/confirm-delivery`
-    : `${API_BASE_URL}/api/orders/confirm-delivery`,
-  REPORT_ANOMALY: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders/report-anomaly`
-    : `${API_BASE_URL}/api/orders/report-anomaly`,
+  // Orders API  
+  ORDERS: `${API_BASE_URL}/api/orders`,
+  SHIPMENTS: `${API_BASE_URL}/api/shipments`,
+  CONFIRM_DELIVERY: `${API_BASE_URL}/api/orders/confirm-delivery`,
+  REPORT_ANOMALY: `${API_BASE_URL}/api/orders/report-anomaly`,
   
   // Users API
-  USERS: isDevelopment 
-    ? `${API_BASE_URL}:8082/user`
-    : `${API_BASE_URL}/user`,
-  WHOAMI: isDevelopment 
-    ? `${API_BASE_URL}:8082/user/whoami`
-    : `${API_BASE_URL}/user/whoami`,
+  USERS: `${API_BASE_URL}/user`,
+  WHOAMI: `${API_BASE_URL}/user/whoami`,
   
-  // Auth (Keycloak - port 8083 in development)
-  AUTH: isDevelopment 
-    ? `${API_BASE_URL}:8083/auth`
-    : `${API_BASE_URL}/auth`,
+  // Auth (Keycloak through nginx proxy)
+  AUTH: `${API_BASE_URL}/auth`,
 } as const;
 
 /**

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useKeycloak } from "../context/KeycloakContext";
-import { useFeatureFlags } from "../context/FeatureFlagsContext";
+import { useKeycloak } from "../context/keycloakHooks";
+import { useFeatureFlags } from "../context/featureFlagsHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 import "./TrackingPortal.css";
 

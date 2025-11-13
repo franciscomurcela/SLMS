@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import "./ConfirmDelivery.css";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
+import { useFeatureFlags } from "../context/featureFlagsHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
 type ConfirmDeliveryProps = Record<string, never>;
@@ -20,7 +21,12 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { keycloak } = useKeycloak();
+  const { isFeatureEnabled } = useFeatureFlags();
   const orderId = searchParams.get("orderId") || "N/A";
+
+  // Feature flags
+  const showAnomalyButton = isFeatureEnabled('driver-register-anomalies');
+  const showProofOfDelivery = isFeatureEnabled('driver-pod');
 
   console.log("ConfirmDelivery component loaded");
 
@@ -277,10 +283,10 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
   };
 
   const handleConfirmDelivery = async () => {
-    // Verificar se temos alguma prova de entrega
+    // Verificar se temos alguma prova de entrega (apenas se feature flag ativa)
     const proofData = capturedPhoto || signatureData || uploadedImage;
 
-    if (!proofData) {
+    if (showProofOfDelivery && !proofData) {
       alert("Por favor, forneça uma prova de entrega (foto ou assinatura)");
       return;
     }
@@ -306,19 +312,30 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
         console.warn("Could not get location:", locationError);
       }
 
-      // Determinar o tipo de prova
-      let proofType: "photo" | "signature";
-      if (capturedPhoto) proofType = "photo";
-      else if (signatureData) proofType = "signature";
-      else proofType = "photo"; // upload de arquivo também é tratado como photo
-
-      const confirmationData = {
+      // Preparar dados de confirmação
+      const confirmationData: {
+        orderId: string;
+        proofType?: "photo" | "signature";
+        proofData?: string;
+        timestamp: string;
+        location?: { latitude: number; longitude: number };
+      } = {
         orderId,
-        proofType,
-        proofData: proofData.split(",")[1], // Remove data:image/... prefix
         timestamp: new Date().toISOString(),
         location,
       };
+
+      // Adicionar prova de entrega apenas se feature flag ativa e houver dados
+      if (showProofOfDelivery && proofData) {
+        // Determinar o tipo de prova
+        let proofType: "photo" | "signature";
+        if (capturedPhoto) proofType = "photo";
+        else if (signatureData) proofType = "signature";
+        else proofType = "photo"; // upload de arquivo também é tratado como photo
+
+        confirmationData.proofType = proofType;
+        confirmationData.proofData = proofData.split(",")[1]; // Remove data:image/... prefix
+      }
 
       const response = await fetch(API_ENDPOINTS.CONFIRM_DELIVERY, {
         method: "POST",
@@ -507,20 +524,22 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                 </h2>
                 <h4 className="text-muted">ID: {orderId}</h4>
               </div>
-              <div>
-                <button
-                  type="button"
-                  className="btn btn-warning btn-lg px-4 py-3"
-                  onClick={handleReportAnomaly}
-                  style={{ fontSize: "1.1rem", fontWeight: "bold" }}
-                >
-                  <i
-                    className="bi bi-exclamation-triangle-fill me-2"
-                    style={{ fontSize: "1.3rem" }}
-                  ></i>
-                  Registrar Anomalia
-                </button>
-              </div>
+              {showAnomalyButton && (
+                <div>
+                  <button
+                    type="button"
+                    className="btn btn-warning btn-lg px-4 py-3"
+                    onClick={handleReportAnomaly}
+                    style={{ fontSize: "1.1rem", fontWeight: "bold" }}
+                  >
+                    <i
+                      className="bi bi-exclamation-triangle-fill me-2"
+                      style={{ fontSize: "1.3rem" }}
+                    ></i>
+                    Registrar Anomalia
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Informações do destinatário e endereço combinadas */}
@@ -575,13 +594,14 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
             </div>
 
             {/* Bloco de Prova de Entrega */}
-            <div className="card mb-4 shadow-sm">
-              <div className="card-header bg-secondary text-white">
-                <h5 className="mb-0">
-                  <i className="bi bi-clipboard-check me-2"></i>
-                  Prova de Entrega
-                </h5>
-              </div>
+            {showProofOfDelivery && (
+              <div className="card mb-4 shadow-sm">
+                <div className="card-header bg-secondary text-white">
+                  <h5 className="mb-0">
+                    <i className="bi bi-clipboard-check me-2"></i>
+                    Prova de Entrega
+                  </h5>
+                </div>
               <div className="card-body">
                 <p className="text-muted text-center mb-4">
                   Carregar uma foto ou assinatura do destinatário.
@@ -787,7 +807,8 @@ const ConfirmDelivery: React.FC<ConfirmDeliveryProps> = () => {
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            )}
 
             {/* Botão de Confirmação */}
             <div className="text-center">

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Paths from './UtilsPaths';
-import { useKeycloak } from '../context/KeycloakContext';
+import { useKeycloak } from '../context/keycloakHooks';
+
 import { API_ENDPOINTS } from '../config/api.config';
 
 const role: string = 'Driver';

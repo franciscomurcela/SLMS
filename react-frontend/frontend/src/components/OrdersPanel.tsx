@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useKeycloak } from "../context/keycloakHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
@@ -50,6 +51,7 @@ function formatWeight(weight: number) {
 
 export default function OrdersPanel() {
   const { keycloak } = useKeycloak();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -117,7 +119,7 @@ export default function OrdersPanel() {
 
   const downloadPackingSlip = async (orderId: string) => {
     try {
-      const url = `/api/orders/${orderId}/packing-slip`;
+      const url = `${API_ENDPOINTS.ORDERS}/${orderId}/packing-slip`;
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -143,7 +145,7 @@ export default function OrdersPanel() {
 
   const downloadShippingLabel = async (orderId: string) => {
     try {
-      const url = `/api/orders/${orderId}/shipping-label`;
+      const url = `${API_ENDPOINTS.ORDERS}/${orderId}/shipping-label`;
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -281,7 +283,7 @@ export default function OrdersPanel() {
                     {order.status === "Pending" && (
                       <button
                         className="btn btn-sm btn-primary"
-                        onClick={() => window.location.href = `/warehouse/process/${order.orderId}`}
+                        onClick={() => navigate(`/warehouse/process/${order.orderId}`)}
                       >
                         <i className="bi bi-pencil-square me-1"></i>
                         Processar

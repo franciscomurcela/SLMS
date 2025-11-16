@@ -5,6 +5,14 @@ WORKDIR /app
 # Aumentar memória do Node.js
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
+# Define build arguments for environment variables
+ARG VITE_FLAGSMITH_ENVIRONMENT_KEY
+ARG VITE_GOOGLE_MAPS_API_KEY
+
+# Set environment variables from build arguments
+ENV VITE_FLAGSMITH_ENVIRONMENT_KEY=${VITE_FLAGSMITH_ENVIRONMENT_KEY}
+ENV VITE_GOOGLE_MAPS_API_KEY=${VITE_GOOGLE_MAPS_API_KEY}
+
 COPY package.json package-lock.json* ./
 # Install dependencies with legacy peer deps flag
 RUN npm install --legacy-peer-deps

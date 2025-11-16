@@ -22,32 +22,32 @@ export const API_BASE_URL = isDevelopment
  * - Production: Through Nginx proxy
  */
 export const API_ENDPOINTS = {
-  // Carriers API
+  // Carriers API  
   CARRIERS: isDevelopment 
     ? `${API_BASE_URL}:8080/carriers`
-    : `${API_BASE_URL}/carriers`,
+    : `https://slms-carrier-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/carriers`,
   
-  // Orders API
+  // Orders API - Direct to order service
   ORDERS: isDevelopment 
     ? `${API_BASE_URL}:8081/api/orders`
-    : `${API_BASE_URL}/api/orders`,
+    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders`,
   SHIPMENTS: isDevelopment 
     ? `${API_BASE_URL}:8081/api/shipments`
-    : `${API_BASE_URL}/api/shipments`,
+    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/shipments`,
   CONFIRM_DELIVERY: isDevelopment 
     ? `${API_BASE_URL}:8081/api/orders/confirm-delivery`
-    : `${API_BASE_URL}/api/orders/confirm-delivery`,
+    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders/confirm-delivery`,
   REPORT_ANOMALY: isDevelopment 
     ? `${API_BASE_URL}:8081/api/orders/report-anomaly`
-    : `${API_BASE_URL}/api/orders/report-anomaly`,
+    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders/report-anomaly`,
   
   // Users API
   USERS: isDevelopment 
     ? `${API_BASE_URL}:8082/user`
-    : `${API_BASE_URL}/user`,
+    : `https://slms-backend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/user`,
   WHOAMI: isDevelopment 
     ? `${API_BASE_URL}:8082/user/whoami`
-    : `${API_BASE_URL}/user/whoami`,
+    : `https://slms-backend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/user/whoami`,
   
   // Auth (Keycloak - port 8083 in development)
   AUTH: isDevelopment 

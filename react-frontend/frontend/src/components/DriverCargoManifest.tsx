@@ -65,7 +65,10 @@ function DriverCargoManifest() {
       }
 
       console.log('🚚 Loading InTransit shipments for keycloak_id:', keycloakId);
-      
+      console.log('🔑 Keycloak token exists:', !!keycloak?.token);
+      console.log('🔑 Token length:', keycloak?.token?.length || 0);
+      console.log('🌐 API endpoint:', `${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`);
+
       // Call optimized endpoint that navigates: keycloak_id → Users.id → Driver.user_id → Shipments
       // This endpoint returns InTransit shipments with their orders
       const response = await fetch(`${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`, {
@@ -74,8 +77,13 @@ function DriverCargoManifest() {
           'Content-Type': 'application/json'
         }
       });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers);
       
       if (!response.ok) {
+        console.error('❌ Request failed with status:', response.status);
+        console.error('❌ Response text:', await response.text());
         throw new Error(`Failed to load shipments: ${response.status}`);
       }
       

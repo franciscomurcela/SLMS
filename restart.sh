@@ -6,10 +6,11 @@
 set -e  # Exit on error
 
 echo "🔄 Parando todos os serviços..."
-cd /home/xavier/MECT/group-project-es2526_204/react-frontend
+cd react-frontend
 docker-compose down 2>/dev/null || true
 
-cd /home/xavier/MECT/group-project-es2526_204/slms-backend
+cd ..
+cd slms-backend
 docker-compose down 2>/dev/null || true
 
 echo ""
@@ -22,7 +23,7 @@ sleep 15
 
 echo ""
 echo "📊 Importando schema da base de dados..."
-cd /home/xavier/MECT/group-project-es2526_204
+cd ..
 docker exec -i slms-db psql -U slms_user -d slms_db < slms-backend/config/schema-postgresql.sql
 
 echo ""
@@ -31,7 +32,7 @@ docker exec -i slms-db psql -U slms_user -d slms_db < scripts/slms-data-only-202
 
 echo ""
 echo "🎨 Iniciando frontend..."
-cd /home/xavier/MECT/group-project-es2526_204/react-frontend
+cd react-frontend
 docker-compose up --build -d
 
 echo ""

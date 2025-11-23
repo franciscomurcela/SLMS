@@ -1,0 +1,40 @@
+1. Primeiro apagar todos os containers existentes para garantir que as mudanças são feitas.
+
+docker-compose down 
+
+primeiro no /react-frontend e depois no /slms-backend
+
+ou façam no docker desktop
+
+
+2. Ir para /slms-backend 
+
+docker-compose up --build -d
+
+
+--build constrói antes de dar up 
+-d não aparece os logs
+
+
+3. Temos de importar os dados e o schema da base de dados
+
+#para o schema
+
+docker cp slms-backend/config/schema-postgresql.sql slms-db:/tmp/
+docker exec slms-db psql -U slms_user -d slms_db -f /tmp/schema-postgresql.sql
+
+
+
+#para os dados
+
+docker cp scripts/slms-data-only-20251027-193147.sql/slms-data-only-20251027-193147.sql slms-db:/tmp/
+docker exec slms-db psql -U slms_user -d slms_db -f /tmp/slms-data-only-20251027-193147.sql
+
+
+
+4. Ir para /react-frontend
+
+docker-compose up --build -d
+
+
+e pronto já deve dar

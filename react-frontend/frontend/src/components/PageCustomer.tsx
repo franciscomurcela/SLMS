@@ -3,6 +3,7 @@ import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import { useKeycloak } from "../context/keycloakHooks";
 import { useEffect, useState } from "react";
+import ChatAssistant from "./ChatAssistant";
 
 const role: string = Roles.ROLE_CUSTOMER;
 const href: string = Paths.PATH_CUSTOMER;
@@ -230,6 +231,15 @@ function Customer() {
           </div>
         )}
       </div>
+
+      {/* Chat Assistant - Only for customers */}
+      {isCustomer && (
+        <ChatAssistant 
+          onToggleOrderHistory={() => setShowOrderHistory(true)} 
+          authToken={keycloak?.token}
+          customerId={keycloak?.tokenParsed?.sub}
+        />
+      )}
     </>
   );
 }

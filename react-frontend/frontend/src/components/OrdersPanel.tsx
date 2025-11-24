@@ -295,7 +295,7 @@ export default function OrdersPanel() {
                     {order.status === "Pending" && (
                       <button
                         className="btn btn-sm btn-primary"
-                        onClick={() => window.location.href = `/warehouse/process/${order.orderId}`}
+                        onClick={() => navigate(`/warehouse/process/${order.orderId}`)}
                       >
                         <i className="bi bi-pencil-square me-1"></i>
                         Processar

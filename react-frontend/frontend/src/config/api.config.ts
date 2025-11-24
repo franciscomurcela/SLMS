@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
   SHIPMENTS: `${API_BASE_URL}/api/shipments`,
   CONFIRM_DELIVERY: `${API_BASE_URL}/api/orders/confirm-delivery`,
   REPORT_ANOMALY: `${API_BASE_URL}/api/orders/report-anomaly`,
+  CREATE_SHIPMENT: `${API_BASE_URL}/api/shipments/create`,
   
   // Users API
   USERS: `${API_BASE_URL}/user`,

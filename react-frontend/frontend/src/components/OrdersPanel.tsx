@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useKeycloak } from "../context/keycloakHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
@@ -50,6 +51,7 @@ function formatWeight(weight: number) {
 
 export default function OrdersPanel() {
   const { keycloak } = useKeycloak();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -215,19 +217,31 @@ export default function OrdersPanel() {
         </h5>
       </div>
       <div className="card-body">
-        {/* Status Filter Buttons */}
-        <div className="btn-group mb-3" role="group" aria-label="Order status filter">
-          {["All", "Pending", "InTransit", "Delivered"].map((status) => (
-            <button
-              key={status}
-              type="button"
-              className={`btn ${filter === status ? "btn-primary" : "btn-outline-primary"}`}
-              onClick={() => setFilter(status)}
-            >
-              {status === "All" ? "Todos" : status}{" "}
-              <span className="badge bg-light text-dark">{statusCounts[status as keyof typeof statusCounts]}</span>
-            </button>
-          ))}
+        {/* Action Buttons */}
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="btn-group" role="group" aria-label="Order status filter">
+            {["All", "Pending", "InTransit", "Delivered"].map((status) => (
+              <button
+                key={status}
+                type="button"
+                className={`btn ${filter === status ? "btn-primary" : "btn-outline-primary"}`}
+                onClick={() => setFilter(status)}
+              >
+                {status === "All" ? "Todos" : status}{" "}
+                <span className="badge bg-light text-dark">{statusCounts[status as keyof typeof statusCounts]}</span>
+              </button>
+            ))}
+          </div>
+          
+          <button
+            className="btn btn-success"
+            onClick={() => navigate("/warehouse/create-shipment")}
+            disabled={statusCounts.Pending === 0}
+            title={statusCounts.Pending === 0 ? "Nenhum pedido pendente disponível" : "Criar novo shipment"}
+          >
+            <i className="bi bi-truck me-2"></i>
+            Criar Shipment
+          </button>
         </div>
 
         {/* Orders Table */}

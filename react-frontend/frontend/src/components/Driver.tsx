@@ -3,11 +3,14 @@ import qr_code from "../assets/qr_code.svg";
 import map from "../assets/map.svg";
 import { useNavigate } from "react-router-dom";
 import Paths from "./UtilsPaths";
+import ChatAssistant from "./ChatAssistant";
+import { useKeycloak } from "../context/keycloakHooks";
 
 const role: string = "Driver";
 
 function Driver() {
   const navigate = useNavigate();
+  const { keycloak } = useKeycloak();
 
   const handleManifestClick = () => {
     navigate("/driver/manifest");
@@ -72,6 +75,12 @@ function Driver() {
           </div>
         </div>
       </div>
+
+      {/* Chat Assistant */}
+      <ChatAssistant
+        authToken={keycloak?.token}
+        customerId={keycloak?.tokenParsed?.sub}
+      />
     </>
   );
 }

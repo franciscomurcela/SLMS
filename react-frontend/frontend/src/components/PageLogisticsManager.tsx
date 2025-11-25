@@ -26,6 +26,7 @@ function LogisticsManager() {
       <ChatAssistant
         authToken={keycloak?.token}
         customerId={keycloak?.tokenParsed?.sub}
+        userRole={role}
       />
     </>
   );

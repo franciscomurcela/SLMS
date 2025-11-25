@@ -20,6 +20,7 @@ function CustomerServiceRep() {
       <ChatAssistant
         authToken={keycloak?.token}
         customerId={keycloak?.tokenParsed?.sub}
+        userRole={role}
       />
     </>
   );

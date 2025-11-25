@@ -67,15 +67,15 @@ function Customer() {
       setError(null);
       try {
         const keycloakId = keycloak.tokenParsed.sub;
-        
+
         // Use same-origin request through Nginx proxy with customer's keycloakId
         const ordersResp = await fetch(`/api/orders/my-orders/${keycloakId}`, {
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${keycloak.token}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${keycloak.token}`,
           },
         });
-        
+
         if (!ordersResp.ok)
           throw new Error(`Orders fetch failed: ${ordersResp.status}`);
         const ordersData = await ordersResp.json();
@@ -188,44 +188,44 @@ function Customer() {
                 {!loading && !error && orders.length > 0 && (
                   <div className="list-group">
                     {orders.map((order) => (
-                          <div
-                            key={order.orderId}
-                            className="list-group-item list-group-item-action"
-                          >
-                            <div className="d-flex w-100 justify-content-between align-items-start">
-                              <div className="flex-grow-1">
-                                <h6 className="mb-1">
-                                  <i className="bi bi-box-seam me-2"></i>
-                                  Pedido #{order.orderId.slice(0, 8)}
-                                </h6>
-                                <p className="mb-1">
-                                  <small className="text-muted">
-                                    <i className="bi bi-geo-alt me-1"></i>
-                                    {order.originAddress}
-                                    <i className="bi bi-arrow-right mx-2"></i>
-                                    {order.destinationAddress}
-                                  </small>
-                                </p>
-                                <p className="mb-1">
-                                  <small className="text-muted">
-                                    <i className="bi bi-calendar3 me-1"></i>
-                                    {formatDate(order.orderDate)}
-                                    <span className="mx-2">•</span>
-                                    <i className="bi bi-box me-1"></i>
-                                    {order.weight.toFixed(2)} kg
-                                  </small>
-                                </p>
-                              </div>
-                              <div className="text-end">
-                                <span className={getStatusBadge(order.status)}>
-                                  {order.status}
-                                </span>
-                              </div>
-                            </div>
+                      <div
+                        key={order.orderId}
+                        className="list-group-item list-group-item-action"
+                      >
+                        <div className="d-flex w-100 justify-content-between align-items-start">
+                          <div className="flex-grow-1">
+                            <h6 className="mb-1">
+                              <i className="bi bi-box-seam me-2"></i>
+                              Pedido #{order.orderId.slice(0, 8)}
+                            </h6>
+                            <p className="mb-1">
+                              <small className="text-muted">
+                                <i className="bi bi-geo-alt me-1"></i>
+                                {order.originAddress}
+                                <i className="bi bi-arrow-right mx-2"></i>
+                                {order.destinationAddress}
+                              </small>
+                            </p>
+                            <p className="mb-1">
+                              <small className="text-muted">
+                                <i className="bi bi-calendar3 me-1"></i>
+                                {formatDate(order.orderDate)}
+                                <span className="mx-2">•</span>
+                                <i className="bi bi-box me-1"></i>
+                                {order.weight.toFixed(2)} kg
+                              </small>
+                            </p>
                           </div>
-                        ))}
-                    </div>
-                  )}
+                          <div className="text-end">
+                            <span className={getStatusBadge(order.status)}>
+                              {order.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -234,10 +234,11 @@ function Customer() {
 
       {/* Chat Assistant - Only for customers */}
       {isCustomer && (
-        <ChatAssistant 
-          onToggleOrderHistory={() => setShowOrderHistory(true)} 
+        <ChatAssistant
+          onToggleOrderHistory={() => setShowOrderHistory(true)}
           authToken={keycloak?.token}
           customerId={keycloak?.tokenParsed?.sub}
+          userRole={primaryRole}
         />
       )}
     </>

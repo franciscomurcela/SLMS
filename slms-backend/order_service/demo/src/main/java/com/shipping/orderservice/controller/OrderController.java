@@ -1,17 +1,18 @@
 package com.shipping.orderservice.controller;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,25 +23,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.properties.TextAlignment;
-import com.itextpdf.io.image.ImageDataFactory;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.qrcode.QRCodeWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-
+import com.shipping.orderservice.dto.ReportAnomalyRequest;
 import com.shipping.orderservice.model.Order;
 import com.shipping.orderservice.repository.OrderRepository;
-import com.shipping.orderservice.dto.ReportAnomalyRequest;
 
 @RestController
 @RequestMapping("/api/orders")
+@CrossOrigin(origins = "*")
 public class OrderController {
 
     private final OrderRepository repository;
@@ -88,10 +88,55 @@ public class OrderController {
         }
     }
 
+    @GetMapping("/health")
+    public ResponseEntity<?> health() {
+        try {
+            jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+            return ResponseEntity.ok(Map.of("status", "ok"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "status", "error",
+                "details", e.getMessage()
+            ));
+        }
+    }
+
     @GetMapping("/native")
     public List<Map<String, Object>> getAllOrdersNative() {
         // Use a literal query to the case-sensitive table name created in Supabase
         return jdbcTemplate.queryForList("SELECT * FROM \"Orders\" LIMIT 100");
+    }
+
+    @GetMapping("/my-shipments/{carrierId}")
+    public ResponseEntity<?> getMyShipments(@PathVariable String carrierId) {
+        try {
+            String sql = """
+                SELECT 
+                    s.shipment_id::text as "shipmentId",
+                    s.carrier_id::text as "carrierId",
+                    s.status as "status",
+                    s.origin_address as "originAddress",
+                    s.destination_address as "destinationAddress",
+                    s.created_at as "createdAt",
+                    s.estimated_delivery as "estimatedDelivery",
+                    COALESCE(
+                        (SELECT COUNT(*) FROM "Orders" o WHERE o.shipment_id = s.shipment_id), 0
+                    ) as "orderCount"
+                FROM "Shipments" s
+                WHERE s.carrier_id = ?::uuid
+                ORDER BY s.created_at DESC
+                """;
+            
+            List<Map<String, Object>> shipments = jdbcTemplate.queryForList(sql, carrierId);
+            return ResponseEntity.ok(shipments);
+        } catch (Exception e) {
+            System.err.println("=== ERROR fetching shipments: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                "error", e.getClass().getSimpleName(),
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
+        }
     }
 
     @PostMapping

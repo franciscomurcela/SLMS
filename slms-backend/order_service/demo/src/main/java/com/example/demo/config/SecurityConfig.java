@@ -1,5 +1,7 @@
 package com.example.demo.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,7 +10,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.List;
 
 /**
  * Security configuration for Order Service
@@ -25,11 +26,21 @@ public class SecurityConfig {
             // Enable CORS with custom configuration
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests((authz) -> authz
-                // Public endpoints
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                // Public endpoints (AQUI ESTÁ A CORREÇÃO)
+                // Permitir Actuator e o Health Check específico de Orders
+                .requestMatchers("/actuator/**", "/api/orders/health").permitAll()
+                
+                // Debug endpoint (mantive o que tinhas, opcional)
+                .requestMatchers("/user/health").permitAll()
+
                 // All order endpoints require authentication
                 .requestMatchers("/api/orders/**").authenticated()
                 .requestMatchers("/api/shipments/**").authenticated()
+                
+                // User endpoints require authentication
+                .requestMatchers("/user/**").authenticated()
+                
+                // Qualquer outro pedido exige autenticação
                 .anyRequest().authenticated()
             )
             // Enable OAuth2 Resource Server (JWT validation against Keycloak)
@@ -44,13 +55,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://192.168.160.9:3000",
-            "https://192.168.160.9",
-            "https://deti-engsoft-09.ua.pt"
-        ));
+        configuration.setAllowedOriginPatterns(List.of("*")); // Allow all origins
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

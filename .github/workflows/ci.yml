@@ -242,6 +242,13 @@ jobs:
         if: always()
         run: node scripts/convert-to-allure.js
 
+      - name: Setup Java for Allure
+        if: always()
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Gerar relatório Allure (frontend)
         if: always()
         run: npx allure generate ./allure-results --clean --output ./allure-report

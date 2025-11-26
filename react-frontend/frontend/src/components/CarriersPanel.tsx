@@ -52,6 +52,7 @@ export default function CarriersPanel() {
     }
 
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keycloak?.authenticated, keycloak?.token]);
 
   const friendlyNames: Record<string, string> = {

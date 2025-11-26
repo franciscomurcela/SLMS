@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Paths from './UtilsPaths';
-import { useKeycloak } from '../context/keycloakHooks';
-
+import { useKeycloak } from '../context/KeycloakContext';
+import { useFeatureFlag } from '../context/FeatureFlagsContext';
 import { API_ENDPOINTS } from '../config/api.config';
 
 const role: string = 'Driver';
@@ -61,7 +61,7 @@ function DriverCargoManifest() {
         return;
       }
 
-      console.log('🚚 Loading all shipments for keycloak_id:', keycloakId);
+      console.log('🚚 Loading InTransit shipments for keycloak_id:', keycloakId);
       
       // Call optimized endpoint that navigates: keycloak_id → Users.id → Driver.user_id → Shipments
       // This endpoint returns all shipments assigned to the driver with their orders
@@ -71,8 +71,13 @@ function DriverCargoManifest() {
           'Content-Type': 'application/json'
         }
       });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers);
       
       if (!response.ok) {
+        console.error('❌ Request failed with status:', response.status);
+        console.error('❌ Response text:', await response.text());
         throw new Error(`Failed to load shipments: ${response.status}`);
       }
       

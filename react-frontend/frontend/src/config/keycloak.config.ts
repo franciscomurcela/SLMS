@@ -1,8 +1,21 @@
 // Keycloak configuration
-// Use local Keycloak instance
+// Adapts to current environment automatically
 const getKeycloakUrl = () => {
-  // Always use local Keycloak on port 8083
-  return 'http://localhost:8083/auth';
+  // Check if we're in development (localhost:3000 or localhost:5173)
+  const isDevelopment = window.location.hostname === 'localhost' && 
+                       (window.location.port === '3000' || window.location.port === '5173');
+  
+  if (isDevelopment) {
+    // In development, Keycloak runs directly on localhost:8083
+    return 'http://localhost:8083/auth';
+  } else {
+    // In production, use nginx proxy path
+    return `${window.location.protocol}//${window.location.host}/auth`;
+  }
+// Point directly to Keycloak public URL with /auth path
+const getKeycloakUrl = () => {
+  // Use Keycloak FQDN directly (not same-origin anymore)
+  return 'https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth';
 };
 
 export const keycloakConfig = {
@@ -12,30 +25,9 @@ export const keycloakConfig = {
 };
 
 export const keycloakInitOptions = {
-  // Don't force login - let page load without authentication
-  // User can manually login if needed
   onLoad: undefined,
   checkLoginIframe: false,
-  // Disable silent check SSO to avoid CORS issues
   silentCheckSsoRedirectUri: undefined,
-  // Enable response mode to handle callback properly
   responseMode: 'fragment' as const,
-  // Disable iframe checking completely to avoid timeouts
   checkLoginIframeInterval: undefined,
 };
-
-// Backend API base URL - adapts to environment
-const getBackendUrl = () => {
-  const isDevelopment = window.location.hostname === 'localhost' && 
-                       (window.location.port === '3000' || window.location.port === '5173');
-  
-  if (isDevelopment) {
-    // In development, services run on direct ports
-    return 'http://localhost'; // Will use :8080, :8081, :8082 as needed
-  } else {
-    // In production, use nginx proxy
-    return `${window.location.protocol}//${window.location.host}/api`;
-  }
-};
-
-export const BACKEND_URL = getBackendUrl();

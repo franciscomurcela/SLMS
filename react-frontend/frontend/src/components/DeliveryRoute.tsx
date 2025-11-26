@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useKeycloak } from "../context/keycloakHooks";
-import { useFeatureFlags } from "../context/featureFlagsHooks";
+import { useKeycloak } from "../context/KeycloakContext";
 import { API_ENDPOINTS } from "../config/api.config";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -154,7 +153,7 @@ const DeliveryRoute: React.FC = () => {
         setLoading(true);
         const keycloakId = keycloak.tokenParsed?.sub;
 
-        // Use same-origin request through Nginx proxy
+        // Use direct shipments endpoint
         const shipmentsResponse = await fetch(
           `${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`,
           {
@@ -174,7 +173,7 @@ const DeliveryRoute: React.FC = () => {
         let foundOrder = null;
         for (const shipment of shipments) {
           const order = shipment.orders?.find(
-            (o: any) => o.orderId === orderId
+            (o: { orderId: string }) => o.orderId === orderId
           );
           if (order) {
             foundOrder = order;
@@ -250,9 +249,10 @@ const DeliveryRoute: React.FC = () => {
             lng: position.coords.longitude,
           };
           console.log("Localização GPS obtida:", currentPos);
-        } catch (gpsError) {
+        } catch (error) {
           console.warn(
-            "GPS não disponível, usando localização padrão (Aveiro)"
+            "GPS não disponível, usando localização padrão (Aveiro)",
+            error
           );
           currentPos = {
             lat: 40.6333,

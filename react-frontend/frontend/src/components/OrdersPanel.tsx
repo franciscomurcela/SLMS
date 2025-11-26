@@ -52,8 +52,6 @@ function formatWeight(weight: number) {
 
 export default function OrdersPanel() {
   const { keycloak } = useKeycloak();
-  const navigate = useNavigate();
-  const isCreateShipmentEnabled = useFeatureFlag("wh-same-client-shipment");
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -121,7 +119,7 @@ export default function OrdersPanel() {
 
   const downloadPackingSlip = async (orderId: string) => {
     try {
-      const url = `/api/orders/${orderId}/packing-slip`;
+      const url = `${API_ENDPOINTS.ORDERS}/${orderId}/packing-slip`;
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -147,7 +145,7 @@ export default function OrdersPanel() {
 
   const downloadShippingLabel = async (orderId: string) => {
     try {
-      const url = `/api/orders/${orderId}/shipping-label`;
+      const url = `${API_ENDPOINTS.ORDERS}/${orderId}/shipping-label`;
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,

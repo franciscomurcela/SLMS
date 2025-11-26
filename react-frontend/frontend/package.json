@@ -15,9 +15,9 @@
     "test:e2e:headed": "start-server-and-test dev http://localhost:5173 cypress:open",
     "cypress:run": "cypress run",
     "cypress:open": "cypress open",
-    "test:allure": "vitest run && node scripts/convert-to-allure.js && npx allure generate ./allure-results --clean --output ./allure-report",
-    "allure:generate": "node scripts/convert-to-allure.js && npx allure generate ./allure-results --clean --output ./allure-report",
-    "allure:serve": "node scripts/convert-to-allure.js && npx allure serve ./allure-results"
+    "test:allure": "npm run test:unit && npm run allure:generate",
+    "allure:generate": "node scripts/convert-to-allure.js && npx allure-commandline generate ./allure-results --clean --output ./allure-report",
+    "allure:serve": "node scripts/convert-to-allure.js && npx allure-commandline serve ./allure-results"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.0.0",
@@ -27,7 +27,6 @@
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.4",
     "@mui/x-charts": "^8.13.1",
-    "ai": "^4.0.0",
     "bootstrap": "^5.3.8",
     "flagsmith": "^9.3.2",
     "keycloak-js": "^21.1.2",

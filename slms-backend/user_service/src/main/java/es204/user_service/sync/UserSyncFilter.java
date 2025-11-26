@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Filter to automatically sync authenticated Keycloak users with Supabase
+ * Filter to automatically sync authenticated Keycloak users with PostgreSQL
  * Runs on every authenticated request to ensure user exists in database
  */
 @Component

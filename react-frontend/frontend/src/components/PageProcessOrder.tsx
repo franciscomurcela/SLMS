@@ -31,7 +31,7 @@ const href: string = Paths.PATH_WAREHOUSE;
 export default function PageProcessOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const { keycloak } = useKeycloak();
+  const { keycloak, loading: keycloakLoading, authenticated } = useKeycloak();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
@@ -49,9 +49,24 @@ export default function PageProcessOrder() {
 
   useEffect(() => {
     async function loadData() {
-      // Wait for Keycloak to be ready and have a token
-      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
-        console.log("Waiting for Keycloak... authenticated:", keycloak?.authenticated, "has token:", !!keycloak?.token);
+      console.log("LoadData called - Keycloak state:", {
+        keycloakLoading,
+        authenticated,
+        hasKeycloak: !!keycloak,
+        hasToken: !!keycloak?.token,
+        tokenLength: keycloak?.token?.length
+      });
+
+      // If Keycloak is still loading, wait
+      if (keycloakLoading) {
+        console.log("Keycloak still loading, waiting...");
+        setLoading(true);
+        return;
+      }
+
+      // If not authenticated, don't proceed (ProtectedRoute will handle redirect)
+      if (!authenticated || !keycloak?.token) {
+        console.log("Not authenticated or no token, waiting for auth...");
         setLoading(true);
         return;
       }
@@ -61,9 +76,17 @@ export default function PageProcessOrder() {
       try {
         setLoading(true);
         
-        // Fetch order details
+        // Get user's keycloak ID from token
+        const keycloakId = keycloak.tokenParsed?.sub;
+        if (!keycloakId) {
+          setError("Não foi possível identificar o utilizador");
+          return;
+        }
+        
+        // Fetch order details using my-orders endpoint
         console.log("Fetching orders with token:", keycloak.token.substring(0, 20) + "...");
-        const orderResp = await fetch(`/api/orders`, {
+        console.log("User keycloak ID:", keycloakId);
+        const orderResp = await fetch(`${API_ENDPOINTS.ORDERS}/my-orders/${keycloakId}`, {
           headers: {
             'Authorization': `Bearer ${keycloak.token}`,
             'Content-Type': 'application/json'
@@ -105,7 +128,7 @@ export default function PageProcessOrder() {
     }
 
     if (orderId) loadData();
-  }, [orderId, keycloak]);
+  }, [orderId, keycloakLoading, authenticated, keycloak?.token]); // Re-run when auth state changes
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -132,7 +155,7 @@ export default function PageProcessOrder() {
         status: "InTransit", // Change to InTransit on dispatch
       };
 
-      const resp = await fetch(`/api/orders/${order.orderId}`, {
+      const resp = await fetch(`${API_ENDPOINTS.ORDERS}/${order.orderId}`, {
         method: "PUT",
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -162,7 +185,7 @@ export default function PageProcessOrder() {
     return carrier?.name || "Desconhecido";
   };
 
-  if (loading) {
+  if (loading || keycloakLoading) {
     return (
       <>
         <Header role={role} href={href} />
@@ -170,6 +193,9 @@ export default function PageProcessOrder() {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Carregando...</span>
           </div>
+          <p className="mt-2 text-muted">
+            {keycloakLoading ? "Verificando autenticação..." : "Carregando dados..."}
+          </p>
         </div>
       </>
     );

@@ -3,7 +3,6 @@ services:
   # DATABASES
   # ============================================
   
-  # PostgreSQL para Keycloak
   keycloak-db:
     image: postgres:15
     container_name: keycloak-db
@@ -14,7 +13,7 @@ services:
     volumes:
       - keycloak-pgdata:/var/lib/postgresql/data
     ports:
-      - "5433:5432"  # Porta externa 5433 para evitar conflito
+      - "5433:5432"
     networks:
       - slms-network
     healthcheck:
@@ -23,9 +22,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # PostgreSQL Local (substitui Supabase) - Base de dados principal
   slms-db:
-    image: postgres:15-alpine  # Alpine = mais leve (95MB vs 313MB)
+    image: postgres:15-alpine
     container_name: slms-db
     environment:
       POSTGRES_DB: slms_db
@@ -34,7 +32,7 @@ services:
     volumes:
       - slms-db-data:/var/lib/postgresql/data
     ports:
-      - "5434:5434"  # Porta principal para todos os services
+      - "5434:5432" # ATENÇÃO: A porta interna do Postgres é sempre 5432!
     networks:
       - slms-network
     healthcheck:
@@ -48,7 +46,6 @@ services:
   # AUTHENTICATION & SECURITY
   # ============================================
 
-  # Keycloak (Authentication Service) - Porta 8083
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
     container_name: keycloak
@@ -66,8 +63,8 @@ services:
       KC_HOSTNAME_STRICT: 'false'
       KC_HTTP_ENABLED: 'true'
       KC_PROXY: 'edge'
-      KC_HOSTNAME_URL: 'http://localhost:8083/auth'
-      KC_HOSTNAME_ADMIN_URL: 'http://localhost:8083/auth'
+      KC_HOSTNAME_URL: ${APP_URL:-http://localhost:8083}/auth
+      KC_HOSTNAME_ADMIN_URL: ${APP_URL:-http://localhost:8083}/auth
       KC_HOSTNAME_STRICT_HTTPS: 'false'
     ports:
       - "8083:8080"
@@ -79,8 +76,12 @@ services:
       - ./keycloak-init:/opt/keycloak/data/import
     networks:
       - slms-network
+      - rede-obs
 
-  # User Service (Authentication + User Sync) - Porta 8082
+  # ============================================
+  # MICROSERVICES
+  # ============================================
+
   user-service:
     build:
       context: ./user_service
@@ -89,14 +90,21 @@ services:
     environment:
       SPRING_APPLICATION_NAME: user_service
       SERVER_PORT: 8082
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      # --- CORREÇÃO DB: Credenciais explícitas ---
+      SPRING_DATASOURCE_URL: jdbc:postgresql://slms-db:5432/slms_db
+      SPRING_DATASOURCE_USERNAME: slms_user
+      SPRING_DATASOURCE_PASSWORD: slms_password
+      # ------------------------------------------
+      # --- CORREÇÃO OTLP: Porta 4318 (HTTP) ---
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: user-service
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_TRACES_SAMPLER: always_on 
+      # ------------------------------------------
       SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 2
       SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 5
-      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: 30000
-      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: 600000
-      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 20000
       KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/auth/realms/ESg204/protocol/openid-connect/certs"
       KEYCLOAK_ISSUER_URI: "http://localhost:8083/auth/realms/ESg204"
     ports:
@@ -108,8 +116,14 @@ services:
       - slms-db
     networks:
       - slms-network
+      - rede-obs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/user/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
-  # Carrier Service (Business Logic) - Porta 8080
   carrier-service:
     build:
       context: ./carrier_service/carrier_service
@@ -118,17 +132,26 @@ services:
     environment:
       SPRING_APPLICATION_NAME: carrier_service
       SERVER_PORT: 8080
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 3
-      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
+      # --- CORREÇÃO DB ---
+      SPRING_DATASOURCE_URL: jdbc:postgresql://slms-db:5432/slms_db
+      SPRING_DATASOURCE_USERNAME: slms_user
+      SPRING_DATASOURCE_PASSWORD: slms_password
+      # -------------------
+      # --- CORREÇÃO OTLP ---
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: carrier-service
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_TRACES_SAMPLER: always_on
+      # ---------------------
       KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/auth/realms/ESg204/protocol/openid-connect/certs"
       KEYCLOAK_ISSUER_URI: "http://localhost:8083/auth/realms/ESg204"
     ports:
       - "8080:8080"
     networks:
       - slms-network
+      - rede-obs
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
@@ -136,7 +159,6 @@ services:
       retries: 3
       start_period: 60s
 
-  # Order Service - Porta 8081
   order-service:
     build:
       context: ./order_service/demo
@@ -144,18 +166,34 @@ services:
     container_name: order-service
     environment:
       SPRING_APPLICATION_NAME: order_service
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: none
-      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 3
-      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 1
+      SERVER_PORT: 8081 # AVISO: Mudei para 8081 interno para bater certo com o mapeamento
+      # --- CORREÇÃO DB ---
+      SPRING_DATASOURCE_URL: jdbc:postgresql://slms-db:5432/slms_db
+      SPRING_DATASOURCE_USERNAME: slms_user
+      SPRING_DATASOURCE_PASSWORD: slms_password
+      # -------------------
+      # --- CORREÇÃO OTLP ---
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: order-service
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_TRACES_SAMPLER: always_on
+      # ---------------------
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update # Para criar as tabelas automaticamente se não existirem
       KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/auth/realms/ESg204/protocol/openid-connect/certs"
       KEYCLOAK_ISSUER_URI: "http://localhost:8083/auth/realms/ESg204"
     ports:
-      - "8081:8080"
+      - "8081:8081" # Ajustei para porta 8081 direta para evitar confusão
     networks:
       - slms-network
+      - rede-obs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 # ============================================
 # NETWORKS & VOLUMES
@@ -164,6 +202,8 @@ services:
 networks:
   slms-network:
     driver: bridge
+  rede-obs:
+    external: true
 
 volumes:
   slms-db-data:

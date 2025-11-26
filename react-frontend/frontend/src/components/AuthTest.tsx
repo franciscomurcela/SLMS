@@ -1,5 +1,5 @@
 import { useKeycloak } from "../context/keycloakHooks";
-import { BACKEND_URL } from "../config/keycloak.config";
+import { API_ENDPOINTS } from "../config/api.config";
 import { useState, useEffect } from "react";
 
 function AuthTest() {
@@ -25,7 +25,7 @@ function AuthTest() {
       setError(null);
       setBackendResponse(null);
 
-      const response = await fetch(`${BACKEND_URL}/user/whoami`, {
+      const response = await fetch(API_ENDPOINTS.WHOAMI, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

@@ -59,9 +59,9 @@ public class ShipmentController {
     }
 
     /**
-     * Get InTransit shipments for the current driver (user)
+     * Get ALL shipments for the current driver (user) - not filtered by status
      * This endpoint extracts the keycloak ID from the JWT token automatically
-     * @return List of InTransit shipments with their associated orders for the current driver
+     * @return List of all shipments with their associated orders for the current driver
      */
     @GetMapping("/driver")
     public ResponseEntity<List<ShipmentWithOrdersDTO>> getMyShipments(Authentication authentication) {
@@ -77,12 +77,12 @@ public class ShipmentController {
                 return ResponseEntity.badRequest().build();
             }
             
-            System.out.println("=== Fetching shipments for current driver with keycloakId: " + keycloakId);
+            System.out.println("=== Fetching ALL shipments for current driver with keycloakId: " + keycloakId);
             
-            // Get InTransit shipments for this user
-            List<Shipment> shipments = shipmentRepository.findInTransitShipmentsByKeycloakId(keycloakId);
+            // Get ALL shipments for this user (not filtered by status)
+            List<Shipment> shipments = shipmentRepository.findAllShipmentsByKeycloakId(keycloakId);
             
-            System.out.println("=== Found " + shipments.size() + " InTransit shipments");
+            System.out.println("=== Found " + shipments.size() + " shipments");
             
             // For each shipment, fetch its orders
             List<ShipmentWithOrdersDTO> result = new ArrayList<>();
@@ -213,12 +213,12 @@ public class ShipmentController {
     @GetMapping("/my-shipments/{keycloakId}")
     public ResponseEntity<List<ShipmentWithOrdersDTO>> getMyShipmentsWithOrders(@PathVariable String keycloakId) {
         try {
-            System.out.println("=== Fetching shipments for keycloakId: " + keycloakId);
+            System.out.println("=== Fetching ALL shipments for keycloakId: " + keycloakId);
             
-            // Get InTransit shipments for this user (navigating through Users and Driver tables)
-            List<Shipment> shipments = shipmentRepository.findInTransitShipmentsByKeycloakId(keycloakId);
+            // Get ALL shipments for this user (not filtered by status)
+            List<Shipment> shipments = shipmentRepository.findAllShipmentsByKeycloakId(keycloakId);
             
-            System.out.println("=== Found " + shipments.size() + " InTransit shipments");
+            System.out.println("=== Found " + shipments.size() + " shipments");
             
             // For each shipment, fetch its orders
             List<ShipmentWithOrdersDTO> result = new ArrayList<>();
@@ -299,13 +299,13 @@ public class ShipmentController {
                     ));
                 }
 
-                String checkOrderSql = "SELECT COUNT(*) FROM \"Orders\" WHERE order_id = ? AND status = 'Pending'";
+                String checkOrderSql = "SELECT COUNT(*) FROM \"Orders\" WHERE order_id = ? AND status = 'Pending' AND shipment_id IS NULL";
                 Integer count = jdbcTemplate.queryForObject(checkOrderSql, Integer.class, orderId);
                 
                 if (count == null || count == 0) {
                     return ResponseEntity.badRequest().body(Map.of(
                         "error", "OrderNotValid",
-                        "message", "Order " + orderIdStr + " not found or not in Pending status"
+                        "message", "Order " + orderIdStr + " not found, not in Pending status, or already assigned to a shipment"
                     ));
                 }
             }

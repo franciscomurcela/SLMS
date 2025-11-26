@@ -129,7 +129,44 @@ public class OrderController {
         order.setCarrierId(updatedOrder.getCarrierId());
         order.setStatus(updatedOrder.getStatus());
         
-        return repository.save(order);
+        Order savedOrder = repository.save(order);
+        
+        // If order was updated to InTransit and has a shipment, check if all orders in shipment are InTransit
+        if ("InTransit".equals(updatedOrder.getStatus()) && order.getShipmentId() != null) {
+            checkAndUpdateShipmentStatus(order.getShipmentId());
+        }
+        
+        return savedOrder;
+    }
+    
+    /**
+     * Check if all orders in a shipment are InTransit and update shipment status accordingly
+     */
+    private void checkAndUpdateShipmentStatus(UUID shipmentId) {
+        try {
+            String checkSql = """
+                SELECT COUNT(*) as total,
+                       SUM(CASE WHEN status = 'InTransit' THEN 1 ELSE 0 END) as intransit_count
+                FROM "Orders"
+                WHERE shipment_id = ?
+                """;
+            
+            Map<String, Object> result = jdbcTemplate.queryForMap(checkSql, shipmentId);
+            int total = ((Number) result.get("total")).intValue();
+            int inTransitCount = ((Number) result.get("intransit_count")).intValue();
+            
+            System.out.println("=== Shipment " + shipmentId + ": " + inTransitCount + "/" + total + " orders InTransit");
+            
+            // If all orders are InTransit, update shipment to InTransit
+            if (total > 0 && inTransitCount == total) {
+                String updateShipmentSql = "UPDATE \"Shipments\" SET status = 'InTransit' WHERE shipment_id = ?";
+                int rowsAffected = jdbcTemplate.update(updateShipmentSql, shipmentId);
+                System.out.println("=== Updated shipment " + shipmentId + " to InTransit (rows affected: " + rowsAffected + ")");
+            }
+        } catch (Exception e) {
+            System.err.println("=== ERROR checking/updating shipment status: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @GetMapping("/track/{trackingId}")

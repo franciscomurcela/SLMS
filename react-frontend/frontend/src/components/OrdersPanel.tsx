@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useKeycloak } from "../context/keycloakHooks";
+import { useFeatureFlag } from "../context/featureFlagsHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
@@ -52,6 +53,7 @@ function formatWeight(weight: number) {
 export default function OrdersPanel() {
   const { keycloak } = useKeycloak();
   const navigate = useNavigate();
+  const isCreateShipmentEnabled = useFeatureFlag("wh-same-client-shipment");
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -233,15 +235,17 @@ export default function OrdersPanel() {
             ))}
           </div>
           
-          <button
-            className="btn btn-success"
-            onClick={() => navigate("/warehouse/create-shipment")}
-            disabled={statusCounts.Pending === 0}
-            title={statusCounts.Pending === 0 ? "Nenhum pedido pendente disponível" : "Criar novo shipment"}
-          >
-            <i className="bi bi-truck me-2"></i>
-            Criar Shipment
-          </button>
+          {isCreateShipmentEnabled && (
+            <button
+              className="btn btn-success"
+              onClick={() => navigate("/warehouse/create-shipment")}
+              disabled={statusCounts.Pending === 0}
+              title={statusCounts.Pending === 0 ? "Nenhum pedido pendente disponível" : "Criar novo shipment"}
+            >
+              <i className="bi bi-truck me-2"></i>
+              Criar Shipment
+            </button>
+          )}
         </div>
 
         {/* Orders Table */}

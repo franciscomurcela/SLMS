@@ -541,9 +541,9 @@ resource "azurerm_application_insights_web_test" "health_user" {
   geo_locations           = ["us-tx-sn1-azr", "us-il-ch1-azr"]
 
   configuration = <<XML
-<WebTest Name="user-health" Id="1" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+<WebTest Name="user-health" Id="d8559510-3a51-4694-8253-293127695b01" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
   <Items>
-    <Request Method="GET" Guid="a" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8082/user/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
+    <Request Method="GET" Guid="a8559510-3a51-4694-8253-293127695b01" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8082/user/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
   </Items>
 </WebTest>
 XML
@@ -562,9 +562,9 @@ resource "azurerm_application_insights_web_test" "health_order" {
   geo_locations           = ["us-tx-sn1-azr", "us-il-ch1-azr"]
 
   configuration = <<XML
-<WebTest Name="order-health" Id="2" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+<WebTest Name="order-health" Id="e8559510-3a51-4694-8253-293127695b02" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
   <Items>
-    <Request Method="GET" Guid="b" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8081/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
+    <Request Method="GET" Guid="b8559510-3a51-4694-8253-293127695b02" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8081/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
   </Items>
 </WebTest>
 XML
@@ -583,9 +583,9 @@ resource "azurerm_application_insights_web_test" "health_carrier" {
   geo_locations           = ["us-tx-sn1-azr", "us-il-ch1-azr"]
 
   configuration = <<XML
-<WebTest Name="carrier-health" Id="3" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+<WebTest Name="carrier-health" Id="f8559510-3a51-4694-8253-293127695b03" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
   <Items>
-    <Request Method="GET" Guid="c" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8080/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
+    <Request Method="GET" Guid="c8559510-3a51-4694-8253-293127695b03" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8080/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
   </Items>
 </WebTest>
 XML

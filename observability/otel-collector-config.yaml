@@ -9,8 +9,8 @@ receivers:
           allowed_origins:
             - "http://localhost:3000"    # Para testes locais
             - "http://localhost:5173"    # Vite local (comum em React)
-            - "http://4.233.56.74"       # O teu IP de produção
-            - "*"                        # (Opcional: para dev, aceita tudo)
+            - "http://4.233.56.74"       # IP de produção
+            - "*"                        #
           allowed_headers: ["*"]
 
 processors:

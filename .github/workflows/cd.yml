@@ -440,6 +440,44 @@ jobs:
         continue-on-error: true
 
       # ==========================================
+      # VM DEPLOYMENT (Atualizar contentores na VM)
+      # ==========================================
+      - name: Deploy Backend to VM
+        run: |
+          echo "🚀 Deploying Backend on VM..."
+          cd slms-backend
+
+          # 1. Descobrir o IP Público da própria VM (onde o script está a correr)
+          PUBLIC_IP=$(curl -s https://api.ipify.org)
+          echo "Detected Public IP: $PUBLIC_IP"
+          
+          # 2. Exportar a variável para o Docker Compose ler
+          export APP_URL="http://$PUBLIC_IP:8083"
+          
+          # Atualizar imagens e reiniciar
+          docker-compose pull
+          docker-compose up -d --build
+          
+          echo "✅ Backend deployed!"
+
+      - name: Deploy Frontend to VM
+        run: |
+          echo "🚀 Deploying Frontend on VM..."
+          cd react-frontend
+          
+          # Garantir que o ficheiro tem a porta 80 (caso não tenhas feito commit ainda)
+          # Mas como vais fazer commit, o git pull já traz a versão certa.
+          
+          docker-compose pull
+          docker-compose up -d --build
+          
+          echo "✅ Frontend deployed!"
+          
+      # Pequena pausa para os serviços arrancarem antes de reportar sucesso
+      - name: Wait for services start
+        run: sleep 15
+
+      # ==========================================
       # DEPLOYMENT SUMMARY
       # ==========================================
       - name: Criar comentário com resultado

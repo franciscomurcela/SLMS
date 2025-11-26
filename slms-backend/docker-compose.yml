@@ -63,8 +63,8 @@ services:
       KC_HOSTNAME_STRICT: 'false'
       KC_HTTP_ENABLED: 'true'
       KC_PROXY: 'edge'
-      KC_HOSTNAME_URL: 'http://localhost:8083/auth'
-      KC_HOSTNAME_ADMIN_URL: 'http://localhost:8083/auth'
+      KC_HOSTNAME_URL: ${APP_URL:-http://localhost:8083}/auth
+      KC_HOSTNAME_ADMIN_URL: ${APP_URL:-http://localhost:8083}/auth
       KC_HOSTNAME_STRICT_HTTPS: 'false'
     ports:
       - "8083:8080"

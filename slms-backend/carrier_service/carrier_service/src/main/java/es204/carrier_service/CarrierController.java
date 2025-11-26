@@ -23,4 +23,14 @@ public class CarrierController {
         return jdbc.queryForList("SELECT * FROM \"Carrier\" LIMIT 100");
     }
 
+    @GetMapping("/health")
+    public Map<String, Object> health() {
+        try {
+            jdbc.queryForObject("SELECT 1", Integer.class);
+            return Map.of("status", "ok");
+        } catch (Exception e) {
+            return Map.of("status", "error", "details", e.getMessage());
+        }
+    }
+
 }

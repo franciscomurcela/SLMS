@@ -34,16 +34,15 @@ public class SecurityConfig {
             // Enable CORS with custom configuration
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests((authz) -> authz
-                // Public endpoints
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                // All user endpoints require authentication
+                // Public endpoints (AQUI ESTÁ A CORREÇÃO)
+                .requestMatchers("/actuator/**", "/user/health").permitAll()
+                
+                // All other user endpoints require authentication
                 .requestMatchers("/user/**").authenticated()
                 .anyRequest().authenticated()
             )
             // Enable OAuth2 Resource Server (JWT validation against Keycloak)
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
-            // DISABLED: UserSyncFilter (using PostgreSQL now instead of Supabase API)
-            // .addFilterAfter(userSyncFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

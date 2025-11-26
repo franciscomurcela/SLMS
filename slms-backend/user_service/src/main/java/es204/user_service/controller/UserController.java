@@ -1,11 +1,14 @@
 package es204.user_service.controller;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * User controller for user-related endpoints
@@ -44,6 +47,16 @@ public class UserController {
         }
         
         return response;
+    }
+    //health check
+    @GetMapping("/health")
+    public Map<String, Object> health() {
+        try {
+            // TODO: Adicionar JdbcTemplate se disponível
+            return Map.of("status", "ok");
+        } catch (Exception e) {
+            return Map.of("status", "error", "details", e.getMessage());
+        }
     }
     
     /**

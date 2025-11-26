@@ -44,3 +44,9 @@ Thumbs.db
 # Temporary files
 LOCAL_VS_CLOUD.md
 react-frontend/frontend/nginx.local.conf
+
+# Observability Data (Ignorar dados locais)
+observability/tempo-data/
+observability/loki-wal/
+observability/loki-data/
+observability/grafana-data/

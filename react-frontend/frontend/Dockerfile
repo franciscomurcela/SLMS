@@ -30,3 +30,6 @@ COPY --from=build /app/dist .
 COPY nginx.azure.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+
+# Healthcheck para o container
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1

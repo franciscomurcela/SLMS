@@ -26,14 +26,21 @@ public class SecurityConfig {
             // Enable CORS with custom configuration
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests((authz) -> authz
-                // Public endpoints
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                .requestMatchers("/user/health").permitAll()  // Debug endpoint
+                // Public endpoints (AQUI ESTÁ A CORREÇÃO)
+                // Permitir Actuator e o Health Check específico de Orders
+                .requestMatchers("/actuator/**", "/api/orders/health").permitAll()
+                
+                // Debug endpoint (mantive o que tinhas, opcional)
+                .requestMatchers("/user/health").permitAll()
+
                 // All order endpoints require authentication
                 .requestMatchers("/api/orders/**").authenticated()
                 .requestMatchers("/api/shipments/**").authenticated()
+                
                 // User endpoints require authentication
                 .requestMatchers("/user/**").authenticated()
+                
+                // Qualquer outro pedido exige autenticação
                 .anyRequest().authenticated()
             )
             // Enable OAuth2 Resource Server (JWT validation against Keycloak)

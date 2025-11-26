@@ -19,7 +19,7 @@ env:
   RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
 
 jobs:
-  # Espera pelo CI antes de fazer deploy yayayaya
+  # Espera pelo CI antes de fazer deploy
   wait-for-ci:
     runs-on: ubuntu-latest
     steps:
@@ -33,11 +33,10 @@ jobs:
             
             console.log(`Waiting for CI workflow to complete for commit ${sha}...`);
             
-            const maxAttempts = 60; // 30 minutos (30 segundos * 60)
+            const maxAttempts = 60; // 30 minutos
             let attempt = 0;
             
             while (attempt < maxAttempts) {
-              // Get all workflow runs for this commit
               const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
                 owner,
                 repo,
@@ -45,7 +44,6 @@ jobs:
                 head_sha: sha,
               });
               
-              // Find the CI workflow
               const ciRun = runs.workflow_runs.find(run => run.name === 'CI');
               
               if (ciRun) {
@@ -77,22 +75,14 @@ jobs:
         run: |
           echo "🔍 Runner Name: $RUNNER_NAME"
           echo "🔍 Runner OS: $RUNNER_OS"
-          echo "🔍 Verificando se tem Azure CLI, Docker e Terraform..."
           
           HAS_AZURE_CLI=$(command -v az >/dev/null 2>&1 && echo "yes" || echo "no")
           HAS_DOCKER=$(command -v docker >/dev/null 2>&1 && echo "yes" || echo "no")
           HAS_TERRAFORM=$(command -v terraform >/dev/null 2>&1 && echo "yes" || echo "no")
           HAS_GIT=$(command -v git >/dev/null 2>&1 && echo "yes" || echo "no")
           
-          echo "Azure CLI: $HAS_AZURE_CLI"
-          echo "Docker: $HAS_DOCKER"
-          echo "Terraform: $HAS_TERRAFORM"
-          echo "Git: $HAS_GIT"
-          
           if [ "$HAS_AZURE_CLI" != "yes" ] || [ "$HAS_DOCKER" != "yes" ]; then
             echo "❌ Este runner não tem as ferramentas necessárias!"
-            echo "💡 O CD precisa de correr no runner 204_runner (Azure VM)"
-            echo "Por favor, garante que o runner 204_runner está online e com a label correta"
             exit 1
           fi
           
@@ -109,7 +99,49 @@ jobs:
         with:
           clean: true
           fetch-depth: 0
+
+      # ==========================================
+      # OBSERVABILITY DEPLOYMENT (SETUP INICIAL)
+      # ==========================================
       
+      # 1. Garantir que o Docker Compose existe
+      - name: Setup Docker Compose
+        run: |
+          if ! command -v docker-compose &> /dev/null; then
+            echo "⚠️ docker-compose not found! Installing..."
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          fi
+          echo "✅ Docker Compose is ready"
+
+      # 2. Criar a rede partilhada
+      - name: Setup Docker Network (Observability)
+        run: |
+          echo "🌐 Creating shared network..."
+          docker network create rede-obs || true
+          echo "✅ Network ready"
+
+      # 3. Levantar a Stack LGTM (Loki, Grafana, Tempo, Prometheus)
+      - name: Deploy Observability Stack
+        run: |
+          echo "🔭 Deploying LGTM Stack..."
+          cd observability
+          
+          # Parar versão antiga e levantar nova
+          docker-compose down || true
+          docker-compose up -d
+          
+          echo "⏳ Waiting for services to stabilize..."
+          sleep 10
+          
+          if [ $(docker ps -q -f name=otel-collector) ]; then
+            echo "✅ OpenTelemetry Collector is UP"
+          else
+            echo "❌ Collector failed to start!"
+            docker-compose logs otel-collector
+            exit 1
+          fi
+
       - name: Debug - Show deployment info
         run: |
           echo "🚀 Iniciando deployment para Azure"
@@ -143,7 +175,6 @@ jobs:
           
           ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           
-          # Build uma vez e tag duas vezes
           docker build -t ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} .
           docker tag ${ACR_LOGIN_SERVER}/slms-backend:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-backend:latest
           
@@ -247,6 +278,15 @@ jobs:
             --auth-mode login \
             2>/dev/null || echo "OK"
 
+      - name: Obter o IP publico do runner
+        id: get-ip
+        run: |
+          # Obtem o IP publico da maquina virtual atual(Runner/VM)
+          IP=$(curl -s https://api.ipify.org)
+          echo "Public IP is $IP"
+          # Guarda o IP numa variavel de saida para usar nos proximos passos
+          echo "public_ip=$IP" >> $GITHUB_OUTPUT
+
       - name: Terraform Init
         env:
           ARM_USE_MSI: "true"
@@ -275,6 +315,7 @@ jobs:
           TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
           TF_VAR_image_tag: ${{ github.sha }}
           TF_VAR_google_maps_api_key: ${{ secrets.TF_VAR_GOOGLE_MAPS_API_KEY }}
+          TF_VAR_otel_exporter_endpoint: "http://${{ steps.get-ip.outputs.public_ip }}:4318"
         run: |
           cd terraform
           terraform apply -auto-approve
@@ -303,7 +344,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Find CI workflow runs for this commit
             const sha = context.sha;
             const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
               owner: context.repo.owner,
@@ -312,7 +352,6 @@ jobs:
               head_sha: sha,
             });
             
-            // Get the CI workflow run that completed
             const ciRun = runs.workflow_runs.find(run => run.name === 'CI' && run.status === 'completed');
             
             if (!ciRun) {
@@ -323,7 +362,6 @@ jobs:
             
             console.log(`CI workflow ID: ${ciRun.id}`);
             
-            // Get artifacts from CI workflow
             const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -379,14 +417,9 @@ jobs:
         if: steps.check-artifacts.outputs.has-artifacts == 'true'
         run: |
           echo "📊 Verificando docker-compose..."
+          # A instalação já foi feita no passo inicial, mas deixamos a verificação
           if ! command -v docker-compose &> /dev/null; then
-            echo "Instalando docker-compose..."
-            # Verificar se curl existe
-            if ! command -v curl &> /dev/null; then
-              echo "⚠️  curl não encontrado! Instalando..."
-              sudo apt-get update -qq
-              sudo apt-get install -y curl
-            fi
+            echo "docker-compose should be here, but installing just in case..."
             sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
           fi
@@ -425,6 +458,7 @@ jobs:
             - 📋 Order Service
             - 🔑 Keycloak (Auth)
             - 🗄️ PostgreSQL Database
+            - 🔭 LGTM Observability Stack
             `;
             
             console.log(comment);

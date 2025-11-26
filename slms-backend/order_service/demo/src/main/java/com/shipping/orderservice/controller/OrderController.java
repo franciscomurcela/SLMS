@@ -1,12 +1,12 @@
 package com.shipping.orderservice.controller;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,22 +23,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.properties.TextAlignment;
-import com.itextpdf.io.image.ImageDataFactory;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.qrcode.QRCodeWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-
+import com.shipping.orderservice.dto.ReportAnomalyRequest;
 import com.shipping.orderservice.model.Order;
 import com.shipping.orderservice.repository.OrderRepository;
-import com.shipping.orderservice.dto.ReportAnomalyRequest;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -86,6 +84,19 @@ public class OrderController {
             return ResponseEntity.status(500).body(Map.of(
                 "error", e.getClass().getSimpleName(),
                 "message", e.getMessage() != null ? e.getMessage() : "Unknown error"
+            ));
+        }
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<?> health() {
+        try {
+            jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+            return ResponseEntity.ok(Map.of("status", "ok"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "status", "error",
+                "details", e.getMessage()
             ));
         }
     }

@@ -27,3 +27,6 @@ EXPOSE 8080
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+# Healthcheck para o container
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:8080/api/orders/health || exit 1

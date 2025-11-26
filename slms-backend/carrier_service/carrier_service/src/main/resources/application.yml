@@ -1,6 +1,5 @@
 spring:
   datasource:
-    # Local PostgreSQL configuration (no SSL required for local container communication)
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/slms_db}
     username: ${SPRING_DATASOURCE_USERNAME:slms_user}
     password: ${SPRING_DATASOURCE_PASSWORD:slms_password}
@@ -10,7 +9,6 @@ spring:
       ddl-auto: none
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    # Ensure Hibernate quotes identifiers so exact case-sensitive table names (like Orders) are used.
     properties:
       hibernate.globally_quoted_identifiers: true
     show-sql: true

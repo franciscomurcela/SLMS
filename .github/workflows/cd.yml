@@ -230,8 +230,15 @@ jobs:
           
           ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           
-          echo "Building with progress output..."
-          docker build --progress=plain -t ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} .
+          # Definir o Endpoint do OTel (IP Público Fixo)
+          export VITE_OTEL_ENDPOINT="http://4.233.56.74:4318/v1/traces"
+          echo "Building with OTel Endpoint: $VITE_OTEL_ENDPOINT"
+          
+          # Build com o argumento injetado (Num único passo!)
+          docker build --progress=plain \
+            --build-arg VITE_OTEL_ENDPOINT=$VITE_OTEL_ENDPOINT \
+            -t ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} .
+            
           docker tag ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-frontend:latest
           
           echo "📤 Pushing Frontend to ACR..."
@@ -241,6 +248,7 @@ jobs:
           echo "🧹 Cleaning up local images..."
           docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} || true
           docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:latest || true
+      # -----------------------------------
 
       # ==========================================
       # TERRAFORM DEPLOYMENT
@@ -303,6 +311,7 @@ jobs:
           TF_VAR_runner_admin_password: ${{ secrets.TF_VAR_RUNNER_ADMIN_PASSWORD }}
           TF_VAR_image_tag: ${{ github.sha }}
           TF_VAR_google_maps_api_key: ${{ secrets.TF_VAR_GOOGLE_MAPS_API_KEY }}
+          TF_VAR_otel_exporter_endpoint: "http://${{ steps.get-ip.outputs.public_ip }}:4318"
         run: |
           cd terraform
           terraform plan

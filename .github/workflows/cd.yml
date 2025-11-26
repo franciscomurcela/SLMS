@@ -230,13 +230,20 @@ jobs:
           
           ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           
-          # Definir o Endpoint do OTel (IP Público Fixo)
+          # --- DEFINIÇÃO DAS VARIÁVEIS ---
           export VITE_OTEL_ENDPOINT="http://4.233.56.74:4318/v1/traces"
-          echo "Building with OTel Endpoint: $VITE_OTEL_ENDPOINT"
+          export VITE_KEYCLOAK_URL="http://4.233.56.74:8083/auth"
+          export VITE_API_URL="http://4.233.56.74:8082"
           
-          # Build com o argumento injetado (Num único passo!)
+          echo "Building with Configuration:"
+          echo "  - OTel: $VITE_OTEL_ENDPOINT"
+          echo "  - Keycloak: $VITE_KEYCLOAK_URL"
+          
+          # Build com os argumentos injetados (CORRIGIDO)
           docker build --progress=plain \
             --build-arg VITE_OTEL_ENDPOINT=$VITE_OTEL_ENDPOINT \
+            --build-arg VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
+            --build-arg VITE_API_URL=$VITE_API_URL \
             -t ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} .
             
           docker tag ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-frontend:latest
@@ -248,7 +255,6 @@ jobs:
           echo "🧹 Cleaning up local images..."
           docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:${{ github.sha }} || true
           docker rmi ${ACR_LOGIN_SERVER}/slms-frontend:latest || true
-      # -----------------------------------
 
       # ==========================================
       # TERRAFORM DEPLOYMENT

@@ -8,13 +8,8 @@ import { useKeycloak } from "../context/keycloakHooks";
 
 const role: string = "Logistics Manager";
 
-interface Row {
-  [key: string]: unknown;
-}
-
 function LogisticsManager() {
   const { keycloak } = useKeycloak();
-  const [rows, setRows] = useState<Row[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -33,14 +28,8 @@ function LogisticsManager() {
             'Content-Type': 'application/json'
           }
         });
-        const text = await r.text();
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = JSON.parse(text);
-        if (Array.isArray(data) && data.length > 0) {
-          setRows(data);
-        } else {
-          setRows([]);
-        }
+        console.log('Carriers fetched successfully');
       } catch (err) {
         console.error('Failed to fetch carriers:', err);
       }

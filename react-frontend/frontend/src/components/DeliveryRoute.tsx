@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useKeycloak } from "../context/keycloakHooks";
+import { useFeatureFlags } from "../context/featureFlagsHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -57,6 +58,11 @@ const DeliveryRoute: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const { keycloak } = useKeycloak();
+  const { isFeatureEnabled } = useFeatureFlags();
+  
+  // Feature flag para botão de registo de anomalias
+  const showAnomalyButton = isFeatureEnabled('driver-register-anomalies');
+  
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(
@@ -148,7 +154,7 @@ const DeliveryRoute: React.FC = () => {
         setLoading(true);
         const keycloakId = keycloak.tokenParsed?.sub;
 
-        // Use direct shipments endpoint
+        // Use same-origin request through Nginx proxy
         const shipmentsResponse = await fetch(
           `${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`,
           {
@@ -168,7 +174,7 @@ const DeliveryRoute: React.FC = () => {
         let foundOrder = null;
         for (const shipment of shipments) {
           const order = shipment.orders?.find(
-            (o: { orderId: string }) => o.orderId === orderId
+            (o: any) => o.orderId === orderId
           );
           if (order) {
             foundOrder = order;
@@ -244,10 +250,9 @@ const DeliveryRoute: React.FC = () => {
             lng: position.coords.longitude,
           };
           console.log("Localização GPS obtida:", currentPos);
-        } catch (error) {
+        } catch (gpsError) {
           console.warn(
-            "GPS não disponível, usando localização padrão (Aveiro)",
-            error
+            "GPS não disponível, usando localização padrão (Aveiro)"
           );
           currentPos = {
             lat: 40.6333,
@@ -689,89 +694,6 @@ const DeliveryRoute: React.FC = () => {
     );
   }
 
-  if (error) {
-    const isBillingError =
-      error.includes("Google Maps") ||
-      error.includes("billing") ||
-      error.includes("APIs");
-
-    return (
-      <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-        <div
-          className={`alert ${
-            isBillingError ? "alert-warning" : "alert-danger"
-          }`}
-          role="alert"
-        >
-          <h4 className="alert-heading">
-            <i className="bi bi-exclamation-triangle-fill"></i>{" "}
-            {isBillingError ? "Configuração Necessária" : "Erro"}
-          </h4>
-          <p>{error}</p>
-
-          {isBillingError && (
-            <div className="mt-4">
-              <h5>Para resolver:</h5>
-              <ol className="text-start">
-                <li>
-                  Acesse{" "}
-                  <a
-                    href="https://console.cloud.google.com/apis/library"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="alert-link"
-                  >
-                    Google Cloud APIs
-                  </a>
-                </li>
-                <li>
-                  Ative as APIs necessárias:
-                  <ul>
-                    <li>
-                      <strong>Maps JavaScript API</strong>
-                    </li>
-                    <li>
-                      <strong>Directions API</strong>
-                    </li>
-                    <li>
-                      <strong>Geocoding API</strong>
-                    </li>
-                  </ul>
-                </li>
-                <li>Aguarde 2-5 minutos e recarregue a página</li>
-              </ol>
-              <div className="alert alert-info mt-3">
-                <i className="bi bi-info-circle"></i>{" "}
-                <strong>Billing já está ativo!</strong> Só falta ativar as APIs
-                individuais.
-                <br />
-                Consulte <code>ATIVAR_APIS.md</code> para instruções detalhadas.
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="d-flex gap-2 justify-content-center mt-3">
-          <button className="btn btn-primary" onClick={() => navigate(-1)}>
-            <i className="bi bi-arrow-left"></i> Voltar ao Manifesto
-          </button>
-          {orderDetails && (
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                orderDetails.destinationAddress
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-success"
-            >
-              <i className="bi bi-map"></i> Abrir no Google Maps (alternativa)
-            </a>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   if (!orderDetails) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
@@ -819,13 +741,15 @@ const DeliveryRoute: React.FC = () => {
             <i className="bi bi-navigation"></i> Navegação GPS
           </h5>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              className="btn btn-warning btn-sm"
-              onClick={handleReportAnomaly}
-            >
-              <i className="bi bi-exclamation-triangle-fill"></i> Registar
-              Anomalia
-            </button>
+            {showAnomalyButton && (
+              <button
+                className="btn btn-warning btn-sm"
+                onClick={handleReportAnomaly}
+              >
+                <i className="bi bi-exclamation-triangle-fill"></i> Registar
+                Anomalia
+              </button>
+            )}
             <button
               className="btn btn-success btn-sm"
               onClick={() => navigate(`/confirm-delivery?orderId=${orderId}`)}
@@ -843,6 +767,21 @@ const DeliveryRoute: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Alerta discreto de erro (não bloqueia a interface) */}
+      {error && (
+        <div
+          style={{
+            backgroundColor: "#fff3cd",
+            borderBottom: "2px solid #ffc107",
+            padding: "10px 20px",
+            fontSize: "0.9rem",
+            color: "#856404",
+          }}
+        >
+          <i className="bi bi-exclamation-triangle"></i> {error}
+        </div>
+      )}
 
       {routeInfo && (
         <div

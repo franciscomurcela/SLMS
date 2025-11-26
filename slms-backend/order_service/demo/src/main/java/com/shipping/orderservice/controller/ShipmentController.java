@@ -2,19 +2,24 @@ package com.shipping.orderservice.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.shipping.orderservice.dto.CreateShipmentRequest;
 import com.shipping.orderservice.dto.ShipmentWithOrdersDTO;
 import com.shipping.orderservice.model.Order;
 import com.shipping.orderservice.model.Shipment;
@@ -36,6 +41,9 @@ public class ShipmentController {
     
     @Autowired
     private OrderRepository orderRepository;
+    
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * Get all shipments
@@ -53,9 +61,9 @@ public class ShipmentController {
     }
 
     /**
-     * Get InTransit shipments for the current driver (user)
+     * Get ALL shipments for the current driver (user) - not filtered by status
      * This endpoint extracts the keycloak ID from the JWT token automatically
-     * @return List of InTransit shipments with their associated orders for the current driver
+     * @return List of all shipments with their associated orders for the current driver
      */
     @GetMapping("/driver")
     public ResponseEntity<List<ShipmentWithOrdersDTO>> getMyShipments(Authentication authentication) {
@@ -71,12 +79,12 @@ public class ShipmentController {
                 return ResponseEntity.badRequest().build();
             }
             
-            System.out.println("=== Fetching shipments for current driver with keycloakId: " + keycloakId);
+            System.out.println("=== Fetching ALL shipments for current driver with keycloakId: " + keycloakId);
             
-            // Get InTransit shipments for this user
-            List<Shipment> shipments = shipmentRepository.findInTransitShipmentsByKeycloakId(keycloakId);
+            // Get ALL shipments for this user (not filtered by status)
+            List<Shipment> shipments = shipmentRepository.findAllShipmentsByKeycloakId(keycloakId);
             
-            System.out.println("=== Found " + shipments.size() + " InTransit shipments");
+            System.out.println("=== Found " + shipments.size() + " shipments");
             
             // For each shipment, fetch its orders
             List<ShipmentWithOrdersDTO> result = new ArrayList<>();
@@ -207,12 +215,12 @@ public class ShipmentController {
     @GetMapping("/my-shipments/{keycloakId}")
     public ResponseEntity<List<ShipmentWithOrdersDTO>> getMyShipmentsWithOrders(@PathVariable String keycloakId) {
         try {
-            System.out.println("=== Fetching shipments for keycloakId: " + keycloakId);
+            System.out.println("=== Fetching ALL shipments for keycloakId: " + keycloakId);
             
-            // Get InTransit shipments for this user (navigating through Users and Driver tables)
-            List<Shipment> shipments = shipmentRepository.findInTransitShipmentsByKeycloakId(keycloakId);
+            // Get ALL shipments for this user (not filtered by status)
+            List<Shipment> shipments = shipmentRepository.findAllShipmentsByKeycloakId(keycloakId);
             
-            System.out.println("=== Found " + shipments.size() + " InTransit shipments");
+            System.out.println("=== Found " + shipments.size() + " shipments");
             
             // For each shipment, fetch its orders
             List<ShipmentWithOrdersDTO> result = new ArrayList<>();
@@ -237,6 +245,156 @@ public class ShipmentController {
             System.err.println("=== ERROR fetching shipments for keycloakId " + keycloakId + ": " + e.getClass().getName() + " - " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * Create a new shipment
+     * This endpoint receives a list of order IDs and a carrier ID, 
+     * creates a shipment, assigns a random driver from the carrier,
+     * and updates all orders to point to this shipment
+     * 
+     * @param request CreateShipmentRequest containing orderIds and carrierId
+     * @return Success response with shipmentId or error
+     */
+    @PostMapping("/create")
+    public ResponseEntity<Map<String, Object>> createShipment(@RequestBody CreateShipmentRequest request) {
+        try {
+            System.out.println("=== CREATING SHIPMENT ===");
+            System.out.println("Carrier ID: " + request.getCarrierId());
+            System.out.println("Number of orders: " + request.getOrderIds().size());
+
+            // Validate input
+            if (request.getOrderIds() == null || request.getOrderIds().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "ValidationError",
+                    "message", "At least one order must be selected"
+                ));
+            }
+
+            if (request.getCarrierId() == null || request.getCarrierId().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "ValidationError",
+                    "message", "Carrier must be selected"
+                ));
+            }
+
+            UUID carrierId;
+            try {
+                carrierId = UUID.fromString(request.getCarrierId());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "ValidationError",
+                    "message", "Invalid carrier ID format"
+                ));
+            }
+
+            // Verify all orders exist and are Pending
+            for (String orderIdStr : request.getOrderIds()) {
+                UUID orderId;
+                try {
+                    orderId = UUID.fromString(orderIdStr);
+                } catch (IllegalArgumentException e) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "ValidationError",
+                        "message", "Invalid order ID format: " + orderIdStr
+                    ));
+                }
+
+                String checkOrderSql = "SELECT COUNT(*) FROM \"Orders\" WHERE order_id = ? AND status = 'Pending' AND shipment_id IS NULL";
+                Integer count = jdbcTemplate.queryForObject(checkOrderSql, Integer.class, orderId);
+                
+                if (count == null || count == 0) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "OrderNotValid",
+                        "message", "Order " + orderIdStr + " not found, not in Pending status, or already assigned to a shipment"
+                    ));
+                }
+            }
+
+            // Check if carrier exists
+            String checkCarrierSql = "SELECT COUNT(*) FROM \"Carrier\" WHERE carrier_id = ?";
+            Integer carrierCount = jdbcTemplate.queryForObject(checkCarrierSql, Integer.class, carrierId);
+            
+            if (carrierCount == null || carrierCount == 0) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "CarrierNotFound",
+                    "message", "Carrier not found with ID: " + request.getCarrierId()
+                ));
+            }
+
+            // Get a random driver from this carrier
+            String getDriverSql = """
+                SELECT d.driver_id 
+                FROM "Driver" d 
+                WHERE d.carrier_id = ? 
+                ORDER BY RANDOM() 
+                LIMIT 1
+                """;
+            
+            List<UUID> driverIds = jdbcTemplate.query(
+                getDriverSql,
+                (rs, rowNum) -> UUID.fromString(rs.getString("driver_id")),
+                carrierId
+            );
+
+            if (driverIds.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "NoDriverAvailable",
+                    "message", "No drivers available for this carrier"
+                ));
+            }
+
+            UUID driverId = driverIds.get(0);
+            System.out.println("Selected driver: " + driverId);
+
+            // Create the shipment with status 'Pending'
+            UUID shipmentId = UUID.randomUUID();
+            String createShipmentSql = """
+                INSERT INTO "Shipments" (shipment_id, carrier_id, driver_id, status)
+                VALUES (?, ?, ?, 'Pending')
+                """;
+            
+            int rowsAffected = jdbcTemplate.update(createShipmentSql, shipmentId, carrierId, driverId);
+
+            if (rowsAffected == 0) {
+                return ResponseEntity.status(500).body(Map.of(
+                    "error", "ShipmentCreationFailed",
+                    "message", "Failed to create shipment"
+                ));
+            }
+
+            System.out.println("Shipment created with ID: " + shipmentId);
+
+            // Update all orders to reference this shipment (keeping original status)
+            String updateOrdersSql = """
+                UPDATE "Orders" 
+                SET shipment_id = ?, carrier_id = ?
+                WHERE order_id = ?
+                """;
+
+            for (String orderIdStr : request.getOrderIds()) {
+                UUID orderId = UUID.fromString(orderIdStr);
+                jdbcTemplate.update(updateOrdersSql, shipmentId, carrierId, orderId);
+                System.out.println("Updated order: " + orderId);
+            }
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Shipment created successfully",
+                "shipmentId", shipmentId.toString(),
+                "driverId", driverId.toString(),
+                "carrierId", carrierId.toString(),
+                "ordersUpdated", request.getOrderIds().size()
+            ));
+
+        } catch (Exception e) {
+            System.err.println("=== ERROR creating shipment: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of(
+                "error", e.getClass().getSimpleName(),
+                "message", e.getMessage() != null ? e.getMessage() : "Unknown error occurred"
+            ));
         }
     }
 }

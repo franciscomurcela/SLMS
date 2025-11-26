@@ -138,7 +138,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
     }
 
     // PRIORITY 2: Process intent and respond
-    const intent = matchIntent(trimmedInput);
+    const intent = matchIntent(trimmedInput, userRole);
 
     if (intent) {
       // Handle count_deliveries action for drivers

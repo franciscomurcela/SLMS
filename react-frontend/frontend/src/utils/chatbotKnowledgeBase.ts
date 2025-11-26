@@ -9,6 +9,7 @@ export interface Intent {
   responses: string[];
   actions?: string[];
   priority?: number;
+  roles?: string[]; // Roles that can access this intent
 }
 
 export interface QuickAction {
@@ -148,7 +149,8 @@ Basta digitar sua dúvida!`
       '📋 O manifesto mostra todas as suas entregas programadas para hoje.',
       '🗺️ Veja o manifesto de carga para visualizar sua rota e entregas.'
     ],
-    actions: ['show_manifest']
+    actions: ['show_manifest'],
+    roles: ['Driver']
   },
   {
     id: 'driver_deliveries',
@@ -160,7 +162,8 @@ Basta digitar sua dúvida!`
       '📦 Vou verificar quantas entregas você tem pendentes...',
       '🔍 Consultando suas entregas agendadas...'
     ],
-    actions: ['count_deliveries']
+    actions: ['count_deliveries'],
+    roles: ['Driver']
   },
   {
     id: 'driver_confirm_delivery',
@@ -171,7 +174,8 @@ Basta digitar sua dúvida!`
     responses: [
       '✅ Para confirmar uma entrega, escaneie o QR code do pedido ou forneça o ID de rastreamento.',
       '📱 Use o scanner QR na página principal para confirmar entregas rapidamente.'
-    ]
+    ],
+    roles: ['Driver']
   },
   {
     id: 'driver_anomaly',
@@ -182,7 +186,8 @@ Basta digitar sua dúvida!`
     responses: [
       '⚠️ Para reportar uma anomalia, use a opção no manifesto de carga ao lado de cada entrega.',
       '📝 Pode registrar problemas de entrega diretamente no manifesto, incluindo fotos e descrição.'
-    ]
+    ],
+    roles: ['Driver']
   },
   // Warehouse-specific intents
   {
@@ -195,7 +200,8 @@ Basta digitar sua dúvida!`
       '📦 Vou verificar quantos pedidos estão no sistema...',
       '🔍 Consultando o status dos pedidos...'
     ],
-    actions: ['count_orders']
+    actions: ['count_orders'],
+    roles: ['Warehouse']
   },
   {
     id: 'warehouse_pending',
@@ -207,7 +213,8 @@ Basta digitar sua dúvida!`
       '📋 Vou verificar os pedidos pendentes de processamento...',
       '⏳ Consultando pedidos que aguardam processamento...'
     ],
-    actions: ['count_pending_orders']
+    actions: ['count_pending_orders'],
+    roles: ['Warehouse']
   },
   {
     id: 'warehouse_process',
@@ -218,7 +225,8 @@ Basta digitar sua dúvida!`
     responses: [
       '📦 Para processar um pedido, selecione-o na lista e clique em "Processar".',
       '📍 Você pode processar pedidos diretamente no painel de gestão acima.'
-    ]
+    ],
+    roles: ['Warehouse']
   },
   {
     id: 'warehouse_carriers',
@@ -229,7 +237,8 @@ Basta digitar sua dúvida!`
     responses: [
       '🚚 Ao processar um pedido, o sistema sugere automaticamente a melhor transportadora com base em custo, pontualidade e taxa de sucesso.',
       '📊 As transportadoras são ranqueadas por desempenho. Você pode escolher manualmente se preferir.'
-    ]
+    ],
+    roles: ['Warehouse', 'Logistics Manager']
   },
   {
     id: 'warehouse_status',
@@ -240,7 +249,8 @@ Basta digitar sua dúvida!`
     responses: [
       '📊 Pode filtrar pedidos por status (Todos, Pendentes, Em Trânsito, Entregues, Falhados) usando o menu suspenso no painel.',
       '🔍 Use os filtros no topo do painel para ver pedidos em diferentes estados.'
-    ]
+    ],
+    roles: ['Warehouse', 'Logistics Manager', 'Customer Service Representative']
   }
 ];
 
@@ -341,7 +351,7 @@ export function extractTrackingId(userMessage: string): string | null {
 }
 
 // Utility function to match user input to intents
-export function matchIntent(userMessage: string): Intent | null {
+export function matchIntent(userMessage: string, userRole?: string): Intent | null {
   const normalizedMessage = userMessage.toLowerCase().trim();
   
   // PRIORITY 1: Check if message contains a tracking ID (UUID)
@@ -358,8 +368,16 @@ export function matchIntent(userMessage: string): Intent | null {
   }
   
   // PRIORITY 2: Match against defined intents
+  // Filter intents by user role if role is specified
+  let availableIntents = [...intents];
+  if (userRole) {
+    availableIntents = intents.filter(intent => 
+      !intent.roles || intent.roles.length === 0 || intent.roles.includes(userRole)
+    );
+  }
+  
   // Sort intents by priority (higher priority first)
-  const sortedIntents = [...intents].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  const sortedIntents = availableIntents.sort((a, b) => (b.priority || 0) - (a.priority || 0));
   
   for (const intent of sortedIntents) {
     for (const pattern of intent.patterns) {

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useKeycloak } from "../context/keycloakHooks";
+import { useFeatureFlag } from "../context/featureFlagsHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
 interface Order {
@@ -50,6 +52,8 @@ function formatWeight(weight: number) {
 
 export default function OrdersPanel() {
   const { keycloak } = useKeycloak();
+  const navigate = useNavigate();
+  const isCreateShipmentEnabled = useFeatureFlag("wh-same-client-shipment");
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -215,19 +219,33 @@ export default function OrdersPanel() {
         </h5>
       </div>
       <div className="card-body">
-        {/* Status Filter Buttons */}
-        <div className="btn-group mb-3" role="group" aria-label="Order status filter">
-          {["All", "Pending", "InTransit", "Delivered"].map((status) => (
+        {/* Action Buttons */}
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="btn-group" role="group" aria-label="Order status filter">
+            {["All", "Pending", "InTransit", "Delivered"].map((status) => (
+              <button
+                key={status}
+                type="button"
+                className={`btn ${filter === status ? "btn-primary" : "btn-outline-primary"}`}
+                onClick={() => setFilter(status)}
+              >
+                {status === "All" ? "Todos" : status}{" "}
+                <span className="badge bg-light text-dark">{statusCounts[status as keyof typeof statusCounts]}</span>
+              </button>
+            ))}
+          </div>
+          
+          {isCreateShipmentEnabled && (
             <button
-              key={status}
-              type="button"
-              className={`btn ${filter === status ? "btn-primary" : "btn-outline-primary"}`}
-              onClick={() => setFilter(status)}
+              className="btn btn-success"
+              onClick={() => navigate("/warehouse/create-shipment")}
+              disabled={statusCounts.Pending === 0}
+              title={statusCounts.Pending === 0 ? "Nenhum pedido pendente disponível" : "Criar novo shipment"}
             >
-              {status === "All" ? "Todos" : status}{" "}
-              <span className="badge bg-light text-dark">{statusCounts[status as keyof typeof statusCounts]}</span>
+              <i className="bi bi-truck me-2"></i>
+              Criar Shipment
             </button>
-          ))}
+          )}
         </div>
 
         {/* Orders Table */}
@@ -281,7 +299,7 @@ export default function OrdersPanel() {
                     {order.status === "Pending" && (
                       <button
                         className="btn btn-sm btn-primary"
-                        onClick={() => window.location.href = `/warehouse/process/${order.orderId}`}
+                        onClick={() => navigate(`/warehouse/process/${order.orderId}`)}
                       >
                         <i className="bi bi-pencil-square me-1"></i>
                         Processar

@@ -61,10 +61,10 @@ function DriverCargoManifest() {
         return;
       }
 
-      console.log('🚚 Loading InTransit shipments for keycloak_id:', keycloakId);
+      console.log('🚚 Loading all shipments for keycloak_id:', keycloakId);
       
       // Call optimized endpoint that navigates: keycloak_id → Users.id → Driver.user_id → Shipments
-      // This endpoint returns InTransit shipments with their orders
+      // This endpoint returns all shipments assigned to the driver with their orders
       const response = await fetch(`${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -126,7 +126,7 @@ function DriverCargoManifest() {
           <i className='bi bi-truck'></i> Manifesto de Carga do Motorista
         </h1>
         <p className='text-center text-muted mb-4'>
-          Shipments InTransit atribuídos a si
+          Shipments atribuídos a si
         </p>
 
         {loading && (
@@ -149,7 +149,7 @@ function DriverCargoManifest() {
 
         {!loading && !error && shipments.length === 0 && (
           <div className='alert alert-info text-center'>
-            <i className='bi bi-info-circle'></i> Nenhum shipment InTransit atribuído a si no momento.
+            <i className='bi bi-info-circle'></i> Nenhum shipment atribuído a si no momento.
           </div>
         )}
 

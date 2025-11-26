@@ -40,6 +40,9 @@ export const API_ENDPOINTS = {
   REPORT_ANOMALY: isDevelopment 
     ? `${API_BASE_URL}:8081/api/orders/report-anomaly`
     : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders/report-anomaly`,
+  CREATE_SHIPMENT: isDevelopment 
+    ? `${API_BASE_URL}:8081/api/shipments/create`
+    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/shipments/create`,
   
   // Users API
   USERS: isDevelopment 

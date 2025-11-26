@@ -100,47 +100,51 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
 
     console.log("[DEBUG] handleSendMessage - trimmedInput:", trimmedInput);
 
-    // PRIORITY 1: Check if message contains tracking ID
-    const trackingId = extractTrackingId(trimmedInput);
-    console.log("[DEBUG] handleSendMessage - trackingId:", trackingId);
-    if (trackingId) {
-      setIsTyping(true);
-
-      try {
-        // Fetch order details from API
-        const order = await fetchOrderByTrackingId(
-          trackingId,
-          authToken,
-          customerId
-        );
-
-        setIsTyping(false);
-
-        if (order) {
-          // Format and display order details
-          const formattedDetails = formatOrderDetails(order);
-          addMessage(formattedDetails, "assistant");
-        } else {
-          // Order not found
-          addMessage(
-            `❌ **Tracking ID não encontrado**\n\nO ID \`${trackingId}\` não foi encontrado no sistema.\n\n💡 **Dicas:**\n• Verifique se copiou o ID completo\n• Certifique-se de que o pedido foi criado\n• Entre em contacto com o suporte se o problema persistir`,
-            "assistant"
-          );
-        }
-      } catch (error) {
-        setIsTyping(false);
-        addMessage(
-          `⚠️ **Erro ao buscar encomenda**\n\nOcorreu um erro ao tentar buscar informações da encomenda.\n\n🔄 Tente novamente ou contacte o suporte: suporte@slms.pt`,
-          "assistant"
-        );
-      }
-      return;
-    }
-
-    // PRIORITY 2: Process intent and respond
+    // Process intent and respond
     const intent = matchIntent(trimmedInput, userRole);
 
     if (intent) {
+      // Handle tracking ID for customers and authorized roles
+      const trackingId = extractTrackingId(trimmedInput);
+      if (
+        trackingId &&
+        (userRole === "Customer" ||
+          userRole === "Customer Service Representative" ||
+          userRole === "Logistics Manager")
+      ) {
+        setIsTyping(true);
+
+        try {
+          // Fetch order details from API
+          const order = await fetchOrderByTrackingId(
+            trackingId,
+            authToken,
+            customerId
+          );
+
+          setIsTyping(false);
+
+          if (order) {
+            // Format and display order details
+            const formattedDetails = formatOrderDetails(order);
+            addMessage(formattedDetails, "assistant");
+          } else {
+            // Order not found
+            addMessage(
+              `❌ **Tracking ID não encontrado**\n\nO ID \`${trackingId}\` não foi encontrado no sistema.\n\n💡 **Dicas:**\n• Verifique se copiou o ID completo\n• Certifique-se de que o pedido foi criado\n• Entre em contacto com o suporte se o problema persistir`,
+              "assistant"
+            );
+          }
+        } catch (error) {
+          setIsTyping(false);
+          addMessage(
+            `⚠️ **Erro ao buscar encomenda**\n\nOcorreu um erro ao tentar buscar informações da encomenda.\n\n🔄 Tente novamente ou contacte o suporte: suporte@slms.pt`,
+            "assistant"
+          );
+        }
+        return;
+      }
+
       // Handle count_deliveries action for drivers
       if (
         intent.actions?.includes("count_deliveries") &&
@@ -262,13 +266,26 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
       addAssistantMessage(response);
 
       // Handle special actions
+      // Handle toggle_order_history for customers
       if (
         intent.actions?.includes("toggle_order_history") &&
-        onToggleOrderHistory
+        onToggleOrderHistory &&
+        userRole === "Customer"
       ) {
         setTimeout(() => {
           onToggleOrderHistory();
         }, 1000);
+      }
+
+      // Handle show_tracking_input for customers and other roles
+      if (intent.actions?.includes("show_tracking_input")) {
+        // Provide guidance message for tracking
+        setTimeout(() => {
+          addMessage(
+            "📍 **Como rastrear:**\n\n1️⃣ Cole o ID completo do pedido (UUID)\n2️⃣ Ou digite qualquer mensagem com o ID incluído\n\n🔍 O sistema detecta automaticamente IDs no formato UUID.",
+            "assistant"
+          );
+        }, 1500);
       }
     } else {
       // Fallback response

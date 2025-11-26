@@ -43,7 +43,8 @@ export const intents: Intent[] = [
       '🔍 Posso ajudar a localizar sua encomenda. Você tem o número do pedido?',
       '📍 Vou ajudar a rastrear seu pedido. Qual o ID da encomenda?'
     ],
-    actions: ['show_tracking_input']
+    actions: ['show_tracking_input'],
+    roles: ['Customer', 'Customer Service Representative', 'Logistics Manager']
   },
   {
     id: 'order_history',
@@ -56,7 +57,8 @@ export const intents: Intent[] = [
       '✅ Pode ver o histórico completo clicando no botão de histórico na parte superior da página.',
       '📝 O botão "Histórico de Encomendas" mostra todos os seus pedidos anteriores.'
     ],
-    actions: ['toggle_order_history']
+    actions: ['toggle_order_history'],
+    roles: ['Customer']
   },
   {
     id: 'delivery_status',
@@ -194,7 +196,7 @@ Basta digitar sua dúvida!`
     id: 'warehouse_orders',
     patterns: [
       'quantos pedidos', 'número de pedidos', 'quantidade', 'orders',
-      'how many orders', 'count orders', 'pedidos pendentes'
+      'how many orders', 'count orders', 'pedidos pendentes', 'processar pedido'
     ],
     responses: [
       '📦 Vou verificar quantos pedidos estão no sistema...',

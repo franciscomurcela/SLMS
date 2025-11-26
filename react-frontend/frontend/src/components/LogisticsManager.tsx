@@ -15,7 +15,6 @@ interface Row {
 function LogisticsManager() {
   const { keycloak } = useKeycloak();
   const [rows, setRows] = useState<Row[]>([]);
-  const [columnsOrdered, setColumnsOrdered] = useState<string[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -50,59 +49,6 @@ function LogisticsManager() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keycloak?.authenticated, keycloak?.token]);
-
-  // friendly labels for common DB columns
-  const friendlyNames: Record<string, string> = {
-    id: "ID",
-    carrier_id: "ID",
-    name: "Name",
-    carrier_name: "Name",
-    display_name: "Name",
-    carrier: "Name",
-    rating: "Rating",
-    score: "Rating",
-    rating_score: "Rating",
-    avg_cost: "Avg cost",
-    cost: "Avg cost",
-    on_time_rate: "On-time rate",
-    ontime_rate: "On-time rate",
-    success_rate: "Success rate",
-    email: "Email",
-    contact: "Contact",
-    phone: "Phone",
-    address: "Address",
-  };
-
-  // detect and order columns once rows arrive
-  useEffect(() => {
-    if (!rows || rows.length === 0) {
-      setColumnsOrdered([]);
-      return;
-    }
-
-  const cols = Object.keys(rows[0]);
-
-  // prefer a name-like column first (case-insensitive)
-  const nameKey = cols.find((c) => /name|carrier/i.test(c));
-  const ratingKey = cols.find((c) => /rating|score/i.test(c));
-
-    const ordered: string[] = [];
-    if (nameKey) ordered.push(nameKey);
-    // then id if exists and not already included
-    const idKey = cols.find((c) => /(^id$|_id$)/i.test(c));
-    if (idKey && idKey !== nameKey) ordered.push(idKey);
-
-    // then rating
-    if (ratingKey && ratingKey !== nameKey && ratingKey !== idKey)
-      ordered.push(ratingKey);
-
-    // then the rest (preserve original order)
-    cols.forEach((c) => {
-      if (!ordered.includes(c)) ordered.push(c);
-    });
-
-    setColumnsOrdered(ordered);
-  }, [rows]);
 
   return (
     <>

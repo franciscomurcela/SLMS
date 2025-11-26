@@ -8,27 +8,24 @@ import { useKeycloak } from "../context/keycloakHooks";
 
 const role: string = "Logistics Manager";
 
+interface Row {
+  [key: string]: unknown;
+}
+
 function LogisticsManager() {
   const { keycloak } = useKeycloak();
   const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [columnsOrdered, setColumnsOrdered] = useState<string[]>([]);
-  const [rawResponse, setRawResponse] = useState<string | null>(null);
-  const [showRaw, setShowRaw] = useState(false);
 
   useEffect(() => {
     async function load() {
       // Wait for Keycloak to be ready
       if (!keycloak || !keycloak.token || !keycloak.authenticated) {
         console.log("[LogisticsManager] Waiting for Keycloak...");
-        setLoading(true);
         return;
       }
 
       console.log("[LogisticsManager] Keycloak ready, fetching carriers with token");
-      setLoading(true);
-      setError(null);
       try {
         console.log('Fetching carriers via API...');
         const r = await fetch(API_ENDPOINTS.CARRIERS, {
@@ -38,21 +35,15 @@ function LogisticsManager() {
           }
         });
         const text = await r.text();
-        setRawResponse(text);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = JSON.parse(text);
         if (Array.isArray(data) && data.length > 0) {
           setRows(data);
-          setError(null);
         } else {
           setRows([]);
-          setError('No carriers data available');
         }
       } catch (err) {
         console.error('Failed to fetch carriers:', err);
-        setError(String(err));
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -81,19 +72,6 @@ function LogisticsManager() {
     phone: "Phone",
     address: "Address",
   };
-
-  // case-insensitive friendly name lookup
-  function getFriendlyName(key: string) {
-    if (!key) return key;
-    const lower = key.toLowerCase();
-    // direct match
-    if (friendlyNames[lower]) return friendlyNames[lower];
-    // fuzzy search keys
-    const found = Object.keys(friendlyNames).find((k) => lower.includes(k));
-    if (found) return friendlyNames[found];
-    // fallback: prettify key
-    return key.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
-  }
 
   // detect and order columns once rows arrive
   useEffect(() => {
@@ -125,69 +103,6 @@ function LogisticsManager() {
 
     setColumnsOrdered(ordered);
   }, [rows]);
-
-  // (no auto-scroll) when rows arrive we just render the table at the top of the content
-
-  const columns = columnsOrdered.length ? columnsOrdered : rows.length ? Object.keys(rows[0]) : [];
-
-  // helper to render rating as stars when appropriate
-  function renderCell(key: string, value: unknown) {
-    if (value == null) return "";
-
-    // helper to extract a numeric value safely from unknown
-    const toNumber = (v: unknown): number => {
-      if (typeof v === 'number') return v;
-      if (typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v))) return Number(v);
-      return NaN;
-    };
-
-    if (/rating|score/i.test(key)) {
-      const n = toNumber(value);
-      if (Number.isFinite(n)) {
-        // normalize to 0-5 scale: if value > 5 assume 0-100 percentage
-        const stars =
-          n > 5 ? Math.round((Math.max(0, Math.min(100, n)) / 100) * 5) : Math.round(Math.max(0, Math.min(5, n)));
-        const filled = "★".repeat(stars);
-        const empty = "☆".repeat(5 - stars);
-        return `${filled}${empty} ${n}`;
-      }
-    }
-
-    // currency formatting for cost columns
-    if (/cost|avg_cost/i.test(key)) {
-      const n = toNumber(value);
-      if (Number.isFinite(n)) {
-        return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n);
-      }
-    }
-
-    // percentage formatting for rates
-    if (/rate|success/i.test(key)) {
-      const n = toNumber(value);
-      if (Number.isFinite(n)) {
-        // if value looks like 0-1, convert to percent
-        const pct = n <= 1 ? n * 100 : n;
-        // show stars for success-like metrics
-        if (/success/i.test(key)) {
-          const stars = Math.round(Math.max(0, Math.min(100, pct)) / 20); // 0-5
-          const filled = '★'.repeat(stars);
-          const empty = '☆'.repeat(5 - stars);
-          return `${filled}${empty} ${pct.toFixed(1)}%`;
-        }
-        return `${pct.toFixed(1)}%`;
-      }
-    }
-
-    // shorten carrier id for readability
-    if (/carrier_id|id/i.test(key) && typeof value === 'string' && value.length > 12) {
-      return `${value.slice(0, 8)}...`;
-    }
-
-    // default stringify (handle objects/arrays safely)
-    if (typeof value === 'object') return JSON.stringify(value);
-    return String(value);
-  }
-
 
   return (
     <>

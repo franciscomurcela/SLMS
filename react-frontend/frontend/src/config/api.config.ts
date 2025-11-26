@@ -10,32 +10,19 @@ export const API_BASE_URL = `${window.location.protocol}//${window.location.host
  * Backend API endpoints through Nginx proxy
  */
 export const API_ENDPOINTS = {
-  // Carriers API  
-  CARRIERS: isDevelopment 
-    ? `${API_BASE_URL}:8080/carriers`
-    : `https://slms-carrier-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/carriers`,
+  // Carriers API
+  CARRIERS: `${API_BASE_URL}/carriers`,
   
-  // Orders API - Direct to order service
-  ORDERS: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders`,
-  SHIPMENTS: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/shipments`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/shipments`,
-  CONFIRM_DELIVERY: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders/confirm-delivery`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders/confirm-delivery`,
-  REPORT_ANOMALY: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders/report-anomaly`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders/report-anomaly`,
+  // Orders API  
+  ORDERS: `${API_BASE_URL}/api/orders`,
+  SHIPMENTS: `${API_BASE_URL}/api/shipments`,
+  CONFIRM_DELIVERY: `${API_BASE_URL}/api/orders/confirm-delivery`,
+  REPORT_ANOMALY: `${API_BASE_URL}/api/orders/report-anomaly`,
+  CREATE_SHIPMENT: `${API_BASE_URL}/api/shipments/create`,
   
   // Users API
-  USERS: isDevelopment 
-    ? `${API_BASE_URL}:8082/user`
-    : `https://slms-backend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/user`,
-  WHOAMI: isDevelopment 
-    ? `${API_BASE_URL}:8082/user/whoami`
-    : `https://slms-backend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/user/whoami`,
+  USERS: `${API_BASE_URL}/user`,
+  WHOAMI: `${API_BASE_URL}/user/whoami`,
   
   // Auth (Keycloak through nginx proxy)
   AUTH: `${API_BASE_URL}/auth`,

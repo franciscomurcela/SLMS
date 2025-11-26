@@ -52,6 +52,8 @@ function formatWeight(weight: number) {
 
 export default function OrdersPanel() {
   const { keycloak } = useKeycloak();
+  const navigate = useNavigate();
+  const isCreateShipmentEnabled = useFeatureFlag("wh-same-client-shipment");
   const [orders, setOrders] = useState<Order[]>([]);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

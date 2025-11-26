@@ -3,6 +3,7 @@ import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import { useKeycloak } from "../context/keycloakHooks";
 import { useEffect, useState } from "react";
+import ChatAssistant from "./ChatAssistant";
 
 const role: string = Roles.ROLE_CUSTOMER;
 const href: string = Paths.PATH_CUSTOMER;
@@ -66,7 +67,7 @@ function Customer() {
       setError(null);
       try {
         const keycloakId = keycloak.tokenParsed.sub;
-        
+
         // Use same-origin request through Nginx proxy with customer's keycloakId
         const ordersResp = await fetch(`/api/orders/my-orders/${keycloakId}`, {
           headers: {

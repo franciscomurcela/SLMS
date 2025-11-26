@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import "./ConfirmDelivery.css";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
+import { useFeatureFlags } from "../context/featureFlagsHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 
 type ConfirmDeliveryProps = Record<string, never>;

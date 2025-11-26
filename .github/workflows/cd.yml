@@ -21,7 +21,7 @@ env:
 jobs:
   # Espera pelo CI antes de fazer deploy
   wait-for-ci:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, es2526-204]
     steps:
       - name: Wait for CI workflow
         uses: actions/github-script@v7

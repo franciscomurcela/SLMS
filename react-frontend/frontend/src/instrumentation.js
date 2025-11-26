@@ -4,16 +4,19 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { ZoneContextManager } from '@opentelemetry/context-zone';
-import { Resource } from '@opentelemetry/resources';
-import { SEMRESATTRS_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
+// MUDANÇA 1: Usar resourceFromAttributes em vez de Resource
+import { resourceFromAttributes } from '@opentelemetry/resources';
+// MUDANÇA 2: Usar ATTR_SERVICE_NAME (padrão mais recente)
+import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
 // URL do Collector.
-// Em dev usa localhost. Em prod usa a variável de ambiente.
+// Em dev usa localhost. Em prod usa a variável de ambiente injetada no build.
 const collectorUrl = import.meta.env.VITE_OTEL_ENDPOINT || 'http://localhost:4318/v1/traces';
 
+// MUDANÇA 3: Criar o provider usando a função helper
 const provider = new WebTracerProvider({
-  resource: new Resource({
-    [SEMRESATTRS_SERVICE_NAME]: 'frontend-react',
+  resource: resourceFromAttributes({
+    [ATTR_SERVICE_NAME]: 'frontend-react',
   }),
 });
 
@@ -29,20 +32,20 @@ provider.register({
   contextManager: new ZoneContextManager(),
 });
 
-// Regista as instrumentações automáticas (Cliques, Fetch, Load)
+// Regista as instrumentações automáticas
 registerInstrumentations({
   tracerProvider: provider,
   instrumentations: [
     getWebAutoInstrumentations({
       '@opentelemetry/instrumentation-user-interaction': {
-        enabled: true, // Regista cliques
+        enabled: true,
       },
       '@opentelemetry/instrumentation-document-load': {
-        enabled: true, // Regista tempo de load da página
+        enabled: true,
       },
       '@opentelemetry/instrumentation-fetch': {
-        enabled: true, // Liga o frontend ao backend nos traces
-        propagateTraceHeaderCorsUrls: /.*/, // Envia headers de trace para o backend
+        enabled: true,
+        propagateTraceHeaderCorsUrls: /.*/,
         clearTimingResources: true,
       },
     }),

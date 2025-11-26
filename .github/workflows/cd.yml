@@ -509,3 +509,14 @@ jobs:
             `;
             
             console.log(comment);
+          
+      # ==========================================
+      # CLEANUP (Evitar erros de permissão no próximo run)
+      # ==========================================
+      - name: Limpar dados do Docker (Root)
+        if: always() # Corre mesmo se os passos anteriores falharem
+        run: |
+          echo "🧹 Limpando volumes de dados criados pelo Docker..."
+          cd observability
+          sudo rm -rf tempo-data loki-data grafana-data loki-wal
+          echo "✅ Limpeza concluída."

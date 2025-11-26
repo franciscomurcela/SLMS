@@ -35,6 +35,3 @@ docker exec slms-db psql -U slms_user -d slms_db -f /tmp/slms-data-only-20251027
 4. Ir para /react-frontend
 
 docker-compose up --build -d
-
-
-e pronto já deve dar

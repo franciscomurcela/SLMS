@@ -24,19 +24,23 @@ Os microserviços expõem endpoints detalhados que verificam a conectividade com
 * **Endpoint:** `/actuator/health`
 * **Resposta Sucesso:** `200 OK {"status": "UP"}`
 
-### 2.3 Nível de Infraestrutura (Azure)
-O Azure Monitor (Application Insights) verifica a disponibilidade externa da VM através de um Web Test (Ping).
-* **Tipo:** Standard Availability Test.
-* **Frequência:** 5 minutos.
-* **Critério:** HTTP 200 no endpoint `/user/health`.
+### 2.3 Nível de Infraestrutura (Azure Monitor)
+O Azure Application Insights verifica a disponibilidade externa da VM e dos serviços através de Web Tests (Pings) a cada 5 minutos.
+
+Foram configurados testes individuais para cada serviço crítico:
+* **User Service:** `http://<VM_IP>:8082/user/health`
+* **Order Service:** `http://<VM_IP>:8081/actuator/health`
+* **Carrier Service:** `http://<VM_IP>:8080/actuator/health`
+
+Critério de Sucesso: HTTP 200 OK.
 
 ## 3. SLIs e SLOs Definidos
 
-| Serviço | SLI (Indicador) | SLO (Objetivo) | Query Prometheus (Exemplo) |
+| Serviço | SLI (Indicador) | SLO (Objetivo) | Query Prometheus (Agregada) |
 | :--- | :--- | :--- | :--- |
-| **User Service** | Taxa de Erros HTTP | < 1% erros (5xx) | `rate(http_server_requests_seconds_count{status=~"5.."}[5m])` |
-| **Order Service** | Latência dos Pedidos | 95% < 500ms | `histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m]))` |
-| **Geral** | Uptime (Disponibilidade) | > 99.9% | `up{job="user-service"}` |
+| **API Backend** | Taxa de Erros HTTP | < 1% erros (5xx) | `sum(rate(http_server_request_duration_seconds_count{status=~"5.."}[5m]))` |
+| **API Backend** | Latência Global (P95) | 95% < 500ms | `histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le))` |
+| **Infraestrutura** | Uptime (Disponibilidade) | > 99.9% | `up` |
 
 ## 4. Configuração Técnica
 * **Persistência:** Volumes Docker configurados para Loki (`loki-data`) e Grafana (`grafana-data`) para garantir que logs e dashboards sobrevivem a reinícios.
@@ -48,25 +52,37 @@ O Azure Monitor (Application Insights) verifica a disponibilidade externa da VM 
 ### A. Logs Estruturados (Loki)
 Os logs são gerados em formato JSON para facilitar a indexação por campos (`service_name`, `trace_id`, `level`).
 > **Evidência:**
-> ![Logs no Loki](image_20e47c.png)
+> ![Logs no Loki](image-2.png)
 
 ### B. Traces Distribuídos (Tempo)
 Rastreio completo do ciclo de vida dos pedidos HTTP através dos microserviços.
 > **Evidência:**
-> ![Trace no Tempo](image_215180.jpg)
+> ![Trace no Tempo](image-1.png)
 
 ### C. Métricas (Prometheus)
 Monitorização de tráfego e contagem de pedidos em tempo real.
 > **Evidência:**
-> ![Métricas no Prometheus](image_21421c.png)
+> ![Métricas no Prometheus](image-3.png)
 
 ### D. Monitorização de Infraestrutura (Azure)
 Teste de disponibilidade configurado no Application Insights para validar o acesso externo à VM.
 > **Evidência:**
-> ![Teste Disponibilidade Azure](image_a0a527.png)
+> ![Teste Disponibilidade Azure](image.png)
 > *(O gráfico demonstra a deteção correta de indisponibilidade quando a VM está desligada).*
+
+### E. Validação de SLO (Latência)
+Validação do SLO de latência (< 200ms) utilizando a função `histogram_quantile` no Prometheus.
+> **Evidência:**
+> ![Validação SLO Latência](image-4.png)
+> *(O gráfico demonstra uma latência P95 consistentemente abaixo de 30ms, cumprindo o objetivo).*
+
+### F. Validação de SLO (Taxa de Erros)
+Monitorização da taxa de erros HTTP 5xx (Server Errors).
+> **Evidência:**
+> ![Taxa de Erros HTTP](image-5.png)
+> *(O gráfico demonstra uma taxa de erros de 0 absoluto, cumprindo largamente o objetivo de < 1%).*
 
 ## 6. Como Aceder
 1.  **Arrancar o sistema:** `docker-compose up -d` (na raiz e na pasta observability).
-2.  **Grafana:** Aceder a `http://localhost:3000` (Local) ou `http://<4.233.56.74>:3000` (Azure).
+2.  **Grafana:** Aceder a `http://localhost:3000` (Local) ou `http://4.233.56.74:3000` (Azure).
 3.  **Menu:** Navegar para "Explore" para análise ad-hoc.

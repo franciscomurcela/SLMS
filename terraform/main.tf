@@ -131,7 +131,7 @@ resource "time_sleep" "wait_for_env" {
 }
 
 # ========================================================
-# CONTAINER APPS (Com configurações OTel adicionadas)
+# CONTAINER APPS
 # ========================================================
 
 # Backend (User Service)
@@ -168,7 +168,7 @@ resource "azurerm_container_app" "backend" {
         value = "prod"
       }
 
-      # --- CONFIGURAÇÃO OPENTELEMETRY (NOVO) ---
+      # Configuração OpenTelemetry
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
         value = var.otel_exporter_endpoint
@@ -178,7 +178,6 @@ resource "azurerm_container_app" "backend" {
         name  = "OTEL_TRACES_SAMPLER"
         value = "always_on"
       }
-      # ----------------------------------------
     }
 
     min_replicas = 1
@@ -277,7 +276,7 @@ resource "azurerm_container_app" "carrier_service" {
         value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204"
       }
 
-      # --- CONFIGURAÇÃO OPENTELEMETRY (NOVO) ---
+      # Configuração OpenTelemetry
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
         value = var.otel_exporter_endpoint
@@ -287,7 +286,6 @@ resource "azurerm_container_app" "carrier_service" {
         name  = "OTEL_TRACES_SAMPLER"
         value = "always_on"
       }
-      # ----------------------------------------
     }
 
     min_replicas = 1
@@ -386,7 +384,7 @@ resource "azurerm_container_app" "order_service" {
         value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204"
       }
 
-      # --- CONFIGURAÇÃO OPENTELEMETRY (NOVO) ---
+      # Configuração OpenTelemetry
       env {
         name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
         value = var.otel_exporter_endpoint
@@ -396,7 +394,6 @@ resource "azurerm_container_app" "order_service" {
         name  = "OTEL_TRACES_SAMPLER"
         value = "always_on"
       }
-      # ----------------------------------------
     }
 
     min_replicas = 1
@@ -519,4 +516,77 @@ data "azurerm_public_ip" "runner_ip" {
 data "azurerm_network_security_group" "nsg" {
   name                = "slms-runner-nsg"
   resource_group_name = azurerm_resource_group.rg.name
+}
+
+# ========================================================
+# MONITORIZAÇÃO (Azure Application Insights - Web Tests)
+# ========================================================
+
+# Referência ao Application Insights existente
+data "azurerm_application_insights" "slms_observability" {
+  name                = "slms-observability"
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# 1. Health Check - User Service (Porta 8082)
+resource "azurerm_application_insights_web_test" "health_user" {
+  name                    = "HealthCheck-UserService-TF"
+  location                = azurerm_resource_group.rg.location
+  resource_group_name     = azurerm_resource_group.rg.name
+  application_insights_id = data.azurerm_application_insights.slms_observability.id
+  kind                    = "ping"
+  frequency               = 300
+  timeout                 = 60
+  enabled                 = true
+  geo_locations           = ["us-tx-sn1-azr", "us-il-ch1-azr"]
+
+  configuration = <<XML
+<WebTest Name="user-health" Id="1" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Items>
+    <Request Method="GET" Guid="a" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8082/user/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
+  </Items>
+</WebTest>
+XML
+}
+
+# 2. Health Check - Order Service (Porta 8081)
+resource "azurerm_application_insights_web_test" "health_order" {
+  name                    = "HealthCheck-OrderService-TF"
+  location                = azurerm_resource_group.rg.location
+  resource_group_name     = azurerm_resource_group.rg.name
+  application_insights_id = data.azurerm_application_insights.slms_observability.id
+  kind                    = "ping"
+  frequency               = 300
+  timeout                 = 60
+  enabled                 = true
+  geo_locations           = ["us-tx-sn1-azr", "us-il-ch1-azr"]
+
+  configuration = <<XML
+<WebTest Name="order-health" Id="2" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Items>
+    <Request Method="GET" Guid="b" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8081/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
+  </Items>
+</WebTest>
+XML
+}
+
+# 3. Health Check - Carrier Service (Porta 8080)
+resource "azurerm_application_insights_web_test" "health_carrier" {
+  name                    = "HealthCheck-CarrierService-TF"
+  location                = azurerm_resource_group.rg.location
+  resource_group_name     = azurerm_resource_group.rg.name
+  application_insights_id = data.azurerm_application_insights.slms_observability.id
+  kind                    = "ping"
+  frequency               = 300
+  timeout                 = 60
+  enabled                 = true
+  geo_locations           = ["us-tx-sn1-azr", "us-il-ch1-azr"]
+
+  configuration = <<XML
+<WebTest Name="carrier-health" Id="3" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Items>
+    <Request Method="GET" Guid="c" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8080/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
+  </Items>
+</WebTest>
+XML
 }

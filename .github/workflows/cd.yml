@@ -471,9 +471,19 @@ jobs:
           echo "🚀 Deploying Frontend on VM..."
           cd react-frontend
           
-          # Garantir que o ficheiro tem a porta 80 (caso não tenhas feito commit ainda)
-          # Mas como vais fazer commit, o git pull já traz a versão certa.
+          # 1. Descobrir o IP Público
+          PUBLIC_IP=$(curl -s https://api.ipify.org)
+          echo "Detected Public IP: $PUBLIC_IP"
           
+          # 2. Criar ficheiro .env para o build do Vite (CRUCIAL!)
+          # Isto garante que o build local na VM usa o IP da VM
+          echo "VITE_OTEL_ENDPOINT=http://$PUBLIC_IP:4318/v1/traces" > frontend/.env
+          echo "VITE_KEYCLOAK_URL=http://$PUBLIC_IP:8083/auth" >> frontend/.env
+          echo "VITE_API_URL=http://$PUBLIC_IP:8082" >> frontend/.env
+          
+          echo "✅ .env file created inside frontend folder"
+          
+          # 3. Reconstruir e Reiniciar
           docker-compose pull
           docker-compose up -d --build
           

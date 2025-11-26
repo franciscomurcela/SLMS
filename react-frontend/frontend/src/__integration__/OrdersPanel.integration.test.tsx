@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import OrdersPanel from '../components/OrdersPanel';
 import { KeycloakContext } from '../context/KeycloakContextDef';
+import { FeatureFlagsProvider } from '../context/FeatureFlagsContext';
 
 /**
  * TESTES DE INTEGRAÇÃO
@@ -86,7 +87,9 @@ describe('Integration Tests - OrdersPanel with API', () => {
     render(
       <BrowserRouter>
         <KeycloakContext.Provider value={mockKeycloakContext}>
-          <OrdersPanel />
+          <FeatureFlagsProvider>
+            <OrdersPanel />
+          </FeatureFlagsProvider>
         </KeycloakContext.Provider>
       </BrowserRouter>
     );
@@ -128,7 +131,9 @@ describe('Integration Tests - OrdersPanel with API', () => {
     render(
       <BrowserRouter>
         <KeycloakContext.Provider value={mockKeycloakContext}>
-          <OrdersPanel />
+          <FeatureFlagsProvider>
+            <OrdersPanel />
+          </FeatureFlagsProvider>
         </KeycloakContext.Provider>
       </BrowserRouter>
     );
@@ -146,7 +151,9 @@ describe('Integration Tests - OrdersPanel with API', () => {
     const { rerender } = render(
       <BrowserRouter>
         <KeycloakContext.Provider value={mockKeycloakContext}>
-          <OrdersPanel />
+          <FeatureFlagsProvider>
+            <OrdersPanel />
+          </FeatureFlagsProvider>
         </KeycloakContext.Provider>
       </BrowserRouter>
     );
@@ -160,7 +167,9 @@ describe('Integration Tests - OrdersPanel with API', () => {
     rerender(
       <BrowserRouter>
         <KeycloakContext.Provider value={newContext}>
-          <OrdersPanel />
+          <FeatureFlagsProvider>
+            <OrdersPanel />
+          </FeatureFlagsProvider>
         </KeycloakContext.Provider>
       </BrowserRouter>
     );
@@ -192,7 +201,9 @@ describe('Integration Tests - Keycloak Authentication Flow', () => {
     render(
       <BrowserRouter>
         <KeycloakContext.Provider value={mockKeycloakContext}>
-          <OrdersPanel />
+          <FeatureFlagsProvider>
+            <OrdersPanel />
+          </FeatureFlagsProvider>
         </KeycloakContext.Provider>
       </BrowserRouter>
     );

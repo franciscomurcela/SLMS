@@ -49,6 +49,25 @@ For Linux/macOS users, Bash is required.
 
 ## Quick Start
 
+### Reinicialização Completa do Sistema
+
+Para reiniciar todo o sistema (backend + frontend + base de dados):
+
+```bash
+cd /home/xavier/MECT/group-project-es2526_204
+./restart.sh
+```
+
+Este script:
+1. Para todos os serviços (frontend e backend)
+2. Reconstrói e inicia o backend
+3. Aguarda 15 segundos para estabilização
+4. Importa schema e dados da base de dados
+5. Reconstrói e inicia o frontend
+6. Apresenta estado final dos containers
+
+### Início Manual
+
 ### 1. Initial Setup (First Time Only)
 
 Before starting the services for the first time, you need to configure environment variables and Keycloak settings.
@@ -234,12 +253,36 @@ The application uses Keycloak for authentication and role-based access control (
 
 ### Login Process
 
-1. Access the frontend at `http://localhost:5173`
+1. Access the frontend at `http://localhost:5173` ou `http://localhost:3000` (Docker)
 2. Click on the login button or navigate to a protected route
 3. You will be redirected to Keycloak login page
 4. Enter credentials from the test accounts table above
 5. Upon successful authentication, you will be redirected to your role-specific dashboard
 
+## Funcionalidades Principais
+
+### Chatbot de Rastreamento
+O sistema inclui um assistente virtual integrado na página do cliente que permite consultar informações sobre encomendas através de conversação natural.
+
+**Características:**
+- Deteção automática de Tracking ID (UUID)
+- Suporte para Order ID e Tracking ID
+- Informações em tempo real sobre estado das encomendas
+- Respostas contextualizadas
+
+**Documentação completa:** Ver [CHATBOT.md](CHATBOT.md)
+
+**Exemplo de uso:**
+```
+Utilizador: d0d1fdf3-5e2f-420f-87ac-0396833b0aca
+Bot: 🟡 Informações da Encomenda
+     Tracking ID: d0d1fdf3-5e2f-420f-87ac-0396833b0aca
+     Status: Pending
+     Origem: Rua das Flores, 120
+     Destino: Rua das Acácias, 145
+     Transportadora: DHL Express
+     ...
+```
 
 ### Service Health Checks
 

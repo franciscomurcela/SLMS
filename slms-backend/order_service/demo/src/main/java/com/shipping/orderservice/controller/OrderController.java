@@ -174,7 +174,44 @@ public class OrderController {
         order.setCarrierId(updatedOrder.getCarrierId());
         order.setStatus(updatedOrder.getStatus());
         
-        return repository.save(order);
+        Order savedOrder = repository.save(order);
+        
+        // If order was updated to InTransit and has a shipment, check if all orders in shipment are InTransit
+        if ("InTransit".equals(updatedOrder.getStatus()) && order.getShipmentId() != null) {
+            checkAndUpdateShipmentStatus(order.getShipmentId());
+        }
+        
+        return savedOrder;
+    }
+    
+    /**
+     * Check if all orders in a shipment are InTransit and update shipment status accordingly
+     */
+    private void checkAndUpdateShipmentStatus(UUID shipmentId) {
+        try {
+            String checkSql = """
+                SELECT COUNT(*) as total,
+                       SUM(CASE WHEN status = 'InTransit' THEN 1 ELSE 0 END) as intransit_count
+                FROM "Orders"
+                WHERE shipment_id = ?
+                """;
+            
+            Map<String, Object> result = jdbcTemplate.queryForMap(checkSql, shipmentId);
+            int total = ((Number) result.get("total")).intValue();
+            int inTransitCount = ((Number) result.get("intransit_count")).intValue();
+            
+            System.out.println("=== Shipment " + shipmentId + ": " + inTransitCount + "/" + total + " orders InTransit");
+            
+            // If all orders are InTransit, update shipment to InTransit
+            if (total > 0 && inTransitCount == total) {
+                String updateShipmentSql = "UPDATE \"Shipments\" SET status = 'InTransit' WHERE shipment_id = ?";
+                int rowsAffected = jdbcTemplate.update(updateShipmentSql, shipmentId);
+                System.out.println("=== Updated shipment " + shipmentId + " to InTransit (rows affected: " + rowsAffected + ")");
+            }
+        } catch (Exception e) {
+            System.err.println("=== ERROR checking/updating shipment status: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @GetMapping("/track/{trackingId}")
@@ -396,6 +433,7 @@ public class OrderController {
                     o.costumer_id::text as "customerId",
                     TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) as "customerName",
                     o.carrier_id::text as "carrierId",
+                    car.name as "carrierName",
                     o.origin_address as "originAddress",
                     o.destination_address as "destinationAddress",
                     o.weight as "weight",
@@ -405,6 +443,7 @@ public class OrderController {
                 FROM "Orders" o
                 LEFT JOIN "Costumer" c ON o.costumer_id = c.user_id
                 LEFT JOIN "Users" u ON c.user_id = u.id
+                LEFT JOIN "Carrier" car ON o.carrier_id = car.carrier_id
                 WHERE u.keycloak_id::text = ?
                 ORDER BY o.order_date DESC
                 """;

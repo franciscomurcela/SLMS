@@ -17,15 +17,11 @@ export const API_BASE_URL = isDevelopment
   : `${window.location.protocol}//${window.location.host}`;
 
 /**
- * Backend API endpoints
- * - Development: Direct service ports
- * - Production: Through Nginx proxy
+ * Backend API endpoints through Nginx proxy
  */
 export const API_ENDPOINTS = {
-  // Carriers API  
-  CARRIERS: isDevelopment 
-    ? `${API_BASE_URL}:8080/carriers`
-    : `https://slms-carrier-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/carriers`,
+  // Carriers API
+  CARRIERS: `${API_BASE_URL}/carriers`,
   
   // Orders API - Direct to order service
   ORDERS: isDevelopment 
@@ -45,17 +41,11 @@ export const API_ENDPOINTS = {
     : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/shipments/create`,
   
   // Users API
-  USERS: isDevelopment 
-    ? `${API_BASE_URL}:8082/user`
-    : `https://slms-backend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/user`,
-  WHOAMI: isDevelopment 
-    ? `${API_BASE_URL}:8082/user/whoami`
-    : `https://slms-backend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/user/whoami`,
+  USERS: `${API_BASE_URL}/user`,
+  WHOAMI: `${API_BASE_URL}/user/whoami`,
   
-  // Auth (Keycloak - port 8083 in development)
-  AUTH: isDevelopment 
-    ? `${API_BASE_URL}:8083/auth`
-    : `${API_BASE_URL}/auth`,
+  // Auth (Keycloak through nginx proxy)
+  AUTH: `${API_BASE_URL}/auth`,
 } as const;
 
 /**

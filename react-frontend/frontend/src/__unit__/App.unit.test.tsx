@@ -9,6 +9,7 @@ import OrdersPanel from '../components/OrdersPanel';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, beforeEach, afterEach, vi, expect } from 'vitest';
 import { KeycloakContext } from '../context/KeycloakContextDef';
+import { FeatureFlagsProvider } from '../context/FeatureFlagsContext';
 
 const mockKeycloakContext = {
   keycloak: { token: 'mock-token', authenticated: true } as unknown as import('keycloak-js').default,
@@ -65,7 +66,9 @@ describe('OrdersPanel', () => {
     render(
       <MemoryRouter>
         <KeycloakContext.Provider value={mockKeycloakContext}>
-          <OrdersPanel />
+          <FeatureFlagsProvider>
+            <OrdersPanel />
+          </FeatureFlagsProvider>
         </KeycloakContext.Provider>
       </MemoryRouter>
     );

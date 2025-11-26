@@ -9,6 +9,7 @@ import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
 import ProcessOrder from "./components/PageProcessOrder";
+import CreateShipment from "./components/CreateShipment";
 import CustomerServiceRep from "./components/PageCustomerServiceRep";
 import AuthTest from "./components/AuthTest";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -95,6 +96,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole={APP_ROLES.WAREHOUSE_STAFF}>
                 <ProcessOrder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/warehouse/create-shipment"
+            element={
+              <ProtectedRoute requiredRole={APP_ROLES.WAREHOUSE_STAFF}>
+                <CreateShipment />
               </ProtectedRoute>
             }
           />

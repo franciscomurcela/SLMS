@@ -51,4 +51,21 @@ public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
         ORDER BY s.departure_time DESC
         """, nativeQuery = true)
     List<Shipment> findInTransitShipmentsByKeycloakId(@Param("keycloakId") String keycloakId);
+    
+    /**
+     * Find ALL shipments for a user (not filtered by status)
+     * Navigation: keycloakId (JWT sub) → Users.keycloak_id → Users.id → Driver.user_id → Driver.driver_id → Shipments.driver_id
+     * 
+     * @param keycloakId The keycloak_id (which comes from JWT sub claim)
+     * @return List of all shipments for the driver associated with this user
+     */
+    @Query(value = """
+        SELECT s.* 
+        FROM "Shipments" s
+        INNER JOIN "Driver" d ON s.driver_id = d.driver_id
+        INNER JOIN "Users" u ON d.user_id = u.id
+        WHERE u.keycloak_id::text = :keycloakId
+        ORDER BY s.departure_time DESC
+        """, nativeQuery = true)
+    List<Shipment> findAllShipmentsByKeycloakId(@Param("keycloakId") String keycloakId);
 }

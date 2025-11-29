@@ -1,30 +1,48 @@
 // API Configuration
-// Always use nginx proxy routes (no direct service access)
+// Uses environment variables for backend service URLs in production
 
 /**
- * Base URL - always uses current host (nginx proxy handles routing)
+ * Determine if running in development mode
+ */
+const isDevelopment = window.location.hostname === 'localhost' && 
+                     (window.location.port === '3000' || window.location.port === '5173');
+
+/**
+ * Backend service base URLs
+ */
+const ORDER_SERVICE_URL = import.meta.env.VITE_ORDER_SERVICE_URL || 
+  (isDevelopment ? 'http://localhost:8081' : `${window.location.protocol}//${window.location.host}`);
+
+const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL || 
+  (isDevelopment ? 'http://localhost:8082' : `${window.location.protocol}//${window.location.host}`);
+
+const CARRIER_SERVICE_URL = import.meta.env.VITE_CARRIER_SERVICE_URL || 
+  (isDevelopment ? 'http://localhost:8080' : `${window.location.protocol}//${window.location.host}`);
+
+/**
+ * Base URL - for auth and other shared services
  */
 export const API_BASE_URL = `${window.location.protocol}//${window.location.host}`;
 
 /**
- * Backend API endpoints through Nginx proxy
+ * Backend API endpoints
  */
 export const API_ENDPOINTS = {
   // Carriers API
-  CARRIERS: `${API_BASE_URL}/carriers`,
+  CARRIERS: `${CARRIER_SERVICE_URL}/carriers`,
   
   // Orders API  
-  ORDERS: `${API_BASE_URL}/api/orders`,
-  SHIPMENTS: `${API_BASE_URL}/api/shipments`,
-  CONFIRM_DELIVERY: `${API_BASE_URL}/api/orders/confirm-delivery`,
-  REPORT_ANOMALY: `${API_BASE_URL}/api/orders/report-anomaly`,
-  CREATE_SHIPMENT: `${API_BASE_URL}/api/shipments/create`,
+  ORDERS: `${ORDER_SERVICE_URL}/api/orders`,
+  SHIPMENTS: `${ORDER_SERVICE_URL}/api/shipments`,
+  CONFIRM_DELIVERY: `${ORDER_SERVICE_URL}/api/orders/confirm-delivery`,
+  REPORT_ANOMALY: `${ORDER_SERVICE_URL}/api/orders/report-anomaly`,
+  CREATE_SHIPMENT: `${ORDER_SERVICE_URL}/api/shipments/create`,
   
   // Users API
-  USERS: `${API_BASE_URL}/user`,
-  WHOAMI: `${API_BASE_URL}/user/whoami`,
+  USERS: `${USER_SERVICE_URL}/user`,
+  WHOAMI: `${USER_SERVICE_URL}/user/whoami`,
   
-  // Auth (Keycloak through nginx proxy)
+  // Auth (Keycloak - uses same host as frontend or env var)
   AUTH: `${API_BASE_URL}/auth`,
 } as const;
 

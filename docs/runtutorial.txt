@@ -27,8 +27,8 @@ docker exec slms-db psql -U slms_user -d slms_db -f /tmp/schema-postgresql.sql
 
 #para os dados
 
-docker cp scripts/slms-data-only-20251027-193147.sql/slms-data-only-20251027-193147.sql slms-db:/tmp/
-docker exec slms-db psql -U slms_user -d slms_db -f /tmp/slms-data-only-20251027-193147.sql
+docker cp slms-backend\slms_db_backup_20251126_182859.sql slms-db:/tmp/
+docker exec slms-db psql -U slms_user -d slms_db -f /tmp/slms_db_backup_20251126_182859.sql
 
 
 

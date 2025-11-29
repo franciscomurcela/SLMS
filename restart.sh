@@ -22,13 +22,13 @@ echo "⏳ Aguardando serviços do backend iniciarem (15s)..."
 sleep 15
 
 echo ""
-echo "📊 Importando schema da base de dados..."
+echo "🗑️  Limpando base de dados..."
 cd ..
-docker exec -i slms-db psql -U slms_user -d slms_db < slms-backend/config/schema-postgresql.sql
+docker exec -i slms-db psql -U slms_user -d slms_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO slms_user; GRANT ALL ON SCHEMA public TO public;"
 
 echo ""
-echo "📦 Importando dados de teste..."
-docker exec -i slms-db psql -U slms_user -d slms_db < scripts/slms-data-only-20251027-193147.sql/slms-data-only-20251027-193147.sql 2>&1 | grep -E "INSERT|ERROR" | tail -10
+echo "📊 Importando dump completo da base de dados (schema + dados)..."
+docker exec -i slms-db psql -U slms_user -d slms_db -c "SET client_encoding TO 'UTF8';" < slms-backend/slms_db_backup_20251126_182859.sql docker exec -i slms-db psql -U slms_user -d slms_db"
 
 echo ""
 echo "🎨 Iniciando frontend..."

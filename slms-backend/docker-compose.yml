@@ -34,7 +34,7 @@ services:
     volumes:
       - slms-db-data:/var/lib/postgresql/data
     ports:
-      - "5434:5434"  # Porta principal para todos os services
+      - "5434:5432"  # Porta externa 5434, interna 5432
     networks:
       - slms-network
     healthcheck:

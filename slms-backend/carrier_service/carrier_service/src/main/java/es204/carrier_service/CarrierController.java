@@ -20,7 +20,22 @@ public class CarrierController {
 
     @GetMapping
     public List<Map<String, Object>> all() {
-        return jdbc.queryForList("SELECT * FROM \"Carrier\" LIMIT 100");
+        String sql = """
+            SELECT 
+                carrier_id,
+                name,
+                avg_cost,
+                on_time_rate,
+                success_rate,
+                cost_history::text as cost_history,
+                successful_deliveries,
+                failed_deliveries,
+                delayed_deliveries,
+                total_deliveries
+            FROM "Carrier" 
+            LIMIT 100
+            """;
+        return jdbc.queryForList(sql);
     }
 
 }

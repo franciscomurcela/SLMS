@@ -37,7 +37,19 @@ CREATE TABLE "Carrier" (
     name text NOT NULL,
     avg_cost numeric(10,2),
     on_time_rate numeric(5,2),
-    success_rate numeric(5,2)
+    success_rate numeric(5,2),
+    cost_history JSONB DEFAULT '{}'::jsonb,
+    successful_deliveries INTEGER DEFAULT 0,
+    failed_deliveries INTEGER DEFAULT 0,
+    delayed_deliveries INTEGER DEFAULT 0,
+    total_deliveries INTEGER DEFAULT 0,
+    CONSTRAINT chk_carrier_metrics_consistency CHECK (
+        total_deliveries >= 0 AND
+        successful_deliveries >= 0 AND
+        failed_deliveries >= 0 AND
+        delayed_deliveries >= 0 AND
+        (successful_deliveries + failed_deliveries) <= total_deliveries
+    )
 );
 
 -- ============================================

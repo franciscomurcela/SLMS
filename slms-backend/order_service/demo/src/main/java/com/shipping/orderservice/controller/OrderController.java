@@ -65,7 +65,8 @@ public class OrderController {
                     o.destination_address as "destinationAddress",
                     o.weight as "weight",
                     o.status as "status",
-                    o.order_date as "orderDate"
+                    o.order_date as "orderDate",
+                    o.error_message as "errorMessage"
                 FROM "Orders" o
                 LEFT JOIN "Costumer" c ON o.costumer_id = c.user_id
                 LEFT JOIN "Users" u ON c.user_id = u.id

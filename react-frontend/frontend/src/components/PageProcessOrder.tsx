@@ -39,6 +39,12 @@ export default function PageProcessOrder() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Dispatch failure modal state
+  const [showFailureModal, setShowFailureModal] = useState(false);
+  const [selectedFailureReason, setSelectedFailureReason] = useState("");
+  const [customFailureReason, setCustomFailureReason] = useState("");
+  const [submittingFailure, setSubmittingFailure] = useState(false);
+
   // Form state
   const [formData, setFormData] = useState({
     originAddress: "",
@@ -63,7 +69,7 @@ export default function PageProcessOrder() {
         
         // Fetch order details
         console.log("Fetching orders with token:", keycloak.token.substring(0, 20) + "...");
-        const orderResp = await fetch(`/api/orders`, {
+        const orderResp = await fetch(API_ENDPOINTS.ORDERS, {
           headers: {
             'Authorization': `Bearer ${keycloak.token}`,
             'Content-Type': 'application/json'
@@ -132,7 +138,7 @@ export default function PageProcessOrder() {
         status: "InTransit", // Change to InTransit on dispatch
       };
 
-      const resp = await fetch(`/api/orders/${order.orderId}`, {
+      const resp = await fetch(`${API_ENDPOINTS.ORDERS}/${order.orderId}`, {
         method: "PUT",
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -160,6 +166,49 @@ export default function PageProcessOrder() {
   const getCarrierName = (carrierId: string): string => {
     const carrier = carriers.find((c) => c.carrier_id === carrierId);
     return carrier?.name || "Desconhecido";
+  };
+
+  const handleRegisterFailure = async () => {
+    if (!order) return;
+
+    // Validate failure reason is selected
+    const failureMessage = selectedFailureReason === "Outras (especificar)"
+      ? customFailureReason.trim()
+      : selectedFailureReason;
+
+    if (!failureMessage) {
+      alert("Por favor, selecione ou especifique um motivo de falha.");
+      return;
+    }
+
+    setSubmittingFailure(true);
+    try {
+      const resp = await fetch(API_ENDPOINTS.REPORT_ANOMALY, {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          orderId: order.orderId,
+          errorMessage: `[FALHA DESPACHO] ${failureMessage}`
+        }),
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        throw new Error(`Erro ao registar falha: ${errorText}`);
+      }
+
+      alert("✅ Falha de despacho registada com sucesso!\nO sistema notificará a equipa de suporte e o cliente.");
+      setShowFailureModal(false);
+      navigate(Paths.PATH_WAREHOUSE);
+    } catch (e) {
+      console.error("Register failure error:", e);
+      alert(`Erro ao registar falha: ${e}`);
+    } finally {
+      setSubmittingFailure(false);
+    }
   };
 
   if (loading) {
@@ -365,32 +414,138 @@ export default function PageProcessOrder() {
         </div>
 
         {/* Action Buttons */}
-        <div className="d-flex justify-content-end gap-3 mt-4 mb-5">
+        <div className="d-flex justify-content-between mt-4 mb-5">
           <button
-            className="btn btn-secondary btn-lg"
-            onClick={() => navigate(href)}
+            className="btn btn-danger btn-lg"
+            onClick={() => setShowFailureModal(true)}
             disabled={submitting}
           >
-            Cancelar
+            <i className="bi bi-exclamation-triangle me-2"></i>
+            Registar Falha de Despacho
           </button>
-          <button
-            className="btn btn-success btn-lg"
-            onClick={handleDispatch}
-            disabled={submitting || !formData.carrierId}
-          >
-            {submitting ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Despachando...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-send-check me-2"></i>
-                Despachar Pedido
-              </>
-            )}
-          </button>
+          
+          <div className="d-flex gap-3">
+            <button
+              className="btn btn-secondary btn-lg"
+              onClick={() => navigate(href)}
+              disabled={submitting}
+            >
+              Cancelar
+            </button>
+            <button
+              className="btn btn-success btn-lg"
+              onClick={handleDispatch}
+              disabled={submitting || !formData.carrierId}
+            >
+              {submitting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Despachando...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-send-check me-2"></i>
+                  Despachar Pedido
+                </>
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Dispatch Failure Modal */}
+        {showFailureModal && (
+          <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header bg-danger text-white">
+                  <h5 className="modal-title">
+                    <i className="bi bi-exclamation-triangle me-2"></i>
+                    Registar Falha de Despacho
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={() => setShowFailureModal(false)}
+                    disabled={submittingFailure}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="text-muted mb-3">
+                    Selecione o motivo da falha de despacho. O sistema notificará automaticamente 
+                    a equipa de suporte e o cliente.
+                  </p>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Motivo da Falha:</label>
+                    <select
+                      className="form-select"
+                      value={selectedFailureReason}
+                      onChange={(e) => setSelectedFailureReason(e.target.value)}
+                      disabled={submittingFailure}
+                    >
+                      <option value="">-- Selecione um motivo --</option>
+                      <option value="Falta de stock">Falta de stock</option>
+                      <option value="Produto danificado no armazém">Produto danificado no armazém</option>
+                      <option value="Endereço de origem inválido">Endereço de origem inválido</option>
+                      <option value="Peso excede capacidade disponível">Peso excede capacidade disponível</option>
+                      <option value="Documentação incorreta ou em falta">Documentação incorreta ou em falta</option>
+                      <option value="Restrições de envio não cumpridas">Restrições de envio não cumpridas</option>
+                      <option value="Outras (especificar)">Outras (especificar)</option>
+                    </select>
+                  </div>
+
+                  {selectedFailureReason === "Outras (especificar)" && (
+                    <div className="mb-3">
+                      <label className="form-label fw-bold">Especifique o motivo:</label>
+                      <textarea
+                        className="form-control"
+                        rows={3}
+                        placeholder="Descreva o motivo da falha..."
+                        value={customFailureReason}
+                        onChange={(e) => setCustomFailureReason(e.target.value)}
+                        disabled={submittingFailure}
+                      />
+                    </div>
+                  )}
+
+                  <div className="alert alert-warning mb-0">
+                    <i className="bi bi-info-circle me-2"></i>
+                    <strong>Atenção:</strong> Esta ação marcará o pedido como "Failed" e 
+                    acionará notificações automáticas.
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowFailureModal(false)}
+                    disabled={submittingFailure}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleRegisterFailure}
+                    disabled={submittingFailure || !selectedFailureReason}
+                  >
+                    {submittingFailure ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Registando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-exclamation-triangle me-2"></i>
+                        Confirmar Falha
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

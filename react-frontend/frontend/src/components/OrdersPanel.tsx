@@ -115,7 +115,7 @@ export default function OrdersPanel() {
 
   const downloadPackingSlip = async (orderId: string) => {
     try {
-      const url = `/api/orders/${orderId}/packing-slip`;
+      const url = API_ENDPOINTS.PACKING_SLIP(orderId);
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -141,7 +141,7 @@ export default function OrdersPanel() {
 
   const downloadShippingLabel = async (orderId: string) => {
     try {
-      const url = `/api/orders/${orderId}/shipping-label`;
+      const url = API_ENDPOINTS.SHIPPING_LABEL(orderId);
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,

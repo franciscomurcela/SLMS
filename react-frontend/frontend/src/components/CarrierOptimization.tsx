@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useKeycloak } from "../context/keycloakHooks";
 import { API_ENDPOINTS } from "../config/api.config";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import ReportGenerator from "./ReportGenerator";
 
 interface CarrierMetrics {
   carrier_id: string;
@@ -21,7 +22,6 @@ interface OptimizationSuggestion {
   title: string;
   description: string;
   carrier?: string;
-  impact: "high" | "medium" | "low";
 }
 
 const CARRIER_COLORS: Record<string, string> = {
@@ -123,8 +123,7 @@ export default function CarrierOptimization() {
       type: "cost",
       title: "Redução de Custos",
       description: `${bestCost.name} oferece o menor custo médio (€${bestCost.avg_cost.toFixed(2)}). Considere aumentar a utilização desta transportadora para envios de baixo risco.`,
-      carrier: bestCost.name,
-      impact: "high"
+      carrier: bestCost.name
     });
 
     // Reliability suggestion
@@ -134,8 +133,7 @@ export default function CarrierOptimization() {
         type: "reliability",
         title: "Alta Fiabilidade",
         description: `${mostReliable.name} tem taxa global de ${(reliableRate * 100).toFixed(1)}%. Ideal para envios críticos ou de alto valor.`,
-        carrier: mostReliable.name,
-        impact: "medium"
+        carrier: mostReliable.name
       });
     }
 
@@ -146,8 +144,7 @@ export default function CarrierOptimization() {
         type: "warning",
         title: "Desempenho Abaixo do Esperado",
         description: `${carrier.name} tem taxa global de apenas ${(overallRate * 100).toFixed(1)}%. Considere rever o contrato ou reduzir a dependência desta transportadora.`,
-        carrier: carrier.name,
-        impact: "high"
+        carrier: carrier.name
       });
     });
 
@@ -165,8 +162,7 @@ export default function CarrierOptimization() {
               type: "cost",
               title: "Tendência de Aumento de Custos",
               description: `${carrier.name} aumentou custos em ${increase.toFixed(1)}% nos últimos 6 meses. Considere renegociar tarifas ou explorar alternativas.`,
-              carrier: carrier.name,
-              impact: "medium"
+              carrier: carrier.name
             });
           }
         }
@@ -249,14 +245,7 @@ export default function CarrierOptimization() {
       : <i className="bi bi-arrow-down ms-1"></i>;
   };
 
-  const getImpactBadge = (impact: string) => {
-    const badges = {
-      high: "danger",
-      medium: "warning",
-      low: "info"
-    };
-    return `badge bg-${badges[impact as keyof typeof badges] || "secondary"}`;
-  };
+
 
   const getTypeBadge = (type: string) => {
     const badges = {
@@ -354,9 +343,12 @@ export default function CarrierOptimization() {
             <i className="bi bi-graph-up-arrow me-2"></i>
             Otimização Logística
           </h2>
-          <p className="text-muted">
-            Análise de desempenho das transportadoras e sugestões para reduzir custos e aumentar eficiência.
-          </p>
+          <div className="d-flex justify-content-between align-items-center">
+            <p className="text-muted mb-0">
+              Análise de desempenho das transportadoras e sugestões para reduzir custos e aumentar eficiência.
+            </p>
+            <ReportGenerator carriers={carriers} />
+          </div>
         </div>
       </div>
 
@@ -597,9 +589,6 @@ export default function CarrierOptimization() {
                               </small>
                             )}
                           </div>
-                          <span className={getImpactBadge(suggestion.impact)}>
-                            {suggestion.impact}
-                          </span>
                         </div>
                       </div>
                     ))}

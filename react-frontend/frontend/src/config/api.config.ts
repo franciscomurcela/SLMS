@@ -37,6 +37,8 @@ export const API_ENDPOINTS = {
   CONFIRM_DELIVERY: `${ORDER_SERVICE_URL}/api/orders/confirm-delivery`,
   REPORT_ANOMALY: `${ORDER_SERVICE_URL}/api/orders/report-anomaly`,
   CREATE_SHIPMENT: `${ORDER_SERVICE_URL}/api/shipments/create`,
+  PACKING_SLIP: (orderId: string) => `${ORDER_SERVICE_URL}/api/orders/${orderId}/packing-slip`,
+  SHIPPING_LABEL: (orderId: string) => `${ORDER_SERVICE_URL}/api/orders/${orderId}/shipping-label`,
   
   // Users API
   USERS: `${USER_SERVICE_URL}/user`,

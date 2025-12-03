@@ -157,6 +157,34 @@ services:
     networks:
       - slms-network
 
+  # Notification Service - Porta 8084
+  notification-service:
+    build:
+      context: ./notification_service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    environment:
+      SPRING_APPLICATION_NAME: notification_service
+      SERVER_PORT: 8084
+      DATABASE_URL: jdbc:postgresql://slms-db:5432/slms_db
+      DATABASE_USERNAME: slms_user
+      DATABASE_PASSWORD: slms_password
+      KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/auth/realms/ESg204/protocol/openid-connect/certs"
+      KEYCLOAK_ISSUER_URI: "http://localhost:8083/auth/realms/ESg204"
+    ports:
+      - "8084:8084"
+    depends_on:
+      - slms-db
+      - keycloak
+    networks:
+      - slms-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 # ============================================
 # NETWORKS & VOLUMES
 # ============================================

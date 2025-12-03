@@ -38,6 +38,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.shipping.orderservice.model.Order;
 import com.shipping.orderservice.repository.OrderRepository;
 import com.shipping.orderservice.dto.ReportAnomalyRequest;
+import com.shipping.orderservice.service.NotificationClient;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -45,10 +46,12 @@ public class OrderController {
 
     private final OrderRepository repository;
     private final JdbcTemplate jdbcTemplate;
+    private final NotificationClient notificationClient;
 
-    public OrderController(OrderRepository repository, JdbcTemplate jdbcTemplate) {
+    public OrderController(OrderRepository repository, JdbcTemplate jdbcTemplate, NotificationClient notificationClient) {
         this.repository = repository;
         this.jdbcTemplate = jdbcTemplate;
+        this.notificationClient = notificationClient;
     }
 
     @GetMapping
@@ -97,7 +100,39 @@ public class OrderController {
 
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
-        return repository.save(order);
+        Order savedOrder = repository.save(order);
+        
+        // Notify all warehouse staff about new order
+        try {
+            String customerNameSql = """
+                SELECT TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) as customer_name
+                FROM "Costumer" c
+                LEFT JOIN "Users" u ON c.user_id = u.id
+                WHERE c.user_id = ?
+                """;
+            
+            String customerName = "Cliente";
+            try {
+                Map<String, Object> customerResult = jdbcTemplate.queryForMap(customerNameSql, order.getCustomerId());
+                customerName = (String) customerResult.get("customer_name");
+                if (customerName == null || customerName.trim().isEmpty()) {
+                    customerName = "Cliente";
+                }
+            } catch (Exception e) {
+                System.err.println("Could not fetch customer name: " + e.getMessage());
+            }
+            
+            // Get all warehouse staff IDs
+            String warehouseStaffSql = "SELECT user_id FROM \"WarehouseStaff\"";
+            List<UUID> warehouseStaffIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+            
+            notificationClient.notifyAllWarehouseStaff(savedOrder.getOrderId(), customerName, warehouseStaffIds);
+        } catch (Exception e) {
+            System.err.println("Failed to send new order notifications: " + e.getMessage());
+            // Don't fail the order creation if notification fails
+        }
+        
+        return savedOrder;
     }
 
     @PatchMapping("/{orderId}/assign")
@@ -123,14 +158,60 @@ public class OrderController {
         Order order = repository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
+        // Track carrier change for notification
+        UUID oldCarrierId = order.getCarrierId();
+        UUID newCarrierId = updatedOrder.getCarrierId();
+        
+        // Detect carrier change: either from one carrier to another, OR from null to a carrier (first assignment)
+        boolean carrierChanged = (oldCarrierId != null && newCarrierId != null && !oldCarrierId.equals(newCarrierId)) ||
+                                 (oldCarrierId == null && newCarrierId != null);
+        
+        String oldCarrierName = null;
+        String newCarrierName = null;
+        
+        if (carrierChanged) {
+            try {
+                String carrierNameSql = "SELECT name FROM \"Carrier\" WHERE carrier_id = ?";
+                
+                // Get old carrier name if it exists
+                if (oldCarrierId != null) {
+                    oldCarrierName = jdbcTemplate.queryForObject(carrierNameSql, String.class, oldCarrierId);
+                } else {
+                    oldCarrierName = "Não Definido";
+                }
+                
+                // Get new carrier name
+                newCarrierName = jdbcTemplate.queryForObject(carrierNameSql, String.class, newCarrierId);
+            } catch (Exception e) {
+                System.err.println("Could not fetch carrier names: " + e.getMessage());
+            }
+        }
+        
         // Update fields
         order.setOriginAddress(updatedOrder.getOriginAddress());
         order.setDestinationAddress(updatedOrder.getDestinationAddress());
         order.setWeight(updatedOrder.getWeight());
-        order.setCarrierId(updatedOrder.getCarrierId());
+        order.setCarrierId(newCarrierId);
         order.setStatus(updatedOrder.getStatus());
         
         Order savedOrder = repository.save(order);
+        
+        // Notify warehouse staff about carrier change or assignment
+        if (carrierChanged && newCarrierName != null) {
+            try {
+                String warehouseStaffSql = "SELECT user_id FROM \"WarehouseStaff\"";
+                List<UUID> warehouseStaffIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+                
+                for (UUID staffId : warehouseStaffIds) {
+                    notificationClient.notifyCarrierChange(orderId, oldCarrierName, newCarrierName, staffId);
+                }
+                
+                System.out.println("Sent carrier change notifications: " + oldCarrierName + " -> " + newCarrierName);
+            } catch (Exception e) {
+                System.err.println("Failed to send carrier change notifications: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
         
         // If order was updated to InTransit and has a shipment, check if all orders in shipment are InTransit
         if ("InTransit".equals(updatedOrder.getStatus()) && order.getShipmentId() != null) {

@@ -117,6 +117,35 @@ export default function PageProcessOrder() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Calculate most efficient carrier based on weighted score
+  const getMostEfficientCarrier = (): Carrier | null => {
+    if (carriers.length === 0) return null;
+
+    // Normalize metrics and calculate efficiency score
+    const maxCost = Math.max(...carriers.map(c => c.avg_cost));
+    const minCost = Math.min(...carriers.map(c => c.avg_cost));
+    
+    const scoredCarriers = carriers.map(carrier => {
+      // Normalize cost (lower is better, so invert)
+      const normalizedCost = maxCost === minCost ? 1 : (maxCost - carrier.avg_cost) / (maxCost - minCost);
+      
+      // Weights: 30% cost, 35% on-time, 35% success
+      const efficiencyScore = (
+        normalizedCost * 0.30 +
+        carrier.on_time_rate * 0.35 +
+        carrier.success_rate * 0.35
+      );
+      
+      return { carrier, score: efficiencyScore };
+    });
+
+    // Sort by score descending and return best
+    scoredCarriers.sort((a, b) => b.score - a.score);
+    return scoredCarriers[0].carrier;
+  };
+
+  const mostEfficientCarrier = getMostEfficientCarrier();
+
   const handleDispatch = async () => {
     if (!order) return;
     
@@ -372,6 +401,34 @@ export default function PageProcessOrder() {
                       </option>
                     ))}
                   </select>
+                  
+                  {/* Efficiency Suggestion */}
+                  {mostEfficientCarrier && (
+                    <div className="alert alert-info mt-2 mb-0 d-flex align-items-center" role="alert">
+                      <i className="bi bi-lightbulb-fill me-2 fs-5"></i>
+                      <div>
+                        <strong>Sugestão:</strong> {mostEfficientCarrier.name} é a opção mais eficiente
+                        <span className="d-block small mt-1">
+                          Custo: €{mostEfficientCarrier.avg_cost.toFixed(2)} | 
+                          Pontualidade: {(mostEfficientCarrier.on_time_rate * 100).toFixed(1)}% | 
+                          Sucesso: {(mostEfficientCarrier.success_rate * 100).toFixed(1)}%
+                          {formData.carrierId === mostEfficientCarrier.carrier_id && (
+                            <span className="badge bg-success ms-2">✓ Selecionada</span>
+                          )}
+                        </span>
+                      </div>
+                      {formData.carrierId !== mostEfficientCarrier.carrier_id && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary ms-auto"
+                          onClick={() => handleInputChange("carrierId", mostEfficientCarrier.carrier_id)}
+                        >
+                          Usar Sugestão
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
                   {formData.carrierId && (
                     <small className="text-muted">
                       Selecionado: {getCarrierName(formData.carrierId)}

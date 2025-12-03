@@ -25,6 +25,13 @@ interface Carrier {
   success_rate: number;
 }
 
+const CARRIER_COLORS: Record<string, string> = {
+  'FedEx': '#8a17eeff',
+  'UPS': '#ebbe0aff',
+  'DPD': '#D32F2F',
+  'DHL': '#ff9d00ff'
+};
+
 function getStatusBadge(status: string) {
   const statusMap: Record<string, string> = {
     Pending: "warning",
@@ -111,6 +118,12 @@ export default function OrdersPanel() {
     if (!carrierId) return "Sem atribuição";
     const carrier = carriers.find((c) => c.carrier_id === carrierId);
     return carrier?.name || `Carrier #${carrierId.slice(0, 8)}`;
+  };
+
+  const getCarrierColor = (carrierId: string | null): string => {
+    if (!carrierId) return '#6c757d'; // secondary gray for no assignment
+    const carrier = carriers.find((c) => c.carrier_id === carrierId);
+    return carrier?.name ? (CARRIER_COLORS[carrier.name] || '#6f42c1') : '#6f42c1';
   };
 
   const downloadPackingSlip = async (orderId: string) => {
@@ -321,7 +334,13 @@ export default function OrdersPanel() {
                   </td>
                   <td>
                     {order.carrierId ? (
-                      <span className="badge bg-info text-dark">
+                      <span 
+                        className="badge"
+                        style={{ 
+                          backgroundColor: getCarrierColor(order.carrierId), 
+                          color: '#ffffff' 
+                        }}
+                      >
                         {getCarrierName(order.carrierId)}
                       </span>
                     ) : (

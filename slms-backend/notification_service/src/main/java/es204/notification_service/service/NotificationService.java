@@ -1,4 +1,4 @@
-package main.java.es204.notification_service.service;
+package es204.notification_service.service;
 
 import es204.notification_service.dto.CreateNotificationRequest;
 import es204.notification_service.dto.NotificationDTO;

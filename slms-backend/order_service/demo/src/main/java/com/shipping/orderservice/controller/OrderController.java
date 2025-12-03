@@ -122,11 +122,12 @@ public class OrderController {
                 System.err.println("Could not fetch customer name: " + e.getMessage());
             }
             
-            // Get all warehouse staff IDs
-            String warehouseStaffSql = "SELECT user_id FROM \"WarehouseStaff\"";
-            List<UUID> warehouseStaffIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+            // Get all warehouse staff Users.id (Notifications FK points to Users.id, not keycloak_id)
+            String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                    "JOIN \"Users\" u ON ws.user_id = u.id";
+            List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
             
-            notificationClient.notifyAllWarehouseStaff(savedOrder.getOrderId(), customerName, warehouseStaffIds);
+            notificationClient.notifyAllWarehouseStaff(savedOrder.getOrderId(), customerName, warehouseStaffUserIds);
         } catch (Exception e) {
             System.err.println("Failed to send new order notifications: " + e.getMessage());
             // Don't fail the order creation if notification fails
@@ -199,11 +200,13 @@ public class OrderController {
         // Notify warehouse staff about carrier change or assignment
         if (carrierChanged && newCarrierName != null) {
             try {
-                String warehouseStaffSql = "SELECT user_id FROM \"WarehouseStaff\"";
-                List<UUID> warehouseStaffIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+                // Get Users.id from Users table (Notifications FK points to Users.id, not keycloak_id)
+                String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                        "JOIN \"Users\" u ON ws.user_id = u.id";
+                List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
                 
-                for (UUID staffId : warehouseStaffIds) {
-                    notificationClient.notifyCarrierChange(orderId, oldCarrierName, newCarrierName, staffId);
+                for (UUID userId : warehouseStaffUserIds) {
+                    notificationClient.notifyCarrierChange(orderId, oldCarrierName, newCarrierName, userId);
                 }
                 
                 System.out.println("Sent carrier change notifications: " + oldCarrierName + " -> " + newCarrierName);

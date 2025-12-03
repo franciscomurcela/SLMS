@@ -1,4 +1,4 @@
-package main.java.es204.notification_service.dto;
+package es204.notification_service.dto;
 
 import es204.notification_service.model.NotificationSeverity;
 import es204.notification_service.model.NotificationType;

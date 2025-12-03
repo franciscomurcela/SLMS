@@ -44,8 +44,8 @@ export const API_ENDPOINTS = {
   SHIPPING_LABEL: (orderId: string) => `${ORDER_SERVICE_URL}/api/orders/${orderId}/shipping-label`,
   
   // Users API
-  USERS: `${USER_SERVICE_URL}/user`,
-  WHOAMI: `${USER_SERVICE_URL}/user/whoami`,
+  USERS: `${USER_SERVICE_URL}/api/users`,
+  WHOAMI: `${USER_SERVICE_URL}/api/users/whoami`,
   
   // Notifications API
   NOTIFICATIONS: `${NOTIFICATION_SERVICE_URL}/api/notifications`,

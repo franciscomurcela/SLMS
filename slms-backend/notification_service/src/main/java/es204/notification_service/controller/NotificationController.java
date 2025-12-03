@@ -1,4 +1,4 @@
-package main.java.es204.notification_service.controller;
+package es204.notification_service.controller;
 
 import es204.notification_service.dto.CreateNotificationRequest;
 import es204.notification_service.dto.NotificationDTO;
@@ -37,15 +37,17 @@ public class NotificationController {
     }
     
     /**
-     * Get all notifications for the authenticated user
+     * Get all notifications for a user
      */
     @GetMapping
     public ResponseEntity<Page<NotificationDTO>> getUserNotifications(
-            Authentication authentication,
+            @RequestParam(required = false) UUID userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
-        UUID userId = extractUserId(authentication);
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
         log.info("Fetching notifications for user {}, page {}, size {}", userId, page, size);
         
         Page<NotificationDTO> notifications = notificationService.getUserNotifications(userId, page, size);
@@ -53,15 +55,17 @@ public class NotificationController {
     }
     
     /**
-     * Get unread notifications for the authenticated user
+     * Get unread notifications for a user
      */
     @GetMapping("/unread")
     public ResponseEntity<Page<NotificationDTO>> getUnreadNotifications(
-            Authentication authentication,
+            @RequestParam(required = false) UUID userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
         
-        UUID userId = extractUserId(authentication);
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
         log.info("Fetching unread notifications for user {}", userId);
         
         Page<NotificationDTO> notifications = notificationService.getUnreadNotifications(userId, page, size);
@@ -72,8 +76,10 @@ public class NotificationController {
      * Get count of unread notifications
      */
     @GetMapping("/unread/count")
-    public ResponseEntity<Map<String, Long>> getUnreadCount(Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+    public ResponseEntity<Map<String, Long>> getUnreadCount(@RequestParam(required = false) UUID userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
         long count = notificationService.countUnreadNotifications(userId);
         log.info("User {} has {} unread notifications", userId, count);
         return ResponseEntity.ok(Map.of("count", count));
@@ -84,12 +90,14 @@ public class NotificationController {
      */
     @GetMapping("/type/{type}")
     public ResponseEntity<Page<NotificationDTO>> getNotificationsByType(
-            Authentication authentication,
+            @RequestParam(required = false) UUID userId,
             @PathVariable NotificationType type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
-        UUID userId = extractUserId(authentication);
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
         log.info("Fetching notifications of type {} for user {}", type, userId);
         
         Page<NotificationDTO> notifications = notificationService.getNotificationsByType(userId, type, page, size);
@@ -101,10 +109,13 @@ public class NotificationController {
      */
     @PutMapping("/{id}/read")
     public ResponseEntity<Void> markAsRead(
-            Authentication authentication,
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam(required = false) UUID userId) {
         
-        UUID userId = extractUserId(authentication);
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        
         log.info("Marking notification {} as read for user {}", id, userId);
         
         notificationService.markAsRead(id, userId);
@@ -115,8 +126,11 @@ public class NotificationController {
      * Mark all notifications as read
      */
     @PutMapping("/read-all")
-    public ResponseEntity<Map<String, Integer>> markAllAsRead(Authentication authentication) {
-        UUID userId = extractUserId(authentication);
+    public ResponseEntity<Map<String, Integer>> markAllAsRead(@RequestParam(required = false) UUID userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        
         log.info("Marking all notifications as read for user {}", userId);
         
         int count = notificationService.markAllAsRead(userId);

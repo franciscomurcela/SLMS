@@ -11,25 +11,52 @@ import './NotificationBell.css';
 const POLLING_INTERVAL = 30000; // 30 seconds
 
 export const NotificationBell: React.FC = () => {
-  const { token } = useKeycloak();
+  const { token, userInfo } = useKeycloak();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [dbUserId, setDbUserId] = useState<string | null>(null);
+
+  // Get keycloak_id from Keycloak userInfo
+  const keycloakId = userInfo?.sub as string | undefined;
+
+  /**
+   * Fetch Users.id from database based on keycloak_id
+   */
+  useEffect(() => {
+    const fetchDbUserId = async () => {
+      if (!keycloakId || !token) return;
+
+      try {
+        // Call user-service to get Users.id based on keycloak_id
+        const response = await fetch(`http://localhost:8082/api/users/by-keycloak/${keycloakId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+
+        if (response.ok) {
+          const user = await response.json();
+          setDbUserId(user.id); // This is Users.id from database
+        }
+      } catch (error) {
+        console.error('Failed to fetch database user ID:', error);
+      }
+    };
+
+    fetchDbUserId();
+  }, [keycloakId, token]);
 
   /**
    * Fetch unread count
    */
   const fetchUnreadCount = useCallback(async () => {
-    if (!token) return;
+    if (!dbUserId) return;
 
     try {
-      const response = await fetch(API_ENDPOINTS.NOTIFICATIONS_UNREAD_COUNT, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(`${API_ENDPOINTS.NOTIFICATIONS_UNREAD_COUNT}?userId=${dbUserId}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -38,21 +65,17 @@ export const NotificationBell: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
     }
-  }, [token]);
+  }, [dbUserId]);
 
   /**
    * Fetch recent unread notifications for dropdown
    */
   const fetchRecentNotifications = useCallback(async () => {
-    if (!token) return;
+    if (!dbUserId) return;
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_ENDPOINTS.NOTIFICATIONS_UNREAD}?page=0&size=5`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(`${API_ENDPOINTS.NOTIFICATIONS_UNREAD}?userId=${dbUserId}&page=0&size=5`);
 
       if (response.ok) {
         const data: NotificationResponse = await response.json();
@@ -63,20 +86,17 @@ export const NotificationBell: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [dbUserId]);
 
   /**
    * Mark notification as read
    */
   const markAsRead = async (notificationId: number) => {
-    if (!token) return;
+    if (!dbUserId) return;
 
     try {
-      const response = await fetch(API_ENDPOINTS.NOTIFICATION_MARK_READ(notificationId), {
+      const response = await fetch(`${API_ENDPOINTS.NOTIFICATION_MARK_READ(notificationId)}?userId=${dbUserId}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (response.ok) {

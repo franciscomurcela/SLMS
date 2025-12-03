@@ -1,4 +1,4 @@
-package main.java.es204.notification_service.repository;
+package es204.notification_service.repository;
 
 import es204.notification_service.model.Notification;
 import es204.notification_service.model.NotificationType;

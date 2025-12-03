@@ -35,7 +35,10 @@ public class SecurityConfig {
             .authorizeHttpRequests((authz) -> authz
                 // Public endpoints
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                // All user endpoints require authentication
+                // Allow keycloak ID lookup without authentication (needed for notifications)
+                .requestMatchers("/api/users/by-keycloak/**").permitAll()
+                // All other user endpoints require authentication
+                .requestMatchers("/api/users/**").authenticated()
                 .requestMatchers("/user/**").authenticated()
                 .anyRequest().authenticated()
             )

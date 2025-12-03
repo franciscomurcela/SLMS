@@ -25,7 +25,7 @@ function AuthTest() {
       setError(null);
       setBackendResponse(null);
 
-      const response = await fetch(`${BACKEND_URL}/user/whoami`, {
+      const response = await fetch(`${BACKEND_URL}/api/users/whoami`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ function AuthTest() {
               className="btn btn-primary me-2" 
               onClick={testBackendCall}
             >
-              Testar chamada ao Backend (/user/whoami)
+              Testar chamada ao Backend (/api/users/whoami)
             </button>
             <button 
               className="btn btn-danger" 

@@ -1,20 +1,26 @@
 package es204.user_service.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * User controller for user-related endpoints
  * All endpoints require JWT authentication
  */
 @RestController
-@RequestMapping("/user")
-@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api/users")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class UserController {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * Get current authenticated user information from JWT token
@@ -68,6 +74,31 @@ public class UserController {
             response.put("note", "User data synchronized with Supabase");
         } else {
             response.put("error", "Not authenticated");
+        }
+        
+        return response;
+    }
+    
+    /**
+     * Get database Users.id by keycloak_id
+     * This endpoint is used by notification-service to translate keycloak_id to Users.id
+     * 
+     * @param keycloakId The keycloak_id (UUID)
+     * @return Map with database user ID
+     */
+    @GetMapping("/by-keycloak/{keycloakId}")
+    public Map<String, Object> getUserByKeycloakId(@PathVariable String keycloakId) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            String sql = "SELECT id FROM \"Users\" WHERE keycloak_id = ?::uuid";
+            UUID userId = jdbcTemplate.queryForObject(sql, UUID.class, keycloakId);
+            
+            response.put("id", userId);
+            response.put("keycloak_id", keycloakId);
+        } catch (Exception e) {
+            response.put("error", "User not found");
+            response.put("message", e.getMessage());
         }
         
         return response;

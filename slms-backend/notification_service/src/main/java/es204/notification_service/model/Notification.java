@@ -1,4 +1,4 @@
-package main.java.es204.notification_service.model;
+package es204.notification_service.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

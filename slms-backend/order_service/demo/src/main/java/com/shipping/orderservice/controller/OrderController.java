@@ -128,6 +128,9 @@ public class OrderController {
             List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
             
             notificationClient.notifyAllWarehouseStaff(savedOrder.getOrderId(), customerName, warehouseStaffUserIds);
+            
+            // Notify customer about order creation
+            notificationClient.notifyOrderCreated(savedOrder.getOrderId(), order.getCustomerId());
         } catch (Exception e) {
             System.err.println("Failed to send new order notifications: " + e.getMessage());
             // Don't fail the order creation if notification fails
@@ -162,6 +165,11 @@ public class OrderController {
         // Track carrier change for notification
         UUID oldCarrierId = order.getCarrierId();
         UUID newCarrierId = updatedOrder.getCarrierId();
+        
+        // Track status change for customer notification
+        String oldStatus = order.getStatus();
+        String newStatus = updatedOrder.getStatus();
+        boolean statusChanged = !oldStatus.equals(newStatus);
         
         // Detect carrier change: either from one carrier to another, OR from null to a carrier (first assignment)
         boolean carrierChanged = (oldCarrierId != null && newCarrierId != null && !oldCarrierId.equals(newCarrierId)) ||
@@ -213,6 +221,41 @@ public class OrderController {
             } catch (Exception e) {
                 System.err.println("Failed to send carrier change notifications: " + e.getMessage());
                 e.printStackTrace();
+            }
+        }
+        
+        // Notify customer about status change
+        if (statusChanged) {
+            try {
+                notificationClient.notifyOrderStatusChange(orderId, oldStatus, newStatus, order.getCustomerId());
+                
+                // If status changed to InTransit, also send dispatch notification
+                if ("InTransit".equals(newStatus) && newCarrierName != null) {
+                    notificationClient.notifyOrderDispatched(orderId, newCarrierName, order.getCustomerId());
+                }
+                
+                // If status changed to Failed, send failure notification to customer and warehouse staff
+                if ("Failed".equals(newStatus)) {
+                    String errorMessage = updatedOrder.getErrorMessage();
+                    if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                        errorMessage = "Erro desconhecido";
+                    }
+                    
+                    // Notify customer
+                    notificationClient.notifyOrderFailed(orderId, errorMessage, order.getCustomerId());
+                    
+                    // Notify all warehouse staff
+                    String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                            "JOIN \"Users\" u ON ws.user_id = u.id";
+                    List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+                    notificationClient.notifyAllWarehouseStaffOrderFailed(orderId, errorMessage, warehouseStaffUserIds);
+                    
+                    System.out.println("Sent order failure notifications for order " + orderId);
+                }
+                
+                System.out.println("Sent status change notification to customer: " + oldStatus + " -> " + newStatus);
+            } catch (Exception e) {
+                System.err.println("Failed to send status change notification to customer: " + e.getMessage());
             }
         }
         
@@ -619,6 +662,40 @@ public class OrderController {
 
             if (rowsAffected > 0) {
                 System.out.println("Successfully reported anomaly for order: " + request.getOrderId());
+                UUID orderId = UUID.fromString(request.getOrderId());
+                
+                try {
+                    // Get order details including customer ID
+                    String orderSql = "SELECT costumer_id FROM \"Orders\" WHERE order_id = ?::uuid";
+                    UUID customerId = jdbcTemplate.queryForObject(orderSql, UUID.class, request.getOrderId());
+                    
+                    // Get customer email
+                    String customerEmailSql = "SELECT u.email FROM \"Costumer\" c " +
+                            "JOIN \"Users\" u ON c.user_id = u.id WHERE c.user_id = ?";
+                    String customerEmail = jdbcTemplate.queryForObject(customerEmailSql, String.class, customerId);
+                    
+                    // 1. Notify all CSRs about the anomaly (with customer email)
+                    String csrSql = "SELECT u.id FROM \"Csr\" csr " +
+                            "JOIN \"Users\" u ON csr.user_id = u.id";
+                    List<UUID> csrUserIds = jdbcTemplate.queryForList(csrSql, UUID.class);
+                    notificationClient.notifyAllCSRs(orderId, "Anomalia de Entrega", request.getErrorMessage(), customerEmail, csrUserIds);
+                    System.out.println("Sent anomaly notifications to " + csrUserIds.size() + " CSRs");
+                    
+                    // 2. Notify customer about the anomaly report
+                    notificationClient.notifyOrderFailed(orderId, request.getErrorMessage(), customerId);
+                    System.out.println("Sent anomaly notification to customer");
+                    
+                    // 3. Notify all warehouse staff
+                    String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                            "JOIN \"Users\" u ON ws.user_id = u.id";
+                    List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+                    notificationClient.notifyAllWarehouseStaffOrderFailed(orderId, request.getErrorMessage(), warehouseStaffUserIds);
+                    System.out.println("Sent anomaly notifications to " + warehouseStaffUserIds.size() + " warehouse staff");
+                    
+                } catch (Exception e) {
+                    System.err.println("Failed to send anomaly notifications: " + e.getMessage());
+                    e.printStackTrace();
+                }
                 
                 return ResponseEntity.ok(Map.of(
                     "success", true,

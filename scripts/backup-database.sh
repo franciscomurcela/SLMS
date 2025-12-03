@@ -8,7 +8,7 @@ set -e
 CONTAINER_NAME="${1:-slms-db}"
 DB_USER="${2:-slms_user}"
 DB_NAME="${3:-slms_db}"
-OUTPUT_DIR="slms-backend/config/migrations"
+OUTPUT_DIR="../migrations"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_FILE="$OUTPUT_DIR/slms_db_backup_$TIMESTAMP.sql"
 

@@ -817,22 +817,26 @@
     "alwaysDisplayInConsole" : true,
     "clientAuthenticatorType" : "client-secret",
     "redirectUris" : [ 
+      "http://localhost/*",
       "http://localhost:5173/*",
       "http://localhost:3000/*",
       "http://192.168.160.9:3000/*",
       "http://192.168.160.9/*",
       "http://deti-engsoft-09.ua.pt/*",
       "https://192.168.160.9/*",
-      "https://deti-engsoft-09.ua.pt/*"
+      "https://deti-engsoft-09.ua.pt/*",
+      "https://slms-frontend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/*"
     ],
     "webOrigins" : [ 
+      "http://localhost",
       "http://localhost:5173",
       "http://localhost:3000",
       "http://192.168.160.9:3000",
       "http://192.168.160.9",
       "http://deti-engsoft-09.ua.pt",
       "https://192.168.160.9",
-      "https://deti-engsoft-09.ua.pt"
+      "https://deti-engsoft-09.ua.pt",
+      "https://slms-frontend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io"
     ],
     "notBefore" : 0,
     "bearerOnly" : false,

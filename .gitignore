@@ -1,0 +1,57 @@
+# Maven
+**/target/
+**/.m2/
+*.jar
+*.war
+*.ear
+*.class
+
+# Gradle
+**/.gradle/
+**/build/
+
+# Test Results
+**/allure-results/
+**/allure-report/
+**/.allure/
+**/test-results/
+**/surefire-reports/
+
+# Node modules
+**/node_modules/
+node_modules/
+
+# Backend
+slms-backend/.env
+slms-backend/**/*.log
+
+# Terraform sensitive files
+terraform/terraform.tfvars
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.backup
+
+# Environment variables with sensitive data
+.env.local
+.env.*.local
+react-frontend/frontend/.env.local
+react-frontend/frontend/.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+LOCAL_VS_CLOUD.md
+react-frontend/frontend/nginx.local.conf
+
+# Observability Data (Ignorar dados locais)
+observability/tempo-data/
+observability/loki-wal/
+observability/loki-data/
+observability/grafana-data/

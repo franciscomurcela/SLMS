@@ -8,6 +8,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # Não passar VITE_OTEL_ENDPOINT - deixar o código usar window.location.origin
     container_name: slms-frontend
     ports:
       - "0.0.0.0:80:80"
@@ -15,6 +16,7 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - slms-network
+      - rede-obs
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
@@ -30,4 +32,7 @@ services:
 networks:
   slms-network:
     name: slms-backend_slms-network
+    external: true
+  rede-obs:
+    name: rede-obs
     external: true

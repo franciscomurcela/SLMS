@@ -1,0 +1,296 @@
+{
+  "dashboard": {
+    "title": "Frontend Observability - SLMS",
+    "tags": ["frontend", "observability", "slms"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Total Frontend Requests",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "expr": "sum(rate(http_client_duration_milliseconds_count{service_name=\"frontend-react\"}[5m])) * 60",
+            "legendFormat": "req/min",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqpm",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "green" },
+                { "value": 50, "color": "yellow" },
+                { "value": 100, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "Active Users",
+        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "datasource": { "type": "tempo", "uid": "tempo" },
+            "queryType": "traceqlMetrics",
+            "query": "{ span.service.name=\"frontend-react\" && name=\"click\" } | rate() by (resource.service.name)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": { "mode": "palette-classic" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "blue" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "Avg Response Time (P95)",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "expr": "histogram_quantile(0.95, sum(rate(http_client_duration_milliseconds_bucket{service_name=\"frontend-react\"}[5m])) by (le))",
+            "legendFormat": "P95",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "green" },
+                { "value": 200, "color": "yellow" },
+                { "value": 500, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "Error Rate",
+        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "datasource": { "type": "tempo", "uid": "tempo" },
+            "queryType": "traceqlMetrics",
+            "query": "{ span.service.name=\"frontend-react\" && status=error } | rate()",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "orientation": "auto",
+          "textMode": "auto",
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "green" },
+                { "value": 0.01, "color": "yellow" },
+                { "value": 0.05, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "type": "timeseries",
+        "title": "Request Rate Over Time",
+        "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "datasource": { "type": "tempo", "uid": "tempo" },
+            "queryType": "traceqlMetrics",
+            "query": "{ span.service.name=\"frontend-react\" } | rate() by (span.name)",
+            "legendFormat": "{{span.name}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10,
+              "spanNulls": false
+            },
+            "color": { "mode": "palette-classic" },
+            "unit": "reqps"
+          }
+        },
+        "options": {
+          "tooltip": { "mode": "multi" },
+          "legend": { "showLegend": true, "displayMode": "list", "placement": "bottom" }
+        }
+      },
+      {
+        "id": 6,
+        "type": "timeseries",
+        "title": "Response Time Distribution",
+        "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "datasource": { "type": "tempo", "uid": "tempo" },
+            "queryType": "traceqlMetrics",
+            "query": "{ span.service.name=\"frontend-react\" } | quantile_over_time(duration, 0.5, 0.95, 0.99) by (span.name)",
+            "legendFormat": "{{__quantile__}} - {{span.name}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 0
+            },
+            "color": { "mode": "palette-classic" },
+            "unit": "ms"
+          }
+        },
+        "options": {
+          "tooltip": { "mode": "multi" },
+          "legend": { "showLegend": true, "displayMode": "table", "placement": "right" }
+        }
+      },
+      {
+        "id": 7,
+        "type": "table",
+        "title": "Recent Frontend Traces",
+        "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 },
+        "targets": [
+          {
+            "datasource": { "type": "tempo", "uid": "tempo" },
+            "queryType": "traceqlSearch",
+            "query": "{ span.service.name=\"frontend-react\" }",
+            "limit": 20,
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [{ "displayName": "Start time", "desc": true }]
+        },
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        }
+      },
+      {
+        "id": 8,
+        "type": "piechart",
+        "title": "User Interactions Distribution",
+        "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "datasource": { "type": "tempo", "uid": "tempo" },
+            "queryType": "traceqlMetrics",
+            "query": "{ span.service.name=\"frontend-react\" && name=~\"click|documentLoad|fetch\" } | rate() by (name)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          },
+          "pieType": "donut",
+          "displayLabels": ["percent", "name"],
+          "legend": { "displayMode": "table", "placement": "right", "showLegend": true }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "palette-classic" },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "type": "logs",
+        "title": "Frontend Logs",
+        "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "datasource": { "type": "loki", "uid": "loki" },
+            "expr": "{service_name=\"frontend-react\"}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showTime": true,
+          "showLabels": false,
+          "showCommonLabels": false,
+          "wrapLogMessage": true,
+          "sortOrder": "Descending"
+        }
+      }
+    ]
+  },
+  "overwrite": true
+}

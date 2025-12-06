@@ -18,27 +18,18 @@ export const API_BASE_URL = isDevelopment
 
 /**
  * Backend API endpoints through Nginx proxy
+ * All endpoints use relative paths - nginx will proxy to correct service
  */
 export const API_ENDPOINTS = {
   // Carriers API
   CARRIERS: `${API_BASE_URL}/carriers`,
   
-  // Orders API - Direct to order service
-  ORDERS: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders`,
-  SHIPMENTS: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/shipments`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/shipments`,
-  CONFIRM_DELIVERY: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders/confirm-delivery`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders/confirm-delivery`,
-  REPORT_ANOMALY: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/orders/report-anomaly`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/orders/report-anomaly`,
-  CREATE_SHIPMENT: isDevelopment 
-    ? `${API_BASE_URL}:8081/api/shipments/create`
-    : `https://slms-order-service.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/api/shipments/create`,
+  // Orders API - Proxied by nginx to order-service
+  ORDERS: `${API_BASE_URL}/api/orders`,
+  SHIPMENTS: `${API_BASE_URL}/api/shipments`,
+  CONFIRM_DELIVERY: `${API_BASE_URL}/api/orders/confirm-delivery`,
+  REPORT_ANOMALY: `${API_BASE_URL}/api/orders/report-anomaly`,
+  CREATE_SHIPMENT: `${API_BASE_URL}/api/shipments/create`,
   
   // Users API
   USERS: `${API_BASE_URL}/user`,

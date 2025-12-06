@@ -76,30 +76,32 @@ export default function PageProcessOrder() {
       try {
         setLoading(true);
         
-        // Get user's keycloak ID from token
-        const keycloakId = keycloak.tokenParsed?.sub;
-        if (!keycloakId) {
-          setError("Não foi possível identificar o utilizador");
-          return;
-        }
-        
-        // Fetch order details using my-orders endpoint
+        // Fetch all orders (warehouse needs to see all orders to process them)
         console.log("Fetching orders with token:", keycloak.token.substring(0, 20) + "...");
-        console.log("User keycloak ID:", keycloakId);
-        const orderResp = await fetch(`${API_ENDPOINTS.ORDERS}/my-orders/${keycloakId}`, {
+        console.log("Looking for orderId:", orderId);
+        const orderResp = await fetch(`${API_ENDPOINTS.ORDERS}`, {
           headers: {
             'Authorization': `Bearer ${keycloak.token}`,
             'Content-Type': 'application/json'
           }
         });
-        if (!orderResp.ok) throw new Error("Failed to fetch orders");
+        if (!orderResp.ok) {
+          console.error("Failed to fetch orders, status:", orderResp.status);
+          throw new Error("Failed to fetch orders");
+        }
         const orders: Order[] = await orderResp.json();
+        console.log("Total orders fetched:", orders.length);
+        console.log("Order IDs:", orders.map(o => o.orderId));
         const foundOrder = orders.find((o) => o.orderId === orderId);
         
         if (!foundOrder) {
+          console.error("Order not found! Looking for:", orderId);
+          console.error("Available orders:", orders);
           setError("Pedido não encontrado");
           return;
         }
+        
+        console.log("Order found:", foundOrder);
         
         setOrder(foundOrder);
         setFormData({

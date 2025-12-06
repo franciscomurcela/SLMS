@@ -35,7 +35,7 @@ public interface ShipmentRepository extends JpaRepository<Shipment, UUID> {
     List<Shipment> findByCarrierId(UUID carrierId);
     
     /**
-     * Find InTransit shipments for a user (navigating through Users and Driver tables)
+     * Find shipments currently "InTransit" for a driver, identified by the keycloak_id (from JWT).
      * Navigation: keycloakId (JWT sub) → Users.keycloak_id → Users.id → Driver.user_id → Driver.driver_id → Shipments.driver_id
      * 
      * @param keycloakId The keycloak_id (which comes from JWT sub claim)

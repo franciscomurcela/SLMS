@@ -4,15 +4,15 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { ZoneContextManager } from '@opentelemetry/context-zone';
-import { resourceFromAttributes } from '@opentelemetry/resources';
+import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 
 try {
-  // URL do Collector
-  const collectorUrl = import.meta.env.VITE_OTEL_ENDPOINT || 'http://localhost:4318/v1/traces';
+  // URL do Collector - construir URL completa para o browser
+  const collectorUrl = import.meta.env.VITE_OTEL_ENDPOINT || `${window.location.origin}/v1/traces`;
 
   const provider = new WebTracerProvider({
-    resource: resourceFromAttributes({
+    resource: new Resource({
       [ATTR_SERVICE_NAME]: 'frontend-react',
     }),
   });

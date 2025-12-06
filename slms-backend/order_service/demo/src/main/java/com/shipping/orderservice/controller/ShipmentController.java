@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -323,30 +322,9 @@ public class ShipmentController {
                 ));
             }
 
-            // Get a random driver from this carrier
-            String getDriverSql = """
-                SELECT d.driver_id 
-                FROM "Driver" d 
-                WHERE d.carrier_id = ? 
-                ORDER BY RANDOM() 
-                LIMIT 1
-                """;
-            
-            List<UUID> driverIds = jdbcTemplate.query(
-                getDriverSql,
-                (rs, rowNum) -> UUID.fromString(rs.getString("driver_id")),
-                carrierId
-            );
-
-            if (driverIds.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "error", "NoDriverAvailable",
-                    "message", "No drivers available for this carrier"
-                ));
-            }
-
-            UUID driverId = driverIds.get(0);
-            System.out.println("Selected driver: " + driverId);
+            // NOTE: Driver assignment removed - Driver table is in user-service database
+            // Driver should be assigned via user-service API or remain null until assigned
+            UUID driverId = null; // Will be assigned later through proper microservice communication
 
             // Create the shipment with status 'Pending'
             UUID shipmentId = UUID.randomUUID();

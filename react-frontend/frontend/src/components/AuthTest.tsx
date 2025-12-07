@@ -104,7 +104,7 @@ function AuthTest() {
               className="btn btn-primary me-2" 
               onClick={testBackendCall}
             >
-              Testar chamada ao Backend (/user/whoami)
+              Testar chamada ao Backend (/api/users/whoami)
             </button>
             <button 
               className="btn btn-danger" 

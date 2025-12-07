@@ -41,13 +41,20 @@
     "@opentelemetry/sdk-trace-web": "^1.29.0",
     "@opentelemetry/semantic-conventions": "^1.29.0",
     "bootstrap": "^5.3.8",
+    "date-fns": "^2.30.0",
     "flagsmith": "^9.3.2",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
     "keycloak-js": "^21.1.2",
     "react": "^18.2.1",
+    "react-bootstrap": "^2.10.6",
+    "react-bootstrap-icons": "^1.11.4",
     "react-dom": "^18.2.1",
     "react-pro-sidebar": "^1.1.0",
     "react-router-dom": "^7.9.3",
-    "tailwindcss": "^3.4.0"
+    "recharts": "^2.15.4",
+    "tailwindcss": "^3.4.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

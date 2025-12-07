@@ -1,8 +1,29 @@
 // API Configuration
-// Adapts to current environment automatically
+// Uses environment variables for backend service URLs in production
 
 /**
- * Determine the current environment and set appropriate base URL
+ * Determine if running in development mode
+ */
+const isDevelopment = window.location.hostname === 'localhost' && 
+                     (window.location.port === '3000' || window.location.port === '5173');
+
+/**
+ * Backend service base URLs
+ */
+const ORDER_SERVICE_URL = import.meta.env.VITE_ORDER_SERVICE_URL || 
+  (isDevelopment ? 'http://localhost:8081' : `${window.location.protocol}//${window.location.host}`);
+
+const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL || 
+  (isDevelopment ? 'http://localhost:8082' : `${window.location.protocol}//${window.location.host}`);
+
+const CARRIER_SERVICE_URL = import.meta.env.VITE_CARRIER_SERVICE_URL || 
+  (isDevelopment ? 'http://localhost:8080' : `${window.location.protocol}//${window.location.host}`);
+
+const NOTIFICATION_SERVICE_URL = import.meta.env.VITE_NOTIFICATION_SERVICE_URL || 
+  (isDevelopment ? 'http://localhost:8084' : `${window.location.protocol}//${window.location.host}`);
+
+/**
+ * Base URL - for auth and other shared services
  */
 const isDevelopment = window.location.hostname === 'localhost' && 
                      (window.location.port === '3000' || window.location.port === '5173');
@@ -22,20 +43,29 @@ export const API_BASE_URL = isDevelopment
  */
 export const API_ENDPOINTS = {
   // Carriers API
-  CARRIERS: `${API_BASE_URL}/carriers`,
+  CARRIERS: `${CARRIER_SERVICE_URL}/carriers`,
   
-  // Orders API - Proxied by nginx to order-service
-  ORDERS: `${API_BASE_URL}/api/orders`,
-  SHIPMENTS: `${API_BASE_URL}/api/shipments`,
-  CONFIRM_DELIVERY: `${API_BASE_URL}/api/orders/confirm-delivery`,
-  REPORT_ANOMALY: `${API_BASE_URL}/api/orders/report-anomaly`,
-  CREATE_SHIPMENT: `${API_BASE_URL}/api/shipments/create`,
+  // Orders API  
+  ORDERS: `${ORDER_SERVICE_URL}/api/orders`,
+  SHIPMENTS: `${ORDER_SERVICE_URL}/api/shipments`,
+  CONFIRM_DELIVERY: `${ORDER_SERVICE_URL}/api/orders/confirm-delivery`,
+  REPORT_ANOMALY: `${ORDER_SERVICE_URL}/api/orders/report-anomaly`,
+  CREATE_SHIPMENT: `${ORDER_SERVICE_URL}/api/shipments/create`,
+  PACKING_SLIP: (orderId: string) => `${ORDER_SERVICE_URL}/api/orders/${orderId}/packing-slip`,
+  SHIPPING_LABEL: (orderId: string) => `${ORDER_SERVICE_URL}/api/orders/${orderId}/shipping-label`,
   
   // Users API
-  USERS: `${API_BASE_URL}/user`,
-  WHOAMI: `${API_BASE_URL}/user/whoami`,
+  USERS: `${USER_SERVICE_URL}/api/users`,
+  WHOAMI: `${USER_SERVICE_URL}/api/users/whoami`,
   
-  // Auth (Keycloak through nginx proxy)
+  // Notifications API
+  NOTIFICATIONS: `${NOTIFICATION_SERVICE_URL}/api/notifications`,
+  NOTIFICATIONS_UNREAD: `${NOTIFICATION_SERVICE_URL}/api/notifications/unread`,
+  NOTIFICATIONS_UNREAD_COUNT: `${NOTIFICATION_SERVICE_URL}/api/notifications/unread/count`,
+  NOTIFICATION_MARK_READ: (id: number) => `${NOTIFICATION_SERVICE_URL}/api/notifications/${id}/read`,
+  NOTIFICATIONS_MARK_ALL_READ: `${NOTIFICATION_SERVICE_URL}/api/notifications/read-all`,
+  
+  // Auth (Keycloak - uses same host as frontend or env var)
   AUTH: `${API_BASE_URL}/auth`,
 } as const;
 

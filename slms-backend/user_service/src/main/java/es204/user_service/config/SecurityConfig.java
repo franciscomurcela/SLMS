@@ -34,10 +34,12 @@ public class SecurityConfig {
             // Enable CORS with custom configuration
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests((authz) -> authz
-                // Public endpoints (AQUI ESTÁ A CORREÇÃO)
-                .requestMatchers("/actuator/**", "/user/health").permitAll()
-                
+                // Public endpoints
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                // Allow keycloak ID lookup without authentication (needed for notifications)
+                .requestMatchers("/api/users/by-keycloak/**").permitAll()
                 // All other user endpoints require authentication
+                .requestMatchers("/api/users/**").authenticated()
                 .requestMatchers("/user/**").authenticated()
                 .anyRequest().authenticated()
             )

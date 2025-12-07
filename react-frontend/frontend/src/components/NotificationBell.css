@@ -1,0 +1,32 @@
+.notification-bell-toggle {
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.notification-bell-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.notification-dropdown-menu {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.notification-item {
+  transition: background-color 0.2s;
+  padding: 0.75rem 1rem;
+}
+
+.notification-item:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.notification-item.unread {
+  background-color: rgba(13, 110, 253, 0.05);
+  font-weight: 500;
+}
+
+.notification-item.unread:hover {
+  background-color: rgba(13, 110, 253, 0.1);
+}

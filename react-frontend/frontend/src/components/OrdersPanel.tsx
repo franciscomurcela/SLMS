@@ -14,6 +14,7 @@ interface Order {
   weight: number;
   status: string;
   orderDate: string;
+  errorMessage?: string | null;  // Mensagem de erro para pedidos Failed
 }
 
 interface Carrier {
@@ -23,6 +24,13 @@ interface Carrier {
   on_time_rate: number;
   success_rate: number;
 }
+
+const CARRIER_COLORS: Record<string, string> = {
+  'FedEx': '#8a17eeff',
+  'UPS': '#ebbe0aff',
+  'DPD': '#D32F2F',
+  'DHL': '#ff9d00ff'
+};
 
 function getStatusBadge(status: string) {
   const statusMap: Record<string, string> = {
@@ -60,57 +68,50 @@ export default function OrdersPanel() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("All");
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadData() {
-      // Wait for Keycloak to be ready
-      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
-        console.log("[OrdersPanel] Waiting for Keycloak...");
-        setLoading(true);
-        return;
-      }
-
-      console.log("[OrdersPanel] Keycloak ready, fetching orders with token");
+  const loadOrders = async () => {
+    if (!keycloak || !keycloak.token || !keycloak.authenticated) {
+      console.log("[OrdersPanel] Waiting for Keycloak...");
       setLoading(true);
-      setError(null);
-      try {
-        // Fetch orders with Authorization header
-        const ordersResp = await fetch(API_ENDPOINTS.ORDERS, {
-          headers: {
-            'Authorization': `Bearer ${keycloak.token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!ordersResp.ok) throw new Error(`Orders fetch failed: ${ordersResp.status}`);
-        const ordersData = await ordersResp.json();
-        
-        // Fetch carriers with Authorization header
-        const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {
-          headers: {
-            'Authorization': `Bearer ${keycloak.token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!carriersResp.ok) throw new Error(`Carriers fetch failed: ${carriersResp.status}`);
-        const carriersData = await carriersResp.json();
-        
-        if (mounted) {
-          setOrders(Array.isArray(ordersData) ? ordersData : []);
-          setCarriers(Array.isArray(carriersData) ? carriersData : []);
-        }
-      } catch (e) {
-        console.error("Data fetch failed", e);
-        if (mounted) setError(String(e));
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      return;
     }
 
-    loadData();
-    return () => {
-      mounted = false;
-    };
+    console.log("[OrdersPanel] Keycloak ready, fetching orders with token");
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch orders with Authorization header
+      const ordersResp = await fetch(API_ENDPOINTS.ORDERS, {
+        headers: {
+          'Authorization': `Bearer ${keycloak.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!ordersResp.ok) throw new Error(`Orders fetch failed: ${ordersResp.status}`);
+      const ordersData = await ordersResp.json();
+      
+      // Fetch carriers with Authorization header
+      const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {
+        headers: {
+          'Authorization': `Bearer ${keycloak.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!carriersResp.ok) throw new Error(`Carriers fetch failed: ${carriersResp.status}`);
+      const carriersData = await carriersResp.json();
+      
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setCarriers(Array.isArray(carriersData) ? carriersData : []);
+    } catch (e) {
+      console.error("Data fetch failed", e);
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keycloak]);
 
   const getCarrierName = (carrierId: string | null): string => {
@@ -119,9 +120,15 @@ export default function OrdersPanel() {
     return carrier?.name || `Carrier #${carrierId.slice(0, 8)}`;
   };
 
+  const getCarrierColor = (carrierId: string | null): string => {
+    if (!carrierId) return '#6c757d'; // secondary gray for no assignment
+    const carrier = carriers.find((c) => c.carrier_id === carrierId);
+    return carrier?.name ? (CARRIER_COLORS[carrier.name] || '#6f42c1') : '#6f42c1';
+  };
+
   const downloadPackingSlip = async (orderId: string) => {
     try {
-      const url = `${API_ENDPOINTS.ORDERS}/${orderId}/packing-slip`;
+      const url = API_ENDPOINTS.PACKING_SLIP(orderId);
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -147,7 +154,11 @@ export default function OrdersPanel() {
 
   const downloadShippingLabel = async (orderId: string) => {
     try {
+<<<<<<< HEAD
       const url = `${API_ENDPOINTS.ORDERS}/${orderId}/shipping-label`;
+=======
+      const url = API_ENDPOINTS.SHIPPING_LABEL(orderId);
+>>>>>>> origin/visual-rehaul
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -168,6 +179,45 @@ export default function OrdersPanel() {
     } catch (e) {
       console.error("Download error:", e);
       alert(`Erro ao fazer download da etiqueta: ${e}`);
+    }
+  };
+
+  const handleReprocess = async (order: Order) => {
+    if (!confirm(`Reprocessar o pedido #${order.orderId.slice(0, 8)}?\n\nIsto irá limpar a mensagem de erro e marcar o pedido como "Pending" novamente.`)) {
+      return;
+    }
+
+    try {
+      const updatePayload = {
+        customerId: order.customerId,
+        carrierId: null,  // Remove carrier assignment
+        originAddress: order.originAddress,
+        destinationAddress: order.destinationAddress,
+        weight: order.weight,
+        status: "Pending",
+        errorMessage: null,  // Clear error message
+      };
+
+      const resp = await fetch(`${API_ENDPOINTS.ORDERS}/${order.orderId}`, {
+        method: "PUT",
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        throw new Error(`Erro ao reprocessar: ${errorText}`);
+      }
+
+      alert("✅ Pedido reprocessado com sucesso! Status alterado para Pending.");
+      // Reload orders to reflect changes
+      loadOrders();
+    } catch (e) {
+      console.error("Reprocess error:", e);
+      alert(`Erro ao reprocessar pedido: ${e}`);
     }
   };
 
@@ -208,6 +258,7 @@ export default function OrdersPanel() {
     Pending: orders.filter((o) => o.status === "Pending").length,
     InTransit: orders.filter((o) => o.status === "InTransit").length,
     Delivered: orders.filter((o) => o.status === "Delivered").length,
+    Failed: orders.filter((o) => o.status === "Failed").length,
   };
 
   return (
@@ -233,6 +284,14 @@ export default function OrdersPanel() {
                 <span className="badge bg-light text-dark">{statusCounts[status as keyof typeof statusCounts]}</span>
               </button>
             ))}
+            <button
+              type="button"
+              className={`btn ${filter === "Failed" ? "btn-danger" : "btn-outline-danger"}`}
+              onClick={() => setFilter("Failed")}
+            >
+              Failed{" "}
+              <span className="badge bg-light text-dark">{statusCounts.Failed}</span>
+            </button>
           </div>
           
           {isCreateShipmentEnabled && (
@@ -279,7 +338,13 @@ export default function OrdersPanel() {
                   </td>
                   <td>
                     {order.carrierId ? (
-                      <span className="badge bg-info text-dark">
+                      <span 
+                        className="badge"
+                        style={{ 
+                          backgroundColor: getCarrierColor(order.carrierId), 
+                          color: '#ffffff' 
+                        }}
+                      >
                         {getCarrierName(order.carrierId)}
                       </span>
                     ) : (
@@ -305,6 +370,24 @@ export default function OrdersPanel() {
                         Processar
                       </button>
                     )}
+                    {order.status === "Failed" && (
+                      <div className="d-flex flex-column gap-2">
+                        {order.errorMessage && (
+                          <div className="alert alert-danger mb-0 py-1 px-2" style={{ fontSize: '0.85rem' }}>
+                            <i className="bi bi-exclamation-circle me-1"></i>
+                            <strong>Erro:</strong> {order.errorMessage}
+                          </div>
+                        )}
+                        <button
+                          className="btn btn-sm btn-warning"
+                          onClick={() => handleReprocess(order)}
+                          title="Reprocessar pedido - volta a Pending"
+                        >
+                          <i className="bi bi-arrow-clockwise me-1"></i>
+                          Reprocessar
+                        </button>
+                      </div>
+                    )}
                     {(order.status === "InTransit" || order.status === "Delivered") && (
                       <div className="btn-group" role="group">
                         <button
@@ -324,9 +407,6 @@ export default function OrdersPanel() {
                           Etiqueta
                         </button>
                       </div>
-                    )}
-                    {order.status !== "Pending" && order.status !== "InTransit" && order.status !== "Delivered" && (
-                      <span className="text-muted">—</span>
                     )}
                   </td>
                 </tr>

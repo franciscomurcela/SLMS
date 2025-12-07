@@ -4,6 +4,7 @@ import Paths from "./UtilsPaths";
 import { useKeycloak } from "../context/keycloakHooks";
 import { useEffect, useState } from "react";
 import ChatAssistant from "./ChatAssistant";
+import { API_ENDPOINTS } from "../config/api.config";
 
 const role: string = Roles.ROLE_CUSTOMER;
 const href: string = Paths.PATH_CUSTOMER;
@@ -68,8 +69,8 @@ function Customer() {
       try {
         const keycloakId = keycloak.tokenParsed.sub;
 
-        // Use same-origin request through Nginx proxy with customer's keycloakId
-        const ordersResp = await fetch(`/api/orders/my-orders/${keycloakId}`, {
+        // Use API_ENDPOINTS with customer's keycloakId
+        const ordersResp = await fetch(`${API_ENDPOINTS.ORDERS}/my-orders/${keycloakId}`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${keycloak.token}`,

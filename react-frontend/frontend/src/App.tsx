@@ -1,5 +1,5 @@
 import TrackingPortal from "./components/PageTrackingPortal";
-import LogisticsManager from "./components/PageLogisticsManager";
+import LogisticsManager from "./components/LogisticsManager";
 import Driver from "./components/Driver";
 import DriverCargoManifest from "./components/DriverCargoManifest";
 import ConfirmDelivery from "./components/ConfirmDelivery";

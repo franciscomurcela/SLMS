@@ -37,6 +37,7 @@ import com.itextpdf.layout.properties.TextAlignment;
 import com.shipping.orderservice.dto.ReportAnomalyRequest;
 import com.shipping.orderservice.model.Order;
 import com.shipping.orderservice.repository.OrderRepository;
+import com.shipping.orderservice.service.NotificationClient;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -45,10 +46,12 @@ public class OrderController {
 
     private final OrderRepository repository;
     private final JdbcTemplate jdbcTemplate;
+    private final NotificationClient notificationClient;
 
-    public OrderController(OrderRepository repository, JdbcTemplate jdbcTemplate) {
+    public OrderController(OrderRepository repository, JdbcTemplate jdbcTemplate, NotificationClient notificationClient) {
         this.repository = repository;
         this.jdbcTemplate = jdbcTemplate;
+        this.notificationClient = notificationClient;
     }
 
     @GetMapping
@@ -65,7 +68,8 @@ public class OrderController {
                     o.destination_address as "destinationAddress",
                     o.weight as "weight",
                     o.status as "status",
-                    o.order_date as "orderDate"
+                    o.order_date as "orderDate",
+                    o.error_message as "errorMessage"
                 FROM "Orders" o
                 LEFT JOIN "Costumer" c ON o.costumer_id = c.user_id
                 LEFT JOIN "Users" u ON c.user_id = u.id
@@ -141,7 +145,43 @@ public class OrderController {
 
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
-        return repository.save(order);
+        Order savedOrder = repository.save(order);
+        
+        // Notify all warehouse staff about new order
+        try {
+            String customerNameSql = """
+                SELECT TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) as customer_name
+                FROM "Costumer" c
+                LEFT JOIN "Users" u ON c.user_id = u.id
+                WHERE c.user_id = ?
+                """;
+            
+            String customerName = "Cliente";
+            try {
+                Map<String, Object> customerResult = jdbcTemplate.queryForMap(customerNameSql, order.getCustomerId());
+                customerName = (String) customerResult.get("customer_name");
+                if (customerName == null || customerName.trim().isEmpty()) {
+                    customerName = "Cliente";
+                }
+            } catch (Exception e) {
+                System.err.println("Could not fetch customer name: " + e.getMessage());
+            }
+            
+            // Get all warehouse staff Users.id (Notifications FK points to Users.id, not keycloak_id)
+            String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                    "JOIN \"Users\" u ON ws.user_id = u.id";
+            List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+            
+            notificationClient.notifyAllWarehouseStaff(savedOrder.getOrderId(), customerName, warehouseStaffUserIds);
+            
+            // Notify customer about order creation
+            notificationClient.notifyOrderCreated(savedOrder.getOrderId(), order.getCustomerId());
+        } catch (Exception e) {
+            System.err.println("Failed to send new order notifications: " + e.getMessage());
+            // Don't fail the order creation if notification fails
+        }
+        
+        return savedOrder;
     }
 
     @PatchMapping("/{orderId}/assign")
@@ -167,14 +207,102 @@ public class OrderController {
         Order order = repository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
+        // Track carrier change for notification
+        UUID oldCarrierId = order.getCarrierId();
+        UUID newCarrierId = updatedOrder.getCarrierId();
+        
+        // Track status change for customer notification
+        String oldStatus = order.getStatus();
+        String newStatus = updatedOrder.getStatus();
+        boolean statusChanged = !oldStatus.equals(newStatus);
+        
+        // Detect carrier change: either from one carrier to another, OR from null to a carrier (first assignment)
+        boolean carrierChanged = (oldCarrierId != null && newCarrierId != null && !oldCarrierId.equals(newCarrierId)) ||
+                                 (oldCarrierId == null && newCarrierId != null);
+        
+        String oldCarrierName = null;
+        String newCarrierName = null;
+        
+        if (carrierChanged) {
+            try {
+                String carrierNameSql = "SELECT name FROM \"Carrier\" WHERE carrier_id = ?";
+                
+                // Get old carrier name if it exists
+                if (oldCarrierId != null) {
+                    oldCarrierName = jdbcTemplate.queryForObject(carrierNameSql, String.class, oldCarrierId);
+                } else {
+                    oldCarrierName = "Não Definido";
+                }
+                
+                // Get new carrier name
+                newCarrierName = jdbcTemplate.queryForObject(carrierNameSql, String.class, newCarrierId);
+            } catch (Exception e) {
+                System.err.println("Could not fetch carrier names: " + e.getMessage());
+            }
+        }
+        
         // Update fields
         order.setOriginAddress(updatedOrder.getOriginAddress());
         order.setDestinationAddress(updatedOrder.getDestinationAddress());
         order.setWeight(updatedOrder.getWeight());
-        order.setCarrierId(updatedOrder.getCarrierId());
+        order.setCarrierId(newCarrierId);
         order.setStatus(updatedOrder.getStatus());
         
         Order savedOrder = repository.save(order);
+        
+        // Notify warehouse staff about carrier change or assignment
+        if (carrierChanged && newCarrierName != null) {
+            try {
+                // Get Users.id from Users table (Notifications FK points to Users.id, not keycloak_id)
+                String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                        "JOIN \"Users\" u ON ws.user_id = u.id";
+                List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+                
+                for (UUID userId : warehouseStaffUserIds) {
+                    notificationClient.notifyCarrierChange(orderId, oldCarrierName, newCarrierName, userId);
+                }
+                
+                System.out.println("Sent carrier change notifications: " + oldCarrierName + " -> " + newCarrierName);
+            } catch (Exception e) {
+                System.err.println("Failed to send carrier change notifications: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        // Notify customer about status change
+        if (statusChanged) {
+            try {
+                notificationClient.notifyOrderStatusChange(orderId, oldStatus, newStatus, order.getCustomerId());
+                
+                // If status changed to InTransit, also send dispatch notification
+                if ("InTransit".equals(newStatus) && newCarrierName != null) {
+                    notificationClient.notifyOrderDispatched(orderId, newCarrierName, order.getCustomerId());
+                }
+                
+                // If status changed to Failed, send failure notification to customer and warehouse staff
+                if ("Failed".equals(newStatus)) {
+                    String errorMessage = updatedOrder.getErrorMessage();
+                    if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                        errorMessage = "Erro desconhecido";
+                    }
+                    
+                    // Notify customer
+                    notificationClient.notifyOrderFailed(orderId, errorMessage, order.getCustomerId());
+                    
+                    // Notify all warehouse staff
+                    String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                            "JOIN \"Users\" u ON ws.user_id = u.id";
+                    List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+                    notificationClient.notifyAllWarehouseStaffOrderFailed(orderId, errorMessage, warehouseStaffUserIds);
+                    
+                    System.out.println("Sent order failure notifications for order " + orderId);
+                }
+                
+                System.out.println("Sent status change notification to customer: " + oldStatus + " -> " + newStatus);
+            } catch (Exception e) {
+                System.err.println("Failed to send status change notification to customer: " + e.getMessage());
+            }
+        }
         
         // If order was updated to InTransit and has a shipment, check if all orders in shipment are InTransit
         if ("InTransit".equals(updatedOrder.getStatus()) && order.getShipmentId() != null) {
@@ -579,6 +707,40 @@ public class OrderController {
 
             if (rowsAffected > 0) {
                 System.out.println("Successfully reported anomaly for order: " + request.getOrderId());
+                UUID orderId = UUID.fromString(request.getOrderId());
+                
+                try {
+                    // Get order details including customer ID
+                    String orderSql = "SELECT costumer_id FROM \"Orders\" WHERE order_id = ?::uuid";
+                    UUID customerId = jdbcTemplate.queryForObject(orderSql, UUID.class, request.getOrderId());
+                    
+                    // Get customer email
+                    String customerEmailSql = "SELECT u.email FROM \"Costumer\" c " +
+                            "JOIN \"Users\" u ON c.user_id = u.id WHERE c.user_id = ?";
+                    String customerEmail = jdbcTemplate.queryForObject(customerEmailSql, String.class, customerId);
+                    
+                    // 1. Notify all CSRs about the anomaly (with customer email)
+                    String csrSql = "SELECT u.id FROM \"Csr\" csr " +
+                            "JOIN \"Users\" u ON csr.user_id = u.id";
+                    List<UUID> csrUserIds = jdbcTemplate.queryForList(csrSql, UUID.class);
+                    notificationClient.notifyAllCSRs(orderId, "Anomalia de Entrega", request.getErrorMessage(), customerEmail, csrUserIds);
+                    System.out.println("Sent anomaly notifications to " + csrUserIds.size() + " CSRs");
+                    
+                    // 2. Notify customer about the anomaly report
+                    notificationClient.notifyOrderFailed(orderId, request.getErrorMessage(), customerId);
+                    System.out.println("Sent anomaly notification to customer");
+                    
+                    // 3. Notify all warehouse staff
+                    String warehouseStaffSql = "SELECT u.id FROM \"WarehouseStaff\" ws " +
+                            "JOIN \"Users\" u ON ws.user_id = u.id";
+                    List<UUID> warehouseStaffUserIds = jdbcTemplate.queryForList(warehouseStaffSql, UUID.class);
+                    notificationClient.notifyAllWarehouseStaffOrderFailed(orderId, request.getErrorMessage(), warehouseStaffUserIds);
+                    System.out.println("Sent anomaly notifications to " + warehouseStaffUserIds.size() + " warehouse staff");
+                    
+                } catch (Exception e) {
+                    System.err.println("Failed to send anomaly notifications: " + e.getMessage());
+                    e.printStackTrace();
+                }
                 
                 return ResponseEntity.ok(Map.of(
                     "success", true,

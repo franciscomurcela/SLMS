@@ -3,6 +3,7 @@ import { useState } from "react";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import { useKeycloak } from "../context/keycloakHooks";
+import { NotificationBell } from "./NotificationBell";
 
 function Header({ 
   role, 
@@ -59,15 +60,20 @@ function Header({
         )}
 
         {authenticated && (
-          <button
-            type="button"
-            className="btn btn-danger ms-2"
-            onClick={logout}
-            title="Fazer logout do Keycloak"
-          >
-            <i className="bi bi-box-arrow-right me-1"></i>
-            Logout
-          </button>
+          <>
+            <div className="me-3">
+              <NotificationBell />
+            </div>
+            <button
+              type="button"
+              className="btn btn-danger ms-2"
+              onClick={logout}
+              title="Fazer logout do Keycloak"
+            >
+              <i className="bi bi-box-arrow-right me-1"></i>
+              Logout
+            </button>
+          </>
         )}
       </nav>
     </>

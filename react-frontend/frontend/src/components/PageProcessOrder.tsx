@@ -222,7 +222,6 @@ export default function PageProcessOrder() {
     return carrier?.name || "Desconhecido";
   };
 
-  if (loading || keycloakLoading) {
   const handleRegisterFailure = async () => {
     if (!order) return;
 

@@ -23,12 +23,6 @@ const NOTIFICATION_SERVICE_URL = import.meta.env.VITE_NOTIFICATION_SERVICE_URL |
   (isDevelopment ? 'http://localhost:8084' : `${window.location.protocol}//${window.location.host}`);
 
 /**
- * Base URL - for auth and other shared services
- */
-const isDevelopment = window.location.hostname === 'localhost' && 
-                     (window.location.port === '3000' || window.location.port === '5173');
-
-/**
  * Base URL for the application
  * - Development: Direct service URLs on localhost
  * - Production: Uses nginx proxy with current host

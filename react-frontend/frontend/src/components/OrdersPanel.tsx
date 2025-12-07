@@ -154,11 +154,7 @@ export default function OrdersPanel() {
 
   const downloadShippingLabel = async (orderId: string) => {
     try {
-<<<<<<< HEAD
-      const url = `${API_ENDPOINTS.ORDERS}/${orderId}/shipping-label`;
-=======
       const url = API_ENDPOINTS.SHIPPING_LABEL(orderId);
->>>>>>> origin/visual-rehaul
       const resp = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,

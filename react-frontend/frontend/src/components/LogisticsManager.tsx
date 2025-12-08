@@ -40,7 +40,7 @@ function LogisticsManager() {
   return (
     <>
       <Header role={role} href="/" />
-      <div className="container-fluid">
+      <div className="container-fluid mt-4">
         <CarrierOptimization />
       </div>
     </>

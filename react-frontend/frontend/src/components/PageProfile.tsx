@@ -30,7 +30,7 @@ function Profile() {
     <>
       <Header role={role} href={href} />
 
-      <div className="d-grid gap-2 col-6 mx-auto">
+      <div className="d-grid gap-2 col-6 mx-auto mt-4">
         {primaryRole && (
           <button
             type="button"

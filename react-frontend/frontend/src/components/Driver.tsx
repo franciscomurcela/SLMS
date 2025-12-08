@@ -58,7 +58,7 @@ function Driver() {
     <>
       <Header role={role} href={Paths.PATH_DRIVER} />
 
-      <div className="container text-center">
+      <div className="container text-center mt-4">
         <div className="row">
           <div className="col">
             <div className="d-grid gap-2 col-6 mx-auto">

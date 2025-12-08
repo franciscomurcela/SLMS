@@ -2,13 +2,15 @@
 // Uses environment variables for backend service URLs in production
 
 /**
- * Determine if running in development mode
+ * Determine if running in development mode (direct Vite dev server)
  */
 const isDevelopment = window.location.hostname === 'localhost' && 
                      (window.location.port === '3000' || window.location.port === '5173');
 
 /**
  * Backend service base URLs
+ * - Development (Vite): Direct service URLs with ports
+ * - Production/Nginx: Use current host (nginx will proxy based on path)
  */
 const ORDER_SERVICE_URL = import.meta.env.VITE_ORDER_SERVICE_URL || 
   (isDevelopment ? 'http://localhost:8081' : `${window.location.protocol}//${window.location.host}`);
@@ -24,43 +26,43 @@ const NOTIFICATION_SERVICE_URL = import.meta.env.VITE_NOTIFICATION_SERVICE_URL |
 
 /**
  * Base URL for the application
- * - Development: Direct service URLs on localhost
- * - Production: Uses nginx proxy with current host
  */
 export const API_BASE_URL = isDevelopment 
   ? 'http://localhost' 
   : `${window.location.protocol}//${window.location.host}`;
 
 /**
- * Backend API endpoints through Nginx proxy
- * All endpoints use relative paths - nginx will proxy to correct service
+ * Backend API endpoints
+ * In development: Full URLs with ports (direct to services)
+ * In production/nginx: Paths only (nginx proxies based on path)
  */
 export const API_ENDPOINTS = {
   // Carriers API
-  CARRIERS: `${CARRIER_SERVICE_URL}/carriers`,
+  CARRIERS: isDevelopment ? `${CARRIER_SERVICE_URL}/carriers` : '/carriers',
   
   // Orders API  
-  ORDERS: `${ORDER_SERVICE_URL}/api/orders`,
-  SHIPMENTS: `${ORDER_SERVICE_URL}/api/shipments`,
-  CONFIRM_DELIVERY: `${ORDER_SERVICE_URL}/api/orders/confirm-delivery`,
-  REPORT_ANOMALY: `${ORDER_SERVICE_URL}/api/orders/report-anomaly`,
-  CREATE_SHIPMENT: `${ORDER_SERVICE_URL}/api/shipments/create`,
-  PACKING_SLIP: (orderId: string) => `${ORDER_SERVICE_URL}/api/orders/${orderId}/packing-slip`,
-  SHIPPING_LABEL: (orderId: string) => `${ORDER_SERVICE_URL}/api/orders/${orderId}/shipping-label`,
+  ORDERS: isDevelopment ? `${ORDER_SERVICE_URL}/api/orders` : '/api/orders',
+  SHIPMENTS: isDevelopment ? `${ORDER_SERVICE_URL}/api/shipments` : '/api/shipments',
+  CONFIRM_DELIVERY: isDevelopment ? `${ORDER_SERVICE_URL}/api/orders/confirm-delivery` : '/api/orders/confirm-delivery',
+  REPORT_ANOMALY: isDevelopment ? `${ORDER_SERVICE_URL}/api/orders/report-anomaly` : '/api/orders/report-anomaly',
+  CREATE_SHIPMENT: isDevelopment ? `${ORDER_SERVICE_URL}/api/shipments/create` : '/api/shipments/create',
+  PACKING_SLIP: (orderId: string) => isDevelopment ? `${ORDER_SERVICE_URL}/api/orders/${orderId}/packing-slip` : `/api/orders/${orderId}/packing-slip`,
+  SHIPPING_LABEL: (orderId: string) => isDevelopment ? `${ORDER_SERVICE_URL}/api/orders/${orderId}/shipping-label` : `/api/orders/${orderId}/shipping-label`,
   
   // Users API
-  USERS: `${USER_SERVICE_URL}/api/users`,
-  WHOAMI: `${USER_SERVICE_URL}/api/users/whoami`,
+  USERS: isDevelopment ? `${USER_SERVICE_URL}/api/users` : '/api/users',
+  WHOAMI: isDevelopment ? `${USER_SERVICE_URL}/api/users/whoami` : '/api/users/whoami',
+  USER_BY_KEYCLOAK: (keycloakId: string) => isDevelopment ? `${USER_SERVICE_URL}/api/users/by-keycloak/${keycloakId}` : `/api/users/by-keycloak/${keycloakId}`,
   
   // Notifications API
-  NOTIFICATIONS: `${NOTIFICATION_SERVICE_URL}/api/notifications`,
-  NOTIFICATIONS_UNREAD: `${NOTIFICATION_SERVICE_URL}/api/notifications/unread`,
-  NOTIFICATIONS_UNREAD_COUNT: `${NOTIFICATION_SERVICE_URL}/api/notifications/unread/count`,
-  NOTIFICATION_MARK_READ: (id: number) => `${NOTIFICATION_SERVICE_URL}/api/notifications/${id}/read`,
-  NOTIFICATIONS_MARK_ALL_READ: `${NOTIFICATION_SERVICE_URL}/api/notifications/read-all`,
+  NOTIFICATIONS: isDevelopment ? `${NOTIFICATION_SERVICE_URL}/api/notifications` : '/api/notifications',
+  NOTIFICATIONS_UNREAD: isDevelopment ? `${NOTIFICATION_SERVICE_URL}/api/notifications/unread` : '/api/notifications/unread',
+  NOTIFICATIONS_UNREAD_COUNT: isDevelopment ? `${NOTIFICATION_SERVICE_URL}/api/notifications/unread/count` : '/api/notifications/unread/count',
+  NOTIFICATION_MARK_READ: (id: number) => isDevelopment ? `${NOTIFICATION_SERVICE_URL}/api/notifications/${id}/read` : `/api/notifications/${id}/read`,
+  NOTIFICATIONS_MARK_ALL_READ: isDevelopment ? `${NOTIFICATION_SERVICE_URL}/api/notifications/read-all` : '/api/notifications/read-all',
   
-  // Auth (Keycloak - uses same host as frontend or env var)
-  AUTH: `${API_BASE_URL}/auth`,
+  // Auth (Keycloak)
+  AUTH: isDevelopment ? `${API_BASE_URL}/auth` : '/auth',
 } as const;
 
 /**

@@ -31,7 +31,7 @@ export const NotificationBell: React.FC = () => {
 
       try {
         // Call user-service to get Users.id based on keycloak_id
-        const response = await fetch(`http://localhost:8082/api/users/by-keycloak/${keycloakId}`, {
+        const response = await fetch(API_ENDPOINTS.USER_BY_KEYCLOAK(keycloakId), {
           headers: {
             'Authorization': `Bearer ${token}`,
           }
@@ -108,6 +108,27 @@ export const NotificationBell: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  /**
+   * Mark all notifications as read
+   */
+  const markAllAsRead = async () => {
+    if (!dbUserId || unreadCount === 0) return;
+
+    try {
+      const response = await fetch(`${API_ENDPOINTS.NOTIFICATIONS_MARK_ALL_READ}?userId=${dbUserId}`, {
+        method: 'PUT',
+      });
+
+      if (response.ok) {
+        // Update local state
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
     }
   };
 
@@ -256,12 +277,22 @@ export const NotificationBell: React.FC = () => {
           </ListGroup>
         )}
 
-        <Dropdown.Divider />
-        <div className="text-center py-2">
-          <a href="/notifications" className="text-decoration-none small fw-semibold">
-            Ver todas as notificações
-          </a>
-        </div>
+        {notifications.length > 0 && unreadCount > 0 && (
+          <>
+            <Dropdown.Divider />
+            <div className="text-center py-2 px-3">
+              <button
+                className="btn btn-sm btn-outline-primary w-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  markAllAsRead();
+                }}
+              >
+                Marcar todas como lidas
+              </button>
+            </div>
+          </>
+        )}
       </Dropdown.Menu>
     </Dropdown>
   );

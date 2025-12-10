@@ -337,7 +337,12 @@ export function retrieveContext(userMessage: string): RAGContext[] {
           type: 'order_status',
           content: `Status: ${statusInfo.status}\n${statusInfo.description}\nPróximos passos: ${statusInfo.nextSteps.join(', ')}`,
           relevance: 0.9,
-          metadata: statusInfo as Record<string, unknown>
+          metadata: {
+            status: statusInfo.status,
+            description: statusInfo.description,
+            nextSteps: statusInfo.nextSteps.join(', '),
+            estimatedTime: statusInfo.estimatedTime
+          }
         });
       }
     });

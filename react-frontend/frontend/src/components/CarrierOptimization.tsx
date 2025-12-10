@@ -61,7 +61,7 @@ export default function CarrierOptimization() {
         const carriersData = Array.isArray(data) ? data : [];
         
         // Parse cost_history - backend sends it as JSON string
-        const parsedCarriers = carriersData.map((carrier: Record<string, unknown>) => {
+        const parsedCarriers: CarrierMetrics[] = carriersData.map((carrier: Record<string, unknown>): CarrierMetrics => {
           // Parse cost_history string to object
           if (carrier.cost_history && typeof carrier.cost_history === 'string') {
             try {
@@ -77,7 +77,7 @@ export default function CarrierOptimization() {
             carrier.cost_history = {};
           }
           
-          return carrier;
+          return carrier as unknown as CarrierMetrics;
         });
         
         console.log('Carriers data:', parsedCarriers);
@@ -86,7 +86,7 @@ export default function CarrierOptimization() {
         setCarriers(parsedCarriers);
         
         // Initialize all carriers as visible
-        setVisibleCarriers(new Set(parsedCarriers.map((c) => c.name)));
+        setVisibleCarriers(new Set<string>(parsedCarriers.map((c) => c.name)));
       } catch (e) {
         console.error("Carriers fetch failed:", e);
         setError(String(e));

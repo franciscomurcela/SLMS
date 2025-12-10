@@ -86,7 +86,7 @@ export default function CarrierOptimization() {
         setCarriers(parsedCarriers);
         
         // Initialize all carriers as visible
-        setVisibleCarriers(new Set(parsedCarriers.map((c: CarrierMetrics) => c.name)));
+        setVisibleCarriers(new Set(parsedCarriers.map((c) => c.name)));
       } catch (e) {
         console.error("Carriers fetch failed:", e);
         setError(String(e));

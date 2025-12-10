@@ -20,7 +20,7 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
   readAt?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface NotificationResponse {

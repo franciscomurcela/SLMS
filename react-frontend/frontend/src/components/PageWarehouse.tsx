@@ -32,7 +32,7 @@ function Warehouse() {
         if (response.ok) {
           const orders = await response.json();
           const pending = orders.filter(
-            (order: any) => order.status === "Pending"
+            (order: { status: string }) => order.status === "Pending"
           ).length;
           setPendingCount(pending);
         }

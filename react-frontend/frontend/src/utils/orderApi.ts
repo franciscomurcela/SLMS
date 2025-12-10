@@ -58,7 +58,7 @@ export async function fetchOrderByTrackingId(trackingId: string, authToken?: str
     
     // Find the order with matching orderId OR trackingId
     // In the database: order_id and tracking_id are different fields
-    const order = orders.find((o: any) => 
+    const order = orders.find((o: { orderId: string; trackingId: string }) => 
       o.orderId === trackingId || 
       o.trackingId === trackingId
     );

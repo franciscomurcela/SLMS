@@ -11,7 +11,7 @@ export interface RAGContext {
   type: 'order_status' | 'shipment_info' | 'delivery_process' | 'tracking' | 'faq' | 'features';
   content: string;
   relevance: number; // 0-1 score
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface OrderStatusInfo {

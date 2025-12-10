@@ -36,7 +36,7 @@ function Driver() {
         if (response.ok) {
           const shipments = await response.json();
           const total = shipments.reduce(
-            (sum: number, shipment: any) =>
+            (sum: number, shipment: { orders?: unknown[] }) =>
               sum + (shipment.orders?.length || 0),
             0
           );

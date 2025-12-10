@@ -147,7 +147,7 @@ export default function ReportGenerator({ carriers }: ReportGeneratorProps) {
     });
     
     // Box de insights
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    const finalY = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
     
     doc.setFillColor(255, 248, 220);
     doc.setDrawColor(warningColor[0], warningColor[1], warningColor[2]);
@@ -257,7 +257,7 @@ export default function ReportGenerator({ carriers }: ReportGeneratorProps) {
       });
       
       // Avaliação e recomendações
-      const evalY = (doc as any).lastAutoTable.finalY + 15;
+      const evalY = (doc as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15;
       
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');

@@ -135,7 +135,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
               "assistant"
             );
           }
-        } catch (error) {
+        } catch {
           setIsTyping(false);
           addMessage(
             `⚠️ **Erro ao buscar encomenda**\n\nOcorreu um erro ao tentar buscar informações da encomenda.\n\n🔄 Tente novamente ou contacte o suporte: suporte@slms.pt`,
@@ -166,7 +166,7 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
           if (response.ok) {
             const shipments = await response.json();
             const totalOrders = shipments.reduce(
-              (sum: number, shipment: any) =>
+              (sum: number, shipment: { orders?: unknown[] }) =>
                 sum + (shipment.orders?.length || 0),
               0
             );
@@ -221,13 +221,13 @@ const ChatAssistant: React.FC<ChatAssistantProps> = ({
             const orders = await response.json();
             const totalOrders = orders.length;
             const pendingOrders = orders.filter(
-              (order: any) => order.status === "Pending"
+              (order: { status: string }) => order.status === "Pending"
             ).length;
             const inTransitOrders = orders.filter(
-              (order: any) => order.status === "InTransit"
+              (order: { status: string }) => order.status === "InTransit"
             ).length;
             const deliveredOrders = orders.filter(
-              (order: any) => order.status === "Delivered"
+              (order: { status: string }) => order.status === "Delivered"
             ).length;
 
             setIsTyping(false);

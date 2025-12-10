@@ -61,7 +61,7 @@ export default function CarrierOptimization() {
         const carriersData = Array.isArray(data) ? data : [];
         
         // Parse cost_history - backend sends it as JSON string
-        const parsedCarriers = carriersData.map((carrier: any) => {
+        const parsedCarriers = carriersData.map((carrier: Record<string, unknown>) => {
           // Parse cost_history string to object
           if (carrier.cost_history && typeof carrier.cost_history === 'string') {
             try {

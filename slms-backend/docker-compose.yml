@@ -207,6 +207,14 @@ services:
       DATABASE_URL: jdbc:postgresql://slms-db:5432/slms_db
       DATABASE_USERNAME: slms_user
       DATABASE_PASSWORD: slms_password
+      # --- CORREÇÃO OTLP ---
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: notification-service
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_TRACES_SAMPLER: always_on
+      # ---------------------
       KEYCLOAK_JWK_SET_URI: "http://keycloak:8080/auth/realms/ESg204/protocol/openid-connect/certs"
       KEYCLOAK_ISSUER_URI: "http://localhost:8083/auth/realms/ESg204"
     ports:
@@ -216,6 +224,7 @@ services:
       - keycloak
     networks:
       - slms-network
+      - rede-obs
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8084/actuator/health || exit 1"]
       interval: 30s

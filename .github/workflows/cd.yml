@@ -221,6 +221,24 @@ jobs:
           echo "🧹 Cleaning up local images..."
           docker rmi ${ACR_LOGIN_SERVER}/slms-order-service:${{ github.sha }} || true
           docker rmi ${ACR_LOGIN_SERVER}/slms-order-service:latest || true
+      
+      - name: Build e Push - Notification Service
+        run: |
+          echo "🏗️ Building Notification Service..."
+          cd slms-backend/notification_service
+          
+          ACR_LOGIN_SERVER=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          
+          docker build -t ${ACR_LOGIN_SERVER}/slms-notification-service:${{ github.sha }} .
+          docker tag ${ACR_LOGIN_SERVER}/slms-notification-service:${{ github.sha }} ${ACR_LOGIN_SERVER}/slms-notification-service:latest
+          
+          echo "📤 Pushing Notification Service to ACR..."
+          docker push ${ACR_LOGIN_SERVER}/slms-notification-service:${{ github.sha }}
+          docker push ${ACR_LOGIN_SERVER}/slms-notification-service:latest
+          
+          echo "🧹 Cleaning up local images..."
+          docker rmi ${ACR_LOGIN_SERVER}/slms-notification-service:${{ github.sha }} || true
+          docker rmi ${ACR_LOGIN_SERVER}/slms-notification-service:latest || true
 
       - name: Build e Push - Frontend
         timeout-minutes: 30
@@ -519,6 +537,7 @@ jobs:
             - 🔧 Backend (user_service)
             - 📦 Carrier Service
             - 📋 Order Service
+            - 🔔 Notification Service
             - 🔑 Keycloak (Auth)
             - 🗄️ PostgreSQL Database
             - 🔭 LGTM Observability Stack

@@ -433,6 +433,104 @@ resource "azurerm_container_app" "order_service" {
   }
 }
 
+# Notification Service
+resource "azurerm_container_app" "notification_service" {
+  name                         = "slms-notification-service"
+  container_app_environment_id = data.azurerm_container_app_environment.env.id
+  resource_group_name          = azurerm_resource_group.rg.name
+  revision_mode                = "Single"
+
+  template {
+    container {
+      name   = "notification-service"
+      image  = "${azurerm_container_registry.acr.login_server}/slms-notification-service:${var.image_tag}"
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name  = "SPRING_APPLICATION_NAME"
+        value = "notification_service"
+      }
+
+      env {
+        name  = "SERVER_PORT"
+        value = "8084"
+      }
+
+      env {
+        name  = "DATABASE_URL"
+        value = "jdbc:postgresql://${azurerm_postgresql_flexible_server.db.fqdn}:5432/${azurerm_postgresql_flexible_server_database.slms_db.name}"
+      }
+
+      env {
+        name  = "DATABASE_USERNAME"
+        value = "slmsadmin"
+      }
+
+      env {
+        name        = "DATABASE_PASSWORD"
+        secret_name = "db-password"
+      }
+
+      env {
+        name  = "KEYCLOAK_JWK_SET_URI"
+        value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204/protocol/openid-connect/certs"
+      }
+
+      env {
+        name  = "KEYCLOAK_ISSUER_URI"
+        value = "https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth/realms/ESg204"
+      }
+
+      # Configuração OpenTelemetry
+      env {
+        name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+        value = var.otel_exporter_endpoint
+      }
+      
+      env {
+        name  = "OTEL_TRACES_SAMPLER"
+        value = "always_on"
+      }
+    }
+
+    min_replicas = 1
+    max_replicas = 2
+  }
+
+  secret {
+    name  = "db-password"
+    value = var.db_password
+  }
+  
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.acr.admin_password
+  }
+
+  registry {
+    server               = azurerm_container_registry.acr.login_server
+    username             = azurerm_container_registry.acr.admin_username
+    password_secret_name = "acr-password"
+  }
+
+  ingress {
+    external_enabled = false
+    target_port      = 8084
+    
+    traffic_weight {
+      latest_revision = true
+      percentage      = 100
+    }
+  }
+
+  tags = {
+    Service     = "NotificationService"
+    ManagedBy   = "Terraform"
+    Environment = "Production"
+  }
+}
+
 # Keycloak
 data "azurerm_container_app" "keycloak" {
   name                = "slms-keycloak"
@@ -586,6 +684,27 @@ resource "azurerm_application_insights_web_test" "health_carrier" {
 <WebTest Name="carrier-health" Id="f8559510-3a51-4694-8253-293127695b03" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
   <Items>
     <Request Method="GET" Guid="c8559510-3a51-4694-8253-293127695b03" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8080/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
+  </Items>
+</WebTest>
+XML
+}
+
+# 4. Health Check - Notification Service (Porta 8084)
+resource "azurerm_application_insights_web_test" "health_notification" {
+  name                    = "HealthCheck-NotificationService-TF"
+  location                = azurerm_resource_group.rg.location
+  resource_group_name     = azurerm_resource_group.rg.name
+  application_insights_id = data.azurerm_application_insights.slms_observability.id
+  kind                    = "ping"
+  frequency               = 300
+  timeout                 = 60
+  enabled                 = true
+  geo_locations           = ["us-tx-sn1-azr", "us-il-ch1-azr"]
+
+  configuration = <<XML
+<WebTest Name="notification-health" Id="g8559510-3a51-4694-8253-293127695b04" Enabled="True" CssProjectStructure="" CssIteration="" Timeout="60" WorkItemIds="" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Items>
+    <Request Method="GET" Guid="d8559510-3a51-4694-8253-293127695b04" Version="1.1" Url="http://${data.azurerm_public_ip.runner_ip.ip_address}:8084/actuator/health" ThinkTime="0" Timeout="60" ParseDependentRequests="False" FollowRedirects="True" RecordResult="True" Cache="False" ResponseTimeGoal="0" Encoding="utf-8" ExpectedHttpStatusCode="200" ExpectedResponseUrl="" ReportingName="" IgnoreHttpStatusCode="False" />
   </Items>
 </WebTest>
 XML

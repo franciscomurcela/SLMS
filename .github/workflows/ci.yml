@@ -95,6 +95,13 @@ jobs:
             ./mvnw clean test
           fi
       
+      - name: Build and Test notification_service (Java 17)
+        if: matrix.java == 17
+        shell: bash
+        run: |
+          cd notification_service
+          mvn clean test --no-transfer-progress
+      
       # Gerar relatórios Allure para backend
       - name: Gerar relatório Allure (user_service)
         if: always() && matrix.java == 17
@@ -156,6 +163,26 @@ jobs:
           fi
         continue-on-error: true
       
+      - name: Gerar relatório Allure (notification_service)
+        if: always() && matrix.java == 17
+        shell: bash
+        run: |
+          cd notification_service
+          # Mover allure-results para target/ se necessário
+          if [ -d "allure-results" ] && [ ! -d "target/allure-results" ]; then
+            mkdir -p target
+            mv allure-results target/
+            echo "Moved allure-results to target/"
+          fi
+          # Gerar relatório se existirem resultados
+          if [ -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
+            mvn allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for notification_service - skipping report generation"
+          fi
+        continue-on-error: true
+      
       # Publicar relatórios Allure do backend
       - name: Publicar relatório Allure (user_service)
         uses: actions/upload-artifact@v4
@@ -181,6 +208,14 @@ jobs:
           path: slms-backend/order_service/demo/target/site/allure-maven-plugin
           if-no-files-found: ignore
       
+      - name: Publicar relatório Allure (notification_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-report-notification_service-ci-java${{ matrix.java }}
+          path: slms-backend/notification_service/target/site/allure-maven-plugin
+          if-no-files-found: ignore
+      
       # Upload allure-results para uso no container
       - name: Upload Allure results (user_service)
         uses: actions/upload-artifact@v4
@@ -204,6 +239,14 @@ jobs:
         with:
           name: allure-results-order_service
           path: slms-backend/order_service/demo/allure-results
+          if-no-files-found: ignore
+      
+      - name: Upload Allure results (notification_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-results-notification_service
+          path: slms-backend/notification_service/allure-results
           if-no-files-found: ignore
 
   frontend:

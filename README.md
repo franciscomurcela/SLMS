@@ -1,304 +1,310 @@
 # SLMS - Shipping and Logistics Management System
 
-Software Engineering project for group 204.
+Sistema de gestão de encomendas e logística baseado em microserviços, desenvolvido com Spring Boot, React TypeScript e Keycloak.
 
-## Team Members
+**Arquitetura:** Backend (Java 17 + Spring Boot) + Frontend (React + TypeScript) + PostgreSQL + Keycloak OAuth2
 
-| Function          | Name                | Student Number   |
-|-------------------|---------------------|------------------|
-| Scrum Master      | Gonçalo Lima        | 108254           |
-| Product Owner     | Xavier Machado      | 108019           |
-| QA Engineer       | João Rodrigues      | 103947           |
-| Service Analyst   | André Miragaia      | 108412           |
-| DevOps Engineer   | Francisco Murcela   | 108815           |
+---
 
-## Project Overview
+## 📋 Requisitos do Sistema
 
-SLMS is a microservices-based shipping and logistics management system designed to handle order processing, carrier management, user authentication, and real-time tracking of shipments.
+- **OS**: Ubuntu Server 24.04.3 LTS (clean installation)
+- **RAM**: Mínimo 4GB (recomendado 8GB)
+- **Disco**: Mínimo 20GB livres
+- **CPU**: Intel i7 ou equivalente
+- **Rede**: Ligação à internet para download de pacotes
+- **Utilizador**: Com privilégios sudo
 
-## Architecture
+---
 
-The system follows a microservices architecture with the following components:
+## 🚀 Instalação em Ubuntu Server 24.04.3 LTS (Clean)
 
-- **Backend Services** (Spring Boot + Java 21)
-  - Order Service (Port 8081)
-  - User Service (Port 8082)
-  - Carrier Service (Port 8080)
-  
-- **Frontend** (React + TypeScript + Vite)
-  - Web Application (Port 5173)
-  
-- **Authentication**
-  - Keycloak (Port 8083)
-  
-- **Databases**
-  - PostgreSQL instances for each service
-  - Supabase for centralized data storage
+Esta secção assume um **servidor completamente zerado** sem Docker, Git, Node.js ou qualquer ferramenta de desenvolvimento instalada.
 
-## Prerequisites
+### Opção 1: Instalação Automática Completa (Recomendado)
 
-Before running the project, ensure you have the following installed:
-
-- **Docker** (v20.10 or higher)
-- **Docker Compose** (v2.0 or higher)
-- **Node.js** (v18 or higher)
-- **npm** (v9 or higher)
-
-For Windows users, PowerShell 5.1 or higher is required.
-For Linux/macOS users, Bash is required.
-
-## Quick Start
-
-### Reinicialização Completa do Sistema
-
-Para reiniciar todo o sistema (backend + frontend + base de dados):
+**Passo 1:** Instalar Git (necessário para clonar o repositório)
 
 ```bash
-cd /home/xavier/MECT/group-project-es2526_204
+sudo apt update
+sudo apt install -y git
+```
+
+**Passo 2:** Clonar o repositório
+
+```bash
+cd ~
+git clone https://github.com/detiuaveiro/group-project-es2526_204.git
+cd group-project-es2526_204
+```
+
+**Passo 3:** Executar o script de instalação completa
+
+```bash
+chmod +x setup-from-scratch.sh
+./setup-from-scratch.sh
+```
+
+Este script irá:
+- ✅ Atualizar o sistema
+- ✅ Instalar Docker, Docker Compose e Node.js 20.x
+- ✅ Executar `quick-start.sh` automaticamente para iniciar todos os serviços
+- ⏱️ **Tempo estimado: 5-10 minutos**
+
+**Após a instalação**, faça logout e login novamente para que o grupo `docker` seja aplicado.
+
+---
+
+### Opção 2: Instalação Manual Passo-a-Passo
+
+Se preferir instalar cada componente manualmente:
+
+### Passo 1: Atualizar o Sistema
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y curl wget ca-certificates gnupg lsb-release software-properties-common apt-transport-https
+```
+
+---
+
+### Passo 2: Instalar Git
+
+```bash
+sudo apt install -y git
+git --version  # Verificar instalação
+```
+
+---
+
+### Passo 3: Instalar Docker e Docker Compose
+
+```bash
+# Remover versões antigas (se existirem)
+sudo apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+
+# Adicionar chave GPG oficial do Docker
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Adicionar repositório do Docker
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Instalar Docker Engine e Docker Compose
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Adicionar utilizador ao grupo docker
+sudo usermod -aG docker $USER
+
+# Ativar e iniciar Docker
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Verificar instalação
+docker --version
+docker compose version
+```
+
+**⚠️ IMPORTANTE:** Após adicionar o utilizador ao grupo docker, faça logout e login novamente, ou execute:
+```bash
+newgrp docker
+```
+
+---
+
+### Passo 4: Instalar Node.js 20.x e npm
+
+```bash
+# Adicionar repositório NodeSource para Node.js 20.x
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+
+# Instalar Node.js e npm
+sudo apt install -y nodejs
+
+# Verificar instalação
+node --version  # Deve ser v20.x.x
+npm --version   # Deve ser 10.x.x ou superior
+```
+
+---
+
+### Passo 5: Clonar o Repositório
+
+```bash
+cd ~
+git clone https://github.com/detiuaveiro/group-project-es2526_204.git
+cd group-project-es2526_204
+```
+
+---
+
+### Passo 6: Executar Instalação Automática
+
+```bash
+# Dar permissões aos scripts
+chmod +x quick-start.sh quick-stop.sh restart.sh
+
+# Executar setup automático
+./quick-start.sh
+```
+
+**⏱️ Aguarde 5-10 minutos.** O script `quick-start.sh` irá automaticamente:
+
+1. ✅ **Validar pré-requisitos** - Verifica se Docker, Docker Compose e Node.js 18+ estão instalados
+2. ✅ **Criar ficheiros de ambiente** - Gera `.env` com credenciais da BD e API keys (Gemini, Flagsmith, Google Maps) hardcoded para ambiente académico
+3. ✅ **Criar rede Docker de observabilidade** - Cria rede `rede-obs` para OpenTelemetry (a rede `slms-network` é criada automaticamente pelo backend)
+4. ✅ **Iniciar backend** - Levanta PostgreSQL, Keycloak e 3 microserviços Spring Boot
+5. ✅ **Importar base de dados** - Importa schema e dados de teste automaticamente
+6. ✅ **Iniciar frontend** - Instala dependências npm e levanta aplicação React
+
+---
+
+### Aceder ao Sistema
+
+Após o `quick-start.sh` concluir com sucesso:
+
+- **Frontend (Aplicação Principal)**: `http://<ip-do-servidor>:3000`
+- **Keycloak Admin Console**: `http://<ip-do-servidor>:8083/auth/admin` (admin/admin)
+
+**Para obter o IP do servidor:**
+```bash
+hostname -I | awk '{print $1}'
+```
+
+---
+
+## 👥 Credenciais de Teste
+
+Todos os utilizadores têm **password igual ao username**:
+
+| Username              | Password              | Role                          | 
+| --------------------- | --------------------- | ----------------------------- |
+| `anacosta`            | `anacosta`            | Cliente (Customer)            |
+| `mikedias`            | `mikedias`            | Cliente (Customer)            | 
+| `felipegomes`         | `felipegomes`         | Cliente (Customer)            |
+| `viniciuslima`        | `viniciuslima`        | Cliente (Customer)            |
+| `marionunes`          | `marionunes`          | Motorista (Driver)            | 
+| `lucaspereira`        | `lucaspereira`        | Motorista (Driver)            | 
+| `marianasilva`        | `marianasilva`        | Motorista (Driver)            | 
+| `ricardocastro`       | `ricardocastro`       | Armazém (Warehouse)           | 
+| `fabiofigueiredo`     | `fabiofigueiredo`     | Gestor Logística (Manager)    | 
+| `camilasantos`        | `camilasantos`        | Customer Service (CSR)        | 
+
+**🔍 Tracking IDs de teste público:**
+
+- `d0d1fdf3-5e2f-420f-87ac-0396833b0aca`
+- `9315a70a-ae2e-4a64-8d67-07508155500d`
+- `039e0cfa-a791-416f-bfc9-dece9c6c5068`
+- `71e7f15d-32c8-4643-ae82-07c7922c2f15`
+- `ae939af6-a572-4f88-9b51-3e253e288371`
+- `c6d018e9-d265-4679-bc40-d42e5f6ed46b`
+
+---
+
+## 🛠️ Gestão de Serviços
+
+### Parar Todos os Serviços
+
+```bash
+./quick-stop.sh
+```
+
+### Reiniciar com Reimport da Base de Dados
+
+```bash
 ./restart.sh
 ```
-
-Este script:
-1. Para todos os serviços (frontend e backend)
-2. Reconstrói e inicia o backend
-3. Aguarda 15 segundos para estabilização
-4. Importa schema e dados da base de dados
-5. Reconstrói e inicia o frontend
-6. Apresenta estado final dos containers
-
-### Início Manual
-
-### 1. Initial Setup (First Time Only)
-
-Before starting the services for the first time, you need to configure environment variables and Keycloak settings.
-
-#### Step 1.1: Create Environment Files
-
-The project uses environment variables that are not committed to the repository for security reasons. Create them by running:
-
-**Windows (PowerShell):**
-```powershell
-.\scripts\create-env.ps1
-```
-
-**Linux/macOS (Bash):**
-```bash
-chmod +x ./scripts/create-env.sh
-./scripts/create-env.sh
-```
-
-This script will create the necessary `.env` files with database credentials and other configuration.
-
-#### Step 1.2: Configure Keycloak
-
-After the backend services are running for the first time, you need to import the Keycloak realm configuration:
-
-**Windows (PowerShell):**
-```powershell
-cd slms-backend
-.\scripts\reimport-keycloak.ps1
-```
-
-**Linux/macOS (Bash):**
-```bash
-cd slms-backend
-chmod +x ./scripts/reimport-keycloak.sh
-./scripts/reimport-keycloak.sh
-```
-
-This script will:
-- Import the ESg204 realm configuration
-- Configure all test users with their roles
-- Set up authentication clients for the frontend
-
-
-### 2. Start Backend Services
-
-The project includes automated scripts to start all backend services with a single command.
-
-**Windows (PowerShell):**
-```powershell
-.\scripts\start-project.ps1
-```
-
-**Linux/macOS (Bash):**
-```bash
-./scripts/start-project.sh
-```
-
-This script will:
-- Create necessary environment files
-- Start all Docker containers (databases, backend services, Keycloak)
-- Wait for services to become healthy
-- Display service status and access URLs
-
-**Note:** First-time startup may take 5-10 minutes as Docker images need to be downloaded and built.
-
-### 3. Start Frontend Application
-
-After the backend services are running, start the frontend:
-
-**Windows (PowerShell):**
-```powershell
-.\scripts\start-frontend.ps1
-```
-
-**Linux/macOS (Bash):**
-```bash
-./scripts/start-frontend.sh
-```
-
-This script will:
-- Navigate to the frontend directory
-- Install npm dependencies (if needed)
-- Start the development server
-
-The frontend will be available at: `http://localhost:5173`
-
-## Project Structure
+## 📊 Arquitetura do Sistema
 
 ```
-group-project-es2526_204/
-├── slms-backend/
-│   ├── order_service/          # Order management microservice
-│   ├── user_service/            # User management microservice
-│   ├── carrier_service/         # Carrier management microservice
-│   ├── authentication_service/  # Keycloak configuration
-│   ├── config/                  # Shared configuration files
-│   ├── keycloak-init/           # Keycloak realm export
-│   └── docker-compose.yml       # Backend services orchestration
-├── react-frontend/
-│   └── frontend/                # React application
-│       ├── src/
-│       │   ├── components/      # React components
-│       │   ├── config/          # Frontend configuration
-│       │   └── context/         # React context providers
-│       ├── package.json
-│       └── vite.config.ts
-└── scripts/
-    ├── start-project.ps1        # Windows backend startup script
-    ├── start-project.sh         # Linux/macOS backend startup script
-    ├── start-frontend.ps1       # Windows frontend startup script
-    └── start-frontend.sh        # Linux/macOS frontend startup script
+┌─────────────────────────────────────────────────────────────┐
+│                    SLMS System Architecture                  │
+└─────────────────────────────────────────────────────────────┘
+
+Cliente (Browser)
+    ↓
+Frontend Container (React + Nginx) - Port 3000
+    ├── Rede: slms-network (comunicação com backend)
+    └── Rede: rede-obs (observabilidade/telemetria)
+    ↓
+Backend Microservices (na rede slms-network):
+  ├── User Service (Port 8082)      - Gestão de utilizadores + AI Chatbot
+  ├── Order Service (Port 8081)     - Gestão de encomendas + Shipments
+  └── Carrier Service (Port 8080)   - Gestão de transportadoras
+    ↓
+PostgreSQL Database (Port 5434)     - Dados principais (slms_db)
+Keycloak (Port 8083)                - Autenticação OAuth2/JWT
+PostgreSQL Keycloak (Port 5433)     - Dados do Keycloak
+
+Redes Docker:
+  • slms-network: Comunicação entre backend services (bridge)
+  • rede-obs: Observabilidade e telemetria OpenTelemetry
 ```
 
-## Available Services
+### Portas Utilizadas
 
-Once all services are running, you can access them at the following URLs:
+| Serviço            | Porta Externa | Porta Interna |
+|--------------------|---------------|---------------|
+| Frontend (Nginx)   | 3000          | 80            |
+| User Service       | 8082          | 8082          |
+| Order Service      | 8081          | 8081          |
+| Carrier Service    | 8080          | 8080          |
+| Keycloak           | 8083          | 8080          |
+| PostgreSQL SLMS    | 5434          | 5432          |
+| PostgreSQL Keycloak| 5433          | 5432          |
 
-| Service          | URL                        | Description                          |
-|------------------|----------------------------|--------------------------------------|
-| Frontend         | http://localhost:5173      | Main web application                 |
-| Order Service    | http://localhost:8081      | Order management API                 |
-| User Service     | http://localhost:8082      | User management API                  |
-| Carrier Service  | http://localhost:8080      | Carrier management API               |
-| Keycloak         | http://localhost:8083      | Authentication and authorization     |
+---
 
-### Default Keycloak Credentials
+## 🔐 Notas de Segurança
 
-#### Admin Console
-- **URL:** http://localhost:8083/admin
-- **Username:** `admin`
-- **Password:** `admin`
+**⚠️ Este projeto utiliza credenciais de desenvolvimento/teste hardcoded para facilitar a avaliação académica.**
 
-#### Test User Accounts
+**Para ambiente de produção:**
 
-The system includes pre-configured test accounts for each role. All passwords are the same as the username for testing purposes.
+1. Alterar todas as passwords (PostgreSQL, Keycloak, utilizadores)
+2. Configurar HTTPS/SSL com certificados válidos
+3. Usar secrets management (HashiCorp Vault, AWS Secrets Manager)
+4. Configurar firewall (`ufw`) para limitar acessos
+5. Implementar backups automáticos da base de dados
+6. Rodar API keys do Gemini, Google Maps e Flagsmith
+7. Configurar rate limiting nos endpoints
+8. Ativar logging e monitoring (Prometheus + Grafana)
 
-| Role              | Username          | Password          | Access Level                                    |
-|-------------------|-------------------|-------------------|-------------------------------------------------|
-| **Driver**        | `marionunes`      | `marionunes`      | Driver manifest                                 |
-|                   | `lucaspereira`    | `lucaspereira`    | Driver manifest                                 |
-|                   | `marianasilva`    | `marianasilva`    | Driver manifest                                 |
-| **Customer**      | `mikedias`        | `mikedias`        | Order tracking                                  |
-|                   | `anacosta`        | `anacosta`        | Order tracking                                  |
-|                   | `felipegomes`     | `felipegomes`     | Order tracking                                  |
-|                   | `viniciuslima`    | `viniciuslima`    | Order tracking                                  |
-| **Manager**       | `fabiofigueiredo` | `fabiofigueiredo` | Analytics                                       |
-| **Warehouse**     | `ricardocastro`   | `ricardocastro`   | Order preparation                               |
-| **Csr**           | `camilasantos`    | `camilasantos`    | Order tracking                                  |
+---
 
-### Authentication and Authorization
+## 📚 Documentação Técnica
 
-The application uses Keycloak for authentication and role-based access control (RBAC). Each user role has access to specific routes and features:
+Para **explicação detalhada da arquitetura, funcionalidades, decisões técnicas e testes**, consulte:
 
-#### Route Protection by Role
+👉 **[docs/relatorio-final.pdf](docs/relatorio-final.pdf)** - Relatório completo do projeto
 
-- **Driver Routes** (`/driver`)
-  - Accessible only to users with the `Driver` role
+---
 
-- **Customer Routes** (`/customer`)
-  - Accessible only to users with the `Costumer` role
+## 🎓 Informação Académica
 
-- **Manager Routes** (`/logisticsmanager`)
-  - Accessible only to users with the `Manager` role
+**Projeto de Engenharia de Software 2025/2026 - Grupo 204**  
+**Universidade de Aveiro - Departamento de Eletrónica, Telecomunicações e Informática**
 
-- **Warehouse Routes** (`/warehouse`)
-  - Accessible only to users with the `Warehouse` role
+### Equipa
 
-- **Carrier Routes** (`/customerservicerep`)
-  - Accessible only to users with the `Csr` (Costumer service representative) role
+| Função            | Nome                | Número    |
+|-------------------|---------------------|-----------|
+| Scrum Master      | Gonçalo Lima        | 108254    |
+| Product Owner     | Xavier Machado      | 108019    |
+| QA Engineer       | João Rodrigues      | 103947    |
+| Service Analyst   | André Miragaia      | 108412    |
+| DevOps Engineer   | Francisco Murcela   | 108815    |
 
+### Repositório
 
-#### How Role Protection Works
+- **GitHub**: https://github.com/detiuaveiro/group-project-es2526_204
+---
 
-1. **User logs in** through Keycloak at `http://localhost:8083`
-2. **Keycloak issues a JWT token** containing user information and assigned roles
-3. **Frontend validates the token** and checks user roles
-4. **React Router redirects** users to their role-specific dashboard
-5. **Backend APIs verify** the JWT token and role claims before processing requests
-6. **Unauthorized access attempts** are automatically redirected to the login page
-
-
-
-### Login Process
-
-1. Access the frontend at `http://localhost:5173` ou `http://localhost:3000` (Docker)
-2. Click on the login button or navigate to a protected route
-3. You will be redirected to Keycloak login page
-4. Enter credentials from the test accounts table above
-5. Upon successful authentication, you will be redirected to your role-specific dashboard
-
-## Funcionalidades Principais
-
-### Chatbot de Rastreamento
-O sistema inclui um assistente virtual integrado na página do cliente que permite consultar informações sobre encomendas através de conversação natural.
-
-**Características:**
-- Deteção automática de Tracking ID (UUID)
-- Suporte para Order ID e Tracking ID
-- Informações em tempo real sobre estado das encomendas
-- Respostas contextualizadas
-
-**Documentação completa:** Ver [CHATBOT.md](CHATBOT.md)
-
-**Exemplo de uso:**
-```
-Utilizador: d0d1fdf3-5e2f-420f-87ac-0396833b0aca
-Bot: 🟡 Informações da Encomenda
-     Tracking ID: d0d1fdf3-5e2f-420f-87ac-0396833b0aca
-     Status: Pending
-     Origem: Rua das Flores, 120
-     Destino: Rua das Acácias, 145
-     Transportadora: DHL Express
-     ...
-```
-
-### Service Health Checks
-
-To verify all services are running correctly:
-
-```bash
-cd slms-backend
-docker-compose ps
-```
-
-All services should show status as "Up" and "healthy".
-
-## Additional Resources
-
-- [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/)
-- [React Documentation](https://react.dev/)
-- [Vite Documentation](https://vitejs.dev/)
-- [Keycloak Documentation](https://www.keycloak.org/documentation)
-- [Docker Documentation](https://docs.docker.com/)
+Projeto académico desenvolvido para a unidade curricular de Engenharia de Software.  
+Todos os direitos reservados © 2025 Grupo 204 - Universidade de Aveiro.

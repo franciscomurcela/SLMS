@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+  "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+  "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<module name="Checker">
+  <property name="charset" value="UTF-8"/>
+  <property name="severity" value="warning"/>
+  <property name="fileExtensions" value="java, properties, xml"/>
+
+  <!-- Relaxed ruleset for ES204 project -->
+  
+  <!-- Line length: increase to 120 instead of 80 -->
+  <module name="LineLength">
+    <property name="max" value="120"/>
+    <property name="severity" value="warning"/>
+  </module>
+  
+  <module name="TreeWalker">
+
+    <!-- Naming conventions -->
+    <module name="ConstantName">
+      <!-- Allow 'log' as constant name (common for loggers) -->
+      <property name="format" value="^([A-Z][A-Z0-9]*(_[A-Z0-9]+)*|log)$"/>
+    </module>
+
+    <!-- Whitespace -->
+    <module name="WhitespaceAround">
+      <property name="allowEmptyConstructors" value="true"/>
+      <property name="allowEmptyMethods" value="true"/>
+      <property name="allowEmptyTypes" value="true"/>
+    </module>
+
+    <!-- Imports -->
+    <module name="AvoidStarImport">
+      <property name="severity" value="warning"/>
+    </module>
+    <module name="UnusedImports"/>
+
+    <!-- DISABLE strict Javadoc requirements -->
+    <!-- Only require Javadoc for public APIs -->
+    <module name="MissingJavadocMethod">
+      <property name="scope" value="public"/>
+      <property name="severity" value="warning"/>
+    </module>
+    <module name="MissingJavadocType">
+      <property name="scope" value="public"/>
+      <property name="severity" value="warning"/>
+    </module>
+
+    <!-- DISABLE parameter final requirement -->
+    <!-- This is too strict for practical development -->
+    
+    <!-- DISABLE design for extension checks -->
+    <!-- Too strict for DTOs and service classes -->
+
+    <!-- Basic code quality checks -->
+    <module name="NeedBraces"/>
+    <module name="EmptyBlock"/>
+  </module>
+
+  <!-- Check for trailing spaces (but as warning) -->
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="message" value="Line has trailing spaces."/>
+    <property name="severity" value="warning"/>
+  </module>
+
+  <!-- DISABLE package naming check -->
+  <!-- Allow es204.user_service pattern -->
+</module>

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { getRouteForRole } from "../config/roles.config";
 
 const role: string = Roles.ROLE_LOGIN;

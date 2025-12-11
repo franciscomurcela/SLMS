@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { FeatureFlagsContext } from './FeatureFlagsContextDef';
 import type { ReactNode } from 'react';
 import flagsmith from 'flagsmith';
 
-interface FeatureFlagsContextType {
+export interface FeatureFlagsContextType {
   isFeatureEnabled: (flagKey: string) => boolean;
   isLoading: boolean;
   error: string | null;
 }
 
-const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(undefined);
 
 interface FeatureFlagsProviderProps {
   children: ReactNode;
@@ -38,11 +38,10 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ chil
         await flagsmith.init({
           environmentID: FLAGSMITH_ENVIRONMENT_KEY,
           cacheFlags: true,
-          onChange: (_oldFlags: any, params: any) => {
-            console.log('🔄 Feature flags atualizadas pelo Flagsmith:', params.flags);
+          onChange: () => {
+            console.log('🔄 Feature flags atualizadas pelo Flagsmith');
           },
         });
-
         // Obter flags iniciais
         const allFlags = flagsmith.getAllFlags();
         console.log('✅ Flagsmith inicializado com sucesso!');
@@ -89,16 +88,4 @@ export const FeatureFlagsProvider: React.FC<FeatureFlagsProviderProps> = ({ chil
   );
 };
 
-export const useFeatureFlags = (): FeatureFlagsContextType => {
-  const context = useContext(FeatureFlagsContext);
-  if (context === undefined) {
-    throw new Error('useFeatureFlags deve ser usado dentro de um FeatureFlagsProvider');
-  }
-  return context;
-};
-
-// Hook específico para verificar uma feature
-export const useFeatureFlag = (flagKey: string): boolean => {
-  const { isFeatureEnabled } = useFeatureFlags();
-  return isFeatureEnabled(flagKey);
-};
+// Hooks utilitários movidos para 'featureFlagsHooks.ts'

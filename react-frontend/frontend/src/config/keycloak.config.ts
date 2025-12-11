@@ -1,9 +1,10 @@
 // Keycloak configuration
-// Use same-origin URL through Nginx proxy to avoid CORS and secure context issues
+// Use environment variable or fallback to relative path (proxied by nginx)
 const getKeycloakUrl = () => {
-  // Always use relative path /auth when behind Nginx
-  // This makes it same-origin and works without HTTPS
-  return `${window.location.protocol}//${window.location.host}/auth`;
+  // VITE_KEYCLOAK_URL can be:
+  // - Local: /auth (nginx proxies to localhost:8083/auth)
+  // - Cloud: https://slms-keycloak.calmglacier-aaa99a56.francecentral.azurecontainerapps.io/auth
+  return import.meta.env.VITE_KEYCLOAK_URL || '/auth';
 };
 
 export const keycloakConfig = {
@@ -13,20 +14,9 @@ export const keycloakConfig = {
 };
 
 export const keycloakInitOptions = {
-  // Don't auto-login, just check if there's an existing session
-  onLoad: 'check-sso' as const,
+  onLoad: undefined,
   checkLoginIframe: false,
-  // Disable silent check SSO to avoid CORS issues
   silentCheckSsoRedirectUri: undefined,
-  // Enable response mode to handle callback properly
   responseMode: 'fragment' as const,
+  checkLoginIframeInterval: undefined,
 };
-
-// Backend API base URL - user_service handles authentication
-// Use same-origin URL through Nginx proxy
-const getBackendUrl = () => {
-  // Always use relative path /api when behind Nginx
-  return `${window.location.protocol}//${window.location.host}/api`;
-};
-
-export const BACKEND_URL = getBackendUrl();

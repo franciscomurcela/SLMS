@@ -3,8 +3,9 @@ import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import { useNavigate } from "react-router-dom";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { getRouteForRole } from "../config/roles.config";
+import { API_ENDPOINTS } from "../config/api.config";
 import "./TrackingPortal.css";
 
 const role: string = Roles.ROLE_TRACKING_PORTAL;
@@ -22,6 +23,7 @@ interface TrackingResult {
   proofOfDelivery: string | null;
   carrierName: string | null;
   carrierId: string | null;
+  errorMessage: string | null;
 }
 
 function TrackingPortal() {
@@ -53,7 +55,7 @@ function TrackingPortal() {
 
     try {
       const response = await fetch(
-        `/api/orders/track/${trackingId.trim()}`,
+        `${API_ENDPOINTS.ORDERS}/track/${trackingId.trim()}`,
         {
           method: "GET",
           headers: {
@@ -105,6 +107,7 @@ function TrackingPortal() {
       InTransit: { class: "bg-info", text: "Em Trânsito" },
       Delivered: { class: "bg-success", text: "Entregue" },
       Cancelled: { class: "bg-danger", text: "Cancelada" },
+      Failed: { class: "bg-danger", text: "Falhada" },
     };
 
     const statusInfo = statusMap[status] || { class: "bg-secondary", text: status };
@@ -307,6 +310,21 @@ function TrackingPortal() {
                 </div>
               </div>
 
+              {/* Error Message for Failed Status */}
+              {trackingResult.status === 'Failed' && trackingResult.errorMessage && (
+                <div className="error-section mt-4">
+                  <h5 className="mb-3">
+                    <i className="bi bi-exclamation-triangle me-2"></i>Motivo da Falha
+                  </h5>
+                  <div className="alert alert-danger">
+                    <div className="d-flex align-items-center">
+                      <i className="bi bi-x-circle-fill me-2"></i>
+                      <strong>{trackingResult.errorMessage}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Proof of Delivery */}
               {trackingResult.proofOfDelivery && (
                 <div className="pod-section mt-4">
@@ -314,7 +332,30 @@ function TrackingPortal() {
                     <i className="bi bi-file-earmark-check me-2"></i>Comprovativo de Entrega
                   </h5>
                   <div className="alert alert-success">
-                    <p className="mb-0">{trackingResult.proofOfDelivery}</p>
+                    <div className="d-flex flex-column align-items-center">
+                      <img 
+                        src={`data:image/png;base64,${trackingResult.proofOfDelivery}`}
+                        alt="Comprovativo de Entrega"
+                        className="img-fluid rounded border"
+                        style={{ maxWidth: '400px', maxHeight: '300px' }}
+                        onError={(e) => {
+                          // If image fails to load, show as text (fallback)
+                          e.currentTarget.style.display = 'none';
+                          const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (nextElement) nextElement.style.display = 'block';
+                        }}
+                      />
+                      <p 
+                        className="mb-0 mt-2" 
+                        style={{ display: 'none', fontSize: '0.8em', color: '#666' }}
+                      >
+                        {trackingResult.proofOfDelivery.substring(0, 100)}...
+                      </p>
+                      <small className="text-muted mt-2">
+                        <i className="bi bi-info-circle me-1"></i>
+                        Comprovativo registado pelo motorista
+                      </small>
+                    </div>
                   </div>
                 </div>
               )}

@@ -10,10 +10,12 @@ services:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://slms-db:5432/slms_db
+      - SPRING_DATASOURCE_USERNAME=slms_user
+      - SPRING_DATASOURCE_PASSWORD=slms_password
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/ESg204
     depends_on:
+      - slms-db
       - keycloak
     networks:
       - slms-network

@@ -1,16 +1,17 @@
 package es204.user_service.config;
 
-import es204.user_service.sync.UserSyncFilter;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.List;
+
+import es204.user_service.sync.UserSyncFilter;
 
 /**
  * Security configuration for User Service
@@ -35,14 +36,15 @@ public class SecurityConfig {
             .authorizeHttpRequests((authz) -> authz
                 // Public endpoints
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                // All user endpoints require authentication
+                // Allow keycloak ID lookup without authentication (needed for notifications)
+                .requestMatchers("/api/users/by-keycloak/**").permitAll()
+                // All other user endpoints require authentication
+                .requestMatchers("/api/users/**").authenticated()
                 .requestMatchers("/user/**").authenticated()
                 .anyRequest().authenticated()
             )
             // Enable OAuth2 Resource Server (JWT validation against Keycloak)
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));
-            // DISABLED: UserSyncFilter (using PostgreSQL now instead of Supabase API)
-            // .addFilterAfter(userSyncFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -56,7 +58,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
             "http://localhost:5173",
             "http://localhost:3000",
-            "http://192.168.160.9:3000"
+            "http://192.168.160.9:3000",
+            "https://slms-frontend.calmglacier-aaa99a56.francecentral.azurecontainerapps.io"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

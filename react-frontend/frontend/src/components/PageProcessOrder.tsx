@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
@@ -31,13 +31,19 @@ const href: string = Paths.PATH_WAREHOUSE;
 export default function PageProcessOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const { keycloak } = useKeycloak();
+  const { keycloak, loading: keycloakLoading, authenticated } = useKeycloak();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Dispatch failure modal state
+  const [showFailureModal, setShowFailureModal] = useState(false);
+  const [selectedFailureReason, setSelectedFailureReason] = useState("");
+  const [customFailureReason, setCustomFailureReason] = useState("");
+  const [submittingFailure, setSubmittingFailure] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -49,9 +55,24 @@ export default function PageProcessOrder() {
 
   useEffect(() => {
     async function loadData() {
-      // Wait for Keycloak to be ready and have a token
-      if (!keycloak || !keycloak.token || !keycloak.authenticated) {
-        console.log("Waiting for Keycloak... authenticated:", keycloak?.authenticated, "has token:", !!keycloak?.token);
+      console.log("LoadData called - Keycloak state:", {
+        keycloakLoading,
+        authenticated,
+        hasKeycloak: !!keycloak,
+        hasToken: !!keycloak?.token,
+        tokenLength: keycloak?.token?.length
+      });
+
+      // If Keycloak is still loading, wait
+      if (keycloakLoading) {
+        console.log("Keycloak still loading, waiting...");
+        setLoading(true);
+        return;
+      }
+
+      // If not authenticated, don't proceed (ProtectedRoute will handle redirect)
+      if (!authenticated || !keycloak?.token) {
+        console.log("Not authenticated or no token, waiting for auth...");
         setLoading(true);
         return;
       }
@@ -61,22 +82,32 @@ export default function PageProcessOrder() {
       try {
         setLoading(true);
         
-        // Fetch order details
+        // Fetch all orders (warehouse needs to see all orders to process them)
         console.log("Fetching orders with token:", keycloak.token.substring(0, 20) + "...");
-        const orderResp = await fetch(`/api/orders`, {
+        console.log("Looking for orderId:", orderId);
+        const orderResp = await fetch(`${API_ENDPOINTS.ORDERS}`, {
           headers: {
             'Authorization': `Bearer ${keycloak.token}`,
             'Content-Type': 'application/json'
           }
         });
-        if (!orderResp.ok) throw new Error("Failed to fetch orders");
+        if (!orderResp.ok) {
+          console.error("Failed to fetch orders, status:", orderResp.status);
+          throw new Error("Failed to fetch orders");
+        }
         const orders: Order[] = await orderResp.json();
+        console.log("Total orders fetched:", orders.length);
+        console.log("Order IDs:", orders.map(o => o.orderId));
         const foundOrder = orders.find((o) => o.orderId === orderId);
         
         if (!foundOrder) {
+          console.error("Order not found! Looking for:", orderId);
+          console.error("Available orders:", orders);
           setError("Pedido não encontrado");
           return;
         }
+        
+        console.log("Order found:", foundOrder);
         
         setOrder(foundOrder);
         setFormData({
@@ -105,11 +136,40 @@ export default function PageProcessOrder() {
     }
 
     if (orderId) loadData();
-  }, [orderId, keycloak]);
+  }, [orderId, keycloakLoading, authenticated, keycloak?.token]); // Re-run when auth state changes
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Calculate most efficient carrier based on weighted score
+  const getMostEfficientCarrier = (): Carrier | null => {
+    if (carriers.length === 0) return null;
+
+    // Normalize metrics and calculate efficiency score
+    const maxCost = Math.max(...carriers.map(c => c.avg_cost));
+    const minCost = Math.min(...carriers.map(c => c.avg_cost));
+    
+    const scoredCarriers = carriers.map(carrier => {
+      // Normalize cost (lower is better, so invert)
+      const normalizedCost = maxCost === minCost ? 1 : (maxCost - carrier.avg_cost) / (maxCost - minCost);
+      
+      // Weights: 30% cost, 35% on-time, 35% success
+      const efficiencyScore = (
+        normalizedCost * 0.30 +
+        carrier.on_time_rate * 0.35 +
+        carrier.success_rate * 0.35
+      );
+      
+      return { carrier, score: efficiencyScore };
+    });
+
+    // Sort by score descending and return best
+    scoredCarriers.sort((a, b) => b.score - a.score);
+    return scoredCarriers[0].carrier;
+  };
+
+  const mostEfficientCarrier = getMostEfficientCarrier();
 
   const handleDispatch = async () => {
     if (!order) return;
@@ -132,7 +192,7 @@ export default function PageProcessOrder() {
         status: "InTransit", // Change to InTransit on dispatch
       };
 
-      const resp = await fetch(`/api/orders/${order.orderId}`, {
+      const resp = await fetch(`${API_ENDPOINTS.ORDERS}/${order.orderId}`, {
         method: "PUT",
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
@@ -162,6 +222,49 @@ export default function PageProcessOrder() {
     return carrier?.name || "Desconhecido";
   };
 
+  const handleRegisterFailure = async () => {
+    if (!order) return;
+
+    // Validate failure reason is selected
+    const failureMessage = selectedFailureReason === "Outras (especificar)"
+      ? customFailureReason.trim()
+      : selectedFailureReason;
+
+    if (!failureMessage) {
+      alert("Por favor, selecione ou especifique um motivo de falha.");
+      return;
+    }
+
+    setSubmittingFailure(true);
+    try {
+      const resp = await fetch(API_ENDPOINTS.REPORT_ANOMALY, {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${keycloak?.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          orderId: order.orderId,
+          errorMessage: `[FALHA DESPACHO] ${failureMessage}`
+        }),
+      });
+
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        throw new Error(`Erro ao registar falha: ${errorText}`);
+      }
+
+      alert("✅ Falha de despacho registada com sucesso!\nO sistema notificará a equipa de suporte e o cliente.");
+      setShowFailureModal(false);
+      navigate(Paths.PATH_WAREHOUSE);
+    } catch (e) {
+      console.error("Register failure error:", e);
+      alert(`Erro ao registar falha: ${e}`);
+    } finally {
+      setSubmittingFailure(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -170,6 +273,9 @@ export default function PageProcessOrder() {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Carregando...</span>
           </div>
+          <p className="mt-2 text-muted">
+            {keycloakLoading ? "Verificando autenticação..." : "Carregando dados..."}
+          </p>
         </div>
       </>
     );
@@ -323,6 +429,34 @@ export default function PageProcessOrder() {
                       </option>
                     ))}
                   </select>
+                  
+                  {/* Efficiency Suggestion */}
+                  {mostEfficientCarrier && (
+                    <div className="alert alert-info mt-2 mb-0 d-flex align-items-center" role="alert">
+                      <i className="bi bi-lightbulb-fill me-2 fs-5"></i>
+                      <div>
+                        <strong>Sugestão:</strong> {mostEfficientCarrier.name} é a opção mais eficiente
+                        <span className="d-block small mt-1">
+                          Custo: €{mostEfficientCarrier.avg_cost.toFixed(2)} | 
+                          Pontualidade: {(mostEfficientCarrier.on_time_rate * 100).toFixed(1)}% | 
+                          Sucesso: {(mostEfficientCarrier.success_rate * 100).toFixed(1)}%
+                          {formData.carrierId === mostEfficientCarrier.carrier_id && (
+                            <span className="badge bg-success ms-2">✓ Selecionada</span>
+                          )}
+                        </span>
+                      </div>
+                      {formData.carrierId !== mostEfficientCarrier.carrier_id && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary ms-auto"
+                          onClick={() => handleInputChange("carrierId", mostEfficientCarrier.carrier_id)}
+                        >
+                          Usar Sugestão
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
                   {formData.carrierId && (
                     <small className="text-muted">
                       Selecionado: {getCarrierName(formData.carrierId)}
@@ -365,32 +499,138 @@ export default function PageProcessOrder() {
         </div>
 
         {/* Action Buttons */}
-        <div className="d-flex justify-content-end gap-3 mt-4 mb-5">
+        <div className="d-flex justify-content-between mt-4 mb-5">
           <button
-            className="btn btn-secondary btn-lg"
-            onClick={() => navigate(href)}
+            className="btn btn-danger btn-lg"
+            onClick={() => setShowFailureModal(true)}
             disabled={submitting}
           >
-            Cancelar
+            <i className="bi bi-exclamation-triangle me-2"></i>
+            Registar Falha de Despacho
           </button>
-          <button
-            className="btn btn-success btn-lg"
-            onClick={handleDispatch}
-            disabled={submitting || !formData.carrierId}
-          >
-            {submitting ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" />
-                Despachando...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-send-check me-2"></i>
-                Despachar Pedido
-              </>
-            )}
-          </button>
+          
+          <div className="d-flex gap-3">
+            <button
+              className="btn btn-secondary btn-lg"
+              onClick={() => navigate(href)}
+              disabled={submitting}
+            >
+              Cancelar
+            </button>
+            <button
+              className="btn btn-success btn-lg"
+              onClick={handleDispatch}
+              disabled={submitting || !formData.carrierId}
+            >
+              {submitting ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Despachando...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-send-check me-2"></i>
+                  Despachar Pedido
+                </>
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Dispatch Failure Modal */}
+        {showFailureModal && (
+          <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header bg-danger text-white">
+                  <h5 className="modal-title">
+                    <i className="bi bi-exclamation-triangle me-2"></i>
+                    Registar Falha de Despacho
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={() => setShowFailureModal(false)}
+                    disabled={submittingFailure}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  <p className="text-muted mb-3">
+                    Selecione o motivo da falha de despacho. O sistema notificará automaticamente 
+                    a equipa de suporte e o cliente.
+                  </p>
+
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Motivo da Falha:</label>
+                    <select
+                      className="form-select"
+                      value={selectedFailureReason}
+                      onChange={(e) => setSelectedFailureReason(e.target.value)}
+                      disabled={submittingFailure}
+                    >
+                      <option value="">-- Selecione um motivo --</option>
+                      <option value="Falta de stock">Falta de stock</option>
+                      <option value="Produto danificado no armazém">Produto danificado no armazém</option>
+                      <option value="Endereço de origem inválido">Endereço de origem inválido</option>
+                      <option value="Peso excede capacidade disponível">Peso excede capacidade disponível</option>
+                      <option value="Documentação incorreta ou em falta">Documentação incorreta ou em falta</option>
+                      <option value="Restrições de envio não cumpridas">Restrições de envio não cumpridas</option>
+                      <option value="Outras (especificar)">Outras (especificar)</option>
+                    </select>
+                  </div>
+
+                  {selectedFailureReason === "Outras (especificar)" && (
+                    <div className="mb-3">
+                      <label className="form-label fw-bold">Especifique o motivo:</label>
+                      <textarea
+                        className="form-control"
+                        rows={3}
+                        placeholder="Descreva o motivo da falha..."
+                        value={customFailureReason}
+                        onChange={(e) => setCustomFailureReason(e.target.value)}
+                        disabled={submittingFailure}
+                      />
+                    </div>
+                  )}
+
+                  <div className="alert alert-warning mb-0">
+                    <i className="bi bi-info-circle me-2"></i>
+                    <strong>Atenção:</strong> Esta ação marcará o pedido como "Failed" e 
+                    acionará notificações automáticas.
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowFailureModal(false)}
+                    disabled={submittingFailure}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleRegisterFailure}
+                    disabled={submittingFailure || !selectedFailureReason}
+                  >
+                    {submittingFailure ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Registando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-exclamation-triangle me-2"></i>
+                        Confirmar Falha
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

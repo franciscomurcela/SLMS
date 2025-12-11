@@ -2,11 +2,48 @@ import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import OrdersPanel from "./OrdersPanel";
+import ChatAssistant from "./ChatAssistant";
+import { useKeycloak } from "../context/keycloakHooks";
+import { useState, useEffect } from "react";
+import { API_ENDPOINTS } from "../config/api.config";
 
 const role: string = Roles.ROLE_WAREHOUSE;
 const href: string = Paths.PATH_WAREHOUSE;
 
 function Warehouse() {
+  const { keycloak } = useKeycloak();
+  const [pendingCount, setPendingCount] = useState<number | undefined>(
+    undefined
+  );
+
+  // Fetch pending orders count for the warehouse
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      if (!keycloak?.token) return;
+
+      try {
+        const response = await fetch(API_ENDPOINTS.ORDERS, {
+          headers: {
+            Authorization: `Bearer ${keycloak.token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const orders = await response.json();
+          const pending = orders.filter(
+            (order: { status: string }) => order.status === "Pending"
+          ).length;
+          setPendingCount(pending);
+        }
+      } catch (error) {
+        console.error("Error fetching pending orders count:", error);
+      }
+    };
+
+    fetchPendingCount();
+  }, [keycloak?.token]);
+
   return (
     <>
       <Header role={role} href={href} />
@@ -16,19 +53,29 @@ function Warehouse() {
             <div className="col">
               <h2 className="mb-0">
                 <i className="bi bi-building me-2 text-primary"></i>
-                  Warehouse - Gestão de Pedidos
-                </h2>
-                <p className="text-muted">Visualize e gerencie os pedidos recebidos</p>
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="col-12">
-                <OrdersPanel />
-              </div>
+                Warehouse - Gestão de Pedidos
+              </h2>
+              <p className="text-muted">
+                Visualize e gerencie os pedidos recebidos
+              </p>
             </div>
           </div>
-        </main>
+
+          <div className="row">
+            <div className="col-12">
+              <OrdersPanel />
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Chat Assistant */}
+      <ChatAssistant
+        authToken={keycloak?.token}
+        customerId={keycloak?.tokenParsed?.sub}
+        userRole={role}
+        pendingCount={pendingCount}
+      />
     </>
   );
 }

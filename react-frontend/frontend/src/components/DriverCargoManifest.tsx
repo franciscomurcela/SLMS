@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Paths from './UtilsPaths';
-import { useKeycloak } from '../context/KeycloakContext';
-import { useFeatureFlag } from '../context/FeatureFlagsContext';
+import { useKeycloak } from '../context/keycloakHooks';
+
+import { API_ENDPOINTS } from '../config/api.config';
 
 const role: string = 'Driver';
 
@@ -39,13 +40,11 @@ function DriverCargoManifest() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Feature flag para controlar a funcionalidade de visualização da rota
-  const isMapViewEnabled = useFeatureFlag('delivery-route-map-view');
-
   useEffect(() => {
     if (userInfo?.sub) {
       loadShipments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo]);
 
   const loadShipments = async () => {
@@ -62,11 +61,11 @@ function DriverCargoManifest() {
         return;
       }
 
-      console.log('🚚 Loading InTransit shipments for keycloak_id:', keycloakId);
+      console.log('🚚 Loading all shipments for keycloak_id:', keycloakId);
       
       // Call optimized endpoint that navigates: keycloak_id → Users.id → Driver.user_id → Shipments
-      // This endpoint returns InTransit shipments with their orders
-      const response = await fetch(`/api/shipments/my-shipments/${keycloakId}`, {
+      // This endpoint returns all shipments assigned to the driver with their orders
+      const response = await fetch(`${API_ENDPOINTS.SHIPMENTS}/my-shipments/${keycloakId}`, {
         headers: {
           'Authorization': `Bearer ${keycloak?.token}`,
           'Content-Type': 'application/json'
@@ -107,12 +106,14 @@ function DriverCargoManifest() {
     const badges = {
       Pending: 'bg-warning text-dark',
       InTransit: 'bg-primary',
-      Delivered: 'bg-success'
+      Delivered: 'bg-success',
+      Failed: 'bg-danger'
     };
     const statusText = {
       Pending: 'Pendente',
       InTransit: 'Em Trânsito',
-      Delivered: 'Entregue'
+      Delivered: 'Entregue',
+      Failed: 'Falhada'
     };
     return <span className={`badge ${badges[status as keyof typeof badges]}`}>{statusText[status as keyof typeof statusText] || status}</span>;
   };
@@ -125,7 +126,7 @@ function DriverCargoManifest() {
           <i className='bi bi-truck'></i> Manifesto de Carga do Motorista
         </h1>
         <p className='text-center text-muted mb-4'>
-          Shipments InTransit atribuídos a si
+          Shipments atribuídos a si
         </p>
 
         {loading && (
@@ -148,7 +149,7 @@ function DriverCargoManifest() {
 
         {!loading && !error && shipments.length === 0 && (
           <div className='alert alert-info text-center'>
-            <i className='bi bi-info-circle'></i> Nenhum shipment InTransit atribuído a si no momento.
+            <i className='bi bi-info-circle'></i> Nenhum shipment atribuído a si no momento.
           </div>
         )}
 
@@ -231,21 +232,13 @@ function DriverCargoManifest() {
                                   </div>
                                 </div>
                                 
-                                {/* Botão "Ver no Mapa" controlado por feature flag */}
-                                {isMapViewEnabled ? (
-                                  <button 
-                                    className='btn btn-sm btn-outline-primary mt-3 w-100'
-                                    onClick={() => navigate(`/delivery-route/${order.orderId}`)}
-                                  >
-                                    <i className='bi bi-geo-alt'></i> Ver no Mapa
-                                  </button>
-                                ) : (
-                                  <div className='mt-3 text-center'>
-                                    <small className='text-muted'>
-                                      <i className='bi bi-info-circle'></i> Funcionalidade de mapa temporariamente indisponível
-                                    </small>
-                                  </div>
-                                )}
+                                {/* Botão "Ver no Mapa" */}
+                                <button 
+                                  className='btn btn-sm btn-outline-primary mt-3 w-100'
+                                  onClick={() => navigate(`/delivery-route/${order.orderId}`)}
+                                >
+                                  <i className='bi bi-geo-alt'></i> Ver no Mapa
+                                </button>
                               </div>
                             </div>
                           </div>

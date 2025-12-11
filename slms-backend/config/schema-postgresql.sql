@@ -37,7 +37,19 @@ CREATE TABLE "Carrier" (
     name text NOT NULL,
     avg_cost numeric(10,2),
     on_time_rate numeric(5,2),
-    success_rate numeric(5,2)
+    success_rate numeric(5,2),
+    cost_history JSONB DEFAULT '{}'::jsonb,
+    successful_deliveries INTEGER DEFAULT 0,
+    failed_deliveries INTEGER DEFAULT 0,
+    delayed_deliveries INTEGER DEFAULT 0,
+    total_deliveries INTEGER DEFAULT 0,
+    CONSTRAINT chk_carrier_metrics_consistency CHECK (
+        total_deliveries >= 0 AND
+        successful_deliveries >= 0 AND
+        failed_deliveries >= 0 AND
+        delayed_deliveries >= 0 AND
+        (successful_deliveries + failed_deliveries) <= total_deliveries
+    )
 );
 
 -- ============================================
@@ -125,6 +137,30 @@ CREATE INDEX idx_orders_status ON "Orders"(status);
 
 COMMENT ON TABLE "Users" IS 'Main user table synced from Keycloak';
 COMMENT ON TABLE "Carrier" IS 'Shipping carriers/companies';
+-- ============================================
+-- NOTIFICATIONS TABLE
+-- ============================================
+CREATE TABLE "Notifications" (
+    id BIGSERIAL PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    related_entity_type VARCHAR(50),
+    related_entity_id uuid,
+    severity VARCHAR(20) DEFAULT 'INFO',
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP WITH TIME ZONE,
+    metadata JSONB DEFAULT '{}'::jsonb
+);
+
+-- Indexes for performance
+CREATE INDEX idx_notifications_user_id ON "Notifications"(user_id);
+CREATE INDEX idx_notifications_is_read ON "Notifications"(is_read);
+CREATE INDEX idx_notifications_created_at ON "Notifications"(created_at DESC);
+CREATE INDEX idx_notifications_user_unread ON "Notifications"(user_id, is_read) WHERE is_read = FALSE;
+
 COMMENT ON TABLE "Driver" IS 'Drivers assigned to carriers';
 COMMENT ON TABLE "Costumer" IS 'Customer users';
 COMMENT ON TABLE "Csr" IS 'Customer Service Representatives';
@@ -132,3 +168,4 @@ COMMENT ON TABLE "LogisticsManager" IS 'Logistics Managers';
 COMMENT ON TABLE "WarehouseStaff" IS 'Warehouse Staff';
 COMMENT ON TABLE "Shipments" IS 'Shipment tracking';
 COMMENT ON TABLE "Orders" IS 'Customer orders';
+COMMENT ON TABLE "Notifications" IS 'In-app notifications for all users';

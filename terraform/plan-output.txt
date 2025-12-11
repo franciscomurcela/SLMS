@@ -1,0 +1,97 @@
+Acquiring state lock. This may take a few moments...
+random_string.suffix: Refreshing state... [id=s0oijgzr]
+azurerm_resource_group.rg: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg]
+data.azurerm_public_ip.runner_ip: Reading...
+azurerm_log_analytics_workspace.logs: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.OperationalInsights/workspaces/slms-logs-s0oijgzr]
+data.azurerm_container_app.keycloak: Reading...
+data.azurerm_container_app.order_service: Reading...
+data.azurerm_virtual_network.vnet: Reading...
+data.azurerm_container_app.carrier_service: Reading...
+data.azurerm_container_app.frontend: Reading...
+azurerm_postgresql_flexible_server.db: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/slms-postgresql-s0oijgzr]
+azurerm_container_registry.acr: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.ContainerRegistry/registries/slmsacrs0oijgzr]
+azurerm_storage_account.storage: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.Storage/storageAccounts/slmsstorages0oijgzr]
+data.azurerm_virtual_network.vnet: Read complete after 1s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.Network/virtualNetworks/slms-vnet]
+data.azurerm_container_app_environment.env: Reading...
+data.azurerm_public_ip.runner_ip: Read complete after 1s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.Network/publicIPAddresses/slms-runner-ip]
+data.azurerm_network_security_group.nsg: Reading...
+data.azurerm_subnet.subnet: Reading...
+azurerm_postgresql_flexible_server_firewall_rule.allow_azure: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/slms-postgresql-s0oijgzr/firewallRules/allow-azure-services]
+data.azurerm_subnet.subnet: Read complete after 0s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.Network/virtualNetworks/slms-vnet/subnets/slms-subnet]
+azurerm_postgresql_flexible_server_database.slms_db: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/slms-postgresql-s0oijgzr/databases/slms_database]
+data.azurerm_network_security_group.nsg: Read complete after 0s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.Network/networkSecurityGroups/slms-runner-nsg]
+data.azurerm_container_app.order_service: Read complete after 1s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/containerApps/slms-order-service]
+data.azurerm_container_app.carrier_service: Read complete after 2s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/containerApps/slms-carrier-service]
+data.azurerm_container_app.keycloak: Read complete after 2s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/containerApps/slms-keycloak]
+data.azurerm_container_app.frontend: Read complete after 2s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/containerApps/slms-frontend]
+data.azurerm_container_app_environment.env: Read complete after 1s [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/managedEnvironments/slms-container-env]
+azurerm_container_app.backend: Refreshing state... [id=/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/containerApps/slms-backend]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # azurerm_container_app.backend will be updated in-place
+  ~ resource "azurerm_container_app" "backend" {
+        id                            = "/subscriptions/edb0834e-b174-415e-b0f4-360b0f79d8d7/resourceGroups/slms-rg/providers/Microsoft.App/containerApps/slms-backend"
+        name                          = "slms-backend"
+      ~ tags                          = {
+          + "Environment" = "Production"
+          + "ManagedBy"   = "Terraform"
+          + "Service"     = "Backend"
+        }
+        # (9 unchanged attributes hidden)
+
+      ~ registry {
+          ~ server               = "slmsacrezod5cbu.azurecr.io" -> "slmsacrs0oijgzr.azurecr.io"
+          ~ username             = "slmsacrezod5cbu" -> "slmsacrs0oijgzr"
+            # (2 unchanged attributes hidden)
+        }
+
+      - secret {
+          # At least one attribute in this block is (or was) sensitive,
+          # so its contents will not be displayed.
+        }
+      - secret {
+          # At least one attribute in this block is (or was) sensitive,
+          # so its contents will not be displayed.
+        }
+      + secret {
+          # At least one attribute in this block is (or was) sensitive,
+          # so its contents will not be displayed.
+        }
+      + secret {
+          # At least one attribute in this block is (or was) sensitive,
+          # so its contents will not be displayed.
+        }
+
+      ~ template {
+            # (3 unchanged attributes hidden)
+
+          ~ container {
+              ~ image             = "slmsacrezod5cbu.azurecr.io/slms-backend:latest" -> "slmsacrs0oijgzr.azurecr.io/slms-backend:latest"
+                name              = "backend"
+                # (5 unchanged attributes hidden)
+
+              ~ env {
+                    name        = "DB_URL"
+                  ~ value       = "jdbc:postgresql://slms-postgresql-ezod5cbu.postgres.database.azure.com:5432/slms_database" -> "jdbc:postgresql://slms-postgresql-s0oijgzr.postgres.database.azure.com:5432/slms_database"
+                    # (1 unchanged attribute hidden)
+                }
+
+                # (3 unchanged blocks hidden)
+            }
+        }
+
+        # (1 unchanged block hidden)
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+
+ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
+Releasing state lock. This may take a few moments...

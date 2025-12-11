@@ -1,6 +1,28 @@
+vi.mock('../config/api.config', () => ({
+  API_ENDPOINTS: {
+    ORDERS: 'http://localhost:8081/api/orders',
+    CARRIERS: 'http://localhost:8080/carriers',
+  }
+}));
 import { render, screen, waitFor } from '@testing-library/react';
 import OrdersPanel from '../components/OrdersPanel';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, it, beforeEach, afterEach, vi, expect } from 'vitest';
+import { KeycloakContext } from '../context/KeycloakContextDef';
+import { FeatureFlagsProvider } from '../context/FeatureFlagsContext';
+
+const mockKeycloakContext = {
+  keycloak: { token: 'mock-token', authenticated: true } as unknown as import('keycloak-js').default,
+  authenticated: true,
+  loading: false,
+  login: vi.fn(),
+  logout: vi.fn(),
+  token: 'mock-token',
+  userInfo: { sub: 'user1' },
+  roles: [],
+  hasRole: () => false,
+  primaryRole: undefined,
+};
 
 describe('OrdersPanel', () => {
   beforeEach(() => {
@@ -41,7 +63,15 @@ describe('OrdersPanel', () => {
   });
 
   it('renderiza pedido na tabela', async () => {
-    render(<OrdersPanel />);
+    render(
+      <MemoryRouter>
+        <KeycloakContext.Provider value={mockKeycloakContext}>
+          <FeatureFlagsProvider>
+            <OrdersPanel />
+          </FeatureFlagsProvider>
+        </KeycloakContext.Provider>
+      </MemoryRouter>
+    );
     // Espera o pedido aparecer na tabela
     await waitFor(() => {
       expect(screen.getByText(/João Silva/)).toBeInTheDocument();

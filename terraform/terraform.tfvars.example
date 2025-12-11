@@ -1,0 +1,9 @@
+# Copie este ficheiro para terraform.tfvars e preencha com as suas passwords
+# IMPORTANTE: Adicione terraform.tfvars ao .gitignore!
+
+db_password            = "SuaPasswordSeguraAqui123!"
+runner_admin_password  = "OutraPasswordSeguraAqui456!"
+
+# Google Maps API Key (OPCIONAL - deixe vazio se não tiver)
+# Obtenha em: https://console.cloud.google.com/google/maps-apis/
+google_maps_api_key    = ""  # Ex: "AIzaSyC..."

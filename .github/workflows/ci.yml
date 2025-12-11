@@ -56,16 +56,198 @@ jobs:
         run: |
           echo "Looking for mvnw files and making them executable"
           find . -name mvnw -print -exec chmod +x {} +
-      - name: Build with Maven (run all wrappers found)
+      
+      # Teste estático backend (Checkstyle) - user_service
+      - name: Checkstyle user_service
         shell: bash
         run: |
-          echo "Running 'mvnw clean install' for every module that has a mvnw"
-          find . -name mvnw -print -execdir ./mvnw clean install \;
-      - name: Run tests (run all wrappers found)
+          cd user_service
+          if [ -f "mvnw" ]; then
+            ./mvnw checkstyle:check --no-transfer-progress || echo "Checkstyle warnings found"
+          fi
+        continue-on-error: true
+      
+      # Build e testes por serviço (respeitando versão Java)
+      - name: Build and Test user_service (Java 17)
+        if: matrix.java == 17
         shell: bash
         run: |
-          echo "Running 'mvnw test' for every module that has a mvnw"
-          find . -name mvnw -print -execdir ./mvnw test \;
+          cd user_service
+          if [ -f "mvnw" ]; then
+            ./mvnw clean test
+          fi
+      
+      - name: Build and Test carrier_service (Java 17)
+        if: matrix.java == 17
+        shell: bash
+        run: |
+          cd carrier_service/carrier_service
+          if [ -f "mvnw" ]; then
+            ./mvnw clean test
+          fi
+      
+      - name: Build and Test order_service (Java 21)
+        if: matrix.java == 21
+        shell: bash
+        run: |
+          cd order_service/demo
+          if [ -f "mvnw" ]; then
+            ./mvnw clean test
+          fi
+      
+      - name: Build and Test notification_service (Java 17)
+        if: matrix.java == 17
+        shell: bash
+        run: |
+          cd notification_service
+          mvn clean test --no-transfer-progress
+      
+      # Gerar relatórios Allure para backend
+      - name: Gerar relatório Allure (user_service)
+        if: always() && matrix.java == 17
+        shell: bash
+        run: |
+          cd user_service
+          # Mover allure-results para target/ se necessário (Allure Maven espera lá)
+          if [ -d "allure-results" ] && [ ! -d "target/allure-results" ]; then
+            mkdir -p target
+            mv allure-results target/
+            echo "Moved allure-results to target/"
+          fi
+          # Gerar relatório se existirem resultados
+          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
+            ./mvnw allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for user_service - skipping report generation"
+          fi
+        continue-on-error: true
+      
+      - name: Gerar relatório Allure (carrier_service)
+        if: always() && matrix.java == 17
+        shell: bash
+        run: |
+          cd carrier_service/carrier_service
+          # Mover allure-results para target/ se necessário (Allure Maven espera lá)
+          if [ -d "allure-results" ] && [ ! -d "target/allure-results" ]; then
+            mkdir -p target
+            mv allure-results target/
+            echo "Moved allure-results to target/"
+          fi
+          # Gerar relatório se existirem resultados
+          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
+            ./mvnw allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for carrier_service - skipping report generation"
+          fi
+        continue-on-error: true
+      
+      - name: Gerar relatório Allure (order_service)
+        if: always() && matrix.java == 21
+        shell: bash
+        run: |
+          cd order_service/demo
+          # Mover allure-results para target/ se necessário (Allure Maven espera lá)
+          if [ -d "allure-results" ] && [ ! -d "target/allure-results" ]; then
+            mkdir -p target
+            mv allure-results target/
+            echo "Moved allure-results to target/"
+          fi
+          # Gerar relatório se existirem resultados
+          if [ -f "mvnw" ] && [ -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
+            ./mvnw allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for order_service - skipping report generation"
+          fi
+        continue-on-error: true
+      
+      - name: Gerar relatório Allure (notification_service)
+        if: always() && matrix.java == 17
+        shell: bash
+        run: |
+          cd notification_service
+          # Mover allure-results para target/ se necessário
+          if [ -d "allure-results" ] && [ ! -d "target/allure-results" ]; then
+            mkdir -p target
+            mv allure-results target/
+            echo "Moved allure-results to target/"
+          fi
+          # Gerar relatório se existirem resultados
+          if [ -d "target/allure-results" ]; then
+            echo "Allure results found - generating report"
+            mvn allure:report --no-transfer-progress
+          else
+            echo "No Allure results found for notification_service - skipping report generation"
+          fi
+        continue-on-error: true
+      
+      # Publicar relatórios Allure do backend
+      - name: Publicar relatório Allure (user_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-report-user_service-ci-java${{ matrix.java }}
+          path: slms-backend/user_service/target/site/allure-maven-plugin
+          if-no-files-found: ignore
+      
+      - name: Publicar relatório Allure (carrier_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-report-carrier_service-ci-java${{ matrix.java }}
+          path: slms-backend/carrier_service/carrier_service/target/site/allure-maven-plugin
+          if-no-files-found: ignore
+      
+      - name: Publicar relatório Allure (order_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 21
+        with:
+          name: allure-report-order_service-ci-java${{ matrix.java }}
+          path: slms-backend/order_service/demo/target/site/allure-maven-plugin
+          if-no-files-found: ignore
+      
+      - name: Publicar relatório Allure (notification_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-report-notification_service-ci-java${{ matrix.java }}
+          path: slms-backend/notification_service/target/site/allure-maven-plugin
+          if-no-files-found: ignore
+      
+      # Upload allure-results para uso no container
+      - name: Upload Allure results (user_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-results-user_service
+          path: slms-backend/user_service/allure-results
+          if-no-files-found: ignore
+      
+      - name: Upload Allure results (carrier_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-results-carrier_service
+          path: slms-backend/carrier_service/carrier_service/allure-results
+          if-no-files-found: ignore
+      
+      - name: Upload Allure results (order_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 21
+        with:
+          name: allure-results-order_service
+          path: slms-backend/order_service/demo/allure-results
+          if-no-files-found: ignore
+      
+      - name: Upload Allure results (notification_service)
+        uses: actions/upload-artifact@v4
+        if: always() && matrix.java == 17
+        with:
+          name: allure-results-notification_service
+          path: slms-backend/notification_service/allure-results
+          if-no-files-found: ignore
 
   frontend:
     name: Build & Test Frontend
@@ -80,9 +262,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install dependencies
+          cache: 'npm'
+          cache-dependency-path: 'react-frontend/frontend/package-lock.json'
+      
+      - name: Clean install dependencies
         run: |
-          npm install --legacy-peer-deps
+          rm -rf node_modules
           npm ci --legacy-peer-deps
       - name: Lint
         run: npm run lint || echo "Lint warnings"
@@ -90,22 +275,39 @@ jobs:
         run: npm run build
 
       - name: Testes unitários
-        run: npm run test:unit || echo "No unit tests defined"
+        run: npm run test:unit
 
+      - name: Cobertura de testes
+        run: npm run test:unit:coverage
+        continue-on-error: true
 
-      - name: Testes E2E (Cypress)
-        run: npm run test:e2e || echo "No E2E tests defined"
-        env:
-          PORT: 5173
+      - name: Converter resultados para Allure
+        if: always()
+        run: node scripts/convert-to-allure.js
+
+      - name: Setup Java for Allure
+        if: always()
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Gerar relatório Allure (frontend)
-        run: |
-          if [ -d "./allure-results" ]; then npx allure generate --clean ./allure-results -o ./allure-report; fi
-        working-directory: react-frontend/frontend
+        if: always()
+        run: npx allure generate ./allure-results --clean --output ./allure-report
+
       - name: Publicar relatório Allure (frontend)
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: allure-report-frontend
+          name: allure-report-frontend-ci
           path: react-frontend/frontend/allure-report
-
-        #test
+      
+      # Upload allure-results para uso no container
+      - name: Upload Allure results (frontend)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results-frontend
+          path: react-frontend/frontend/allure-results
+          if-no-files-found: ignore

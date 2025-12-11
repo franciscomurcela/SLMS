@@ -2,7 +2,7 @@ import Header from "./Header";
 import Roles from "./UtilsRoles";
 import Paths from "./UtilsPaths";
 import { useNavigate } from "react-router-dom";
-import { useKeycloak } from "../context/KeycloakContext";
+import { useKeycloak } from "../context/keycloakHooks";
 import { getRouteForRole } from "../config/roles.config";
 
 const role: string = Roles.ROLE_PROFILE;
@@ -22,14 +22,15 @@ function Profile() {
   };
 
   // Get the user's name from Keycloak, with fallbacks
-  const displayName =
-    userInfo?.name || userInfo?.preferred_username || "Utilizador";
+  const displayName = String(
+    userInfo?.name || userInfo?.preferred_username || "Utilizador"
+  );
 
   return (
     <>
       <Header role={role} href={href} />
 
-      <div className="d-grid gap-2 col-6 mx-auto">
+      <div className="d-grid gap-2 col-6 mx-auto mt-4">
         {primaryRole && (
           <button
             type="button"
@@ -50,12 +51,12 @@ function Profile() {
               </h5>
               <h4 className="text-end fw-bold text-dark">{displayName}</h4>
               <p className="text-end text-muted mb-1">
-                {userInfo?.email && (
+                {userInfo?.email ? (
                   <small>
                     <i className="bi bi-envelope me-1"></i>
-                    {userInfo.email}
+                    {String(userInfo.email)}
                   </small>
-                )}
+                ) : null}
               </p>
             </div>
           </div>

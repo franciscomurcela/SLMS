@@ -18,3 +18,6 @@ COPY --from=build /workspace/${JAR_FILE} /app/app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
+
+# Healthcheck para o container
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD curl -f http://localhost:8080/carriers/health || exit 1

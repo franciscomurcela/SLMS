@@ -1,10 +1,10 @@
-import { useKeycloak } from "../context/KeycloakContext";
-import { BACKEND_URL } from "../config/keycloak.config";
+import { useKeycloak } from "../context/keycloakHooks";
+import { API_ENDPOINTS } from "../config/api.config";
 import { useState, useEffect } from "react";
 
 function AuthTest() {
   const { authenticated, loading, userInfo, token, logout } = useKeycloak();
-  const [backendResponse, setBackendResponse] = useState<any>(null);
+  const [backendResponse, setBackendResponse] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
@@ -25,7 +25,7 @@ function AuthTest() {
       setError(null);
       setBackendResponse(null);
 
-      const response = await fetch(`${BACKEND_URL}/user/whoami`, {
+      const response = await fetch(API_ENDPOINTS.WHOAMI, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -38,8 +38,12 @@ function AuthTest() {
 
       const data = await response.json();
       setBackendResponse(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erro desconhecido');
+      }
     }
   };
 
@@ -100,7 +104,7 @@ function AuthTest() {
               className="btn btn-primary me-2" 
               onClick={testBackendCall}
             >
-              Testar chamada ao Backend (/user/whoami)
+              Testar chamada ao Backend (/api/users/whoami)
             </button>
             <button 
               className="btn btn-danger" 

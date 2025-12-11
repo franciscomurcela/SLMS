@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/slms_db}
+    username: ${SPRING_DATASOURCE_USERNAME:slms_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:slms_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate.globally_quoted_identifiers: true
+    show-sql: true
+    open-in-view: false
+
+management:
+  otlp:
+    tracing:
+      endpoint: http://localhost:4318/v1/traces
+      protocol: http/protobuf
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

@@ -1,0 +1,398 @@
+// Knowledge base for the chatbot - stores intents, patterns, and responses
+
+// UUID regex pattern for tracking IDs
+const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+export interface Intent {
+  id: string;
+  patterns: string[];
+  responses: string[];
+  actions?: string[];
+  priority?: number;
+  roles?: string[]; // Roles that can access this intent
+}
+
+export interface QuickAction {
+  id: string;
+  label: string;
+  icon: string;
+  action: () => void;
+}
+
+export const intents: Intent[] = [
+  {
+    id: 'greeting',
+    patterns: [
+      'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'hi', 'hello', 'hey'
+    ],
+    responses: [
+      '👋 Olá! Como posso ajudar hoje?',
+      '🙂 Bom dia! Em que posso ser útil?',
+      '👋 Olá! Estou aqui para ajudar com suas encomendas.'
+    ],
+    priority: 1
+  },
+  {
+    id: 'track_order',
+    patterns: [
+      'rastrear', 'onde está', 'tracking', 'track', 'encomenda', 'pedido',
+      'localizar', 'encontrar pedido', 'estado da encomenda', 'status'
+    ],
+    responses: [
+      '📦 Para rastrear sua encomenda, por favor forneça o número do pedido ou ID de rastreamento.',
+      '🔍 Posso ajudar a localizar sua encomenda. Você tem o número do pedido?',
+      '📍 Vou ajudar a rastrear seu pedido. Qual o ID da encomenda?'
+    ],
+    actions: ['show_tracking_input'],
+    roles: ['Customer', 'Customer Service Representative', 'Logistics Manager']
+  },
+  {
+    id: 'order_history',
+    patterns: [
+      'histórico', 'historico', 'lista', 'minhas encomendas', 'meus pedidos',
+      'todas as encomendas', 'ver pedidos', 'listar', 'history'
+    ],
+    responses: [
+      '📋 Clique no botão "Ver Histórico de Encomendas" acima para visualizar todos os seus pedidos.',
+      '✅ Pode ver o histórico completo clicando no botão de histórico na parte superior da página.',
+      '📝 O botão "Histórico de Encomendas" mostra todos os seus pedidos anteriores.'
+    ],
+    actions: ['toggle_order_history'],
+    roles: ['Customer']
+  },
+  {
+    id: 'delivery_status',
+    patterns: [
+      'quando chega', 'previsão', 'entrega', 'delivery', 'quando recebo',
+      'data de entrega', 'prazo', 'tempo de entrega'
+    ],
+    responses: [
+      '🚚 O prazo de entrega depende da transportadora escolhida. Qual o número do seu pedido?',
+      '⏰ Posso verificar a previsão de entrega. Tem o ID de rastreamento?',
+      '📅 Para saber a data prevista, preciso do número do pedido.'
+    ]
+  },
+  {
+    id: 'help',
+    patterns: [
+      'ajuda', 'help', 'o que pode fazer', 'funcionalidades', 'comandos',
+      'what can you do', 'como funciona', 'instruções'
+    ],
+    responses: [
+      `🤖 Posso ajudar com:
+      
+• 📦 Rastrear encomendas
+• 📋 Ver histórico de pedidos
+• 🚚 Informações sobre entregas
+• ❓ Responder perguntas frequentes
+
+Basta digitar sua dúvida!`
+    ],
+    priority: 2
+  },
+  {
+    id: 'create_order',
+    patterns: [
+      'novo pedido', 'criar encomenda', 'fazer pedido', 'enviar',
+      'new order', 'create order', 'quero enviar'
+    ],
+    responses: [
+      '📦 Para criar um novo pedido, entre em contacto com o suporte através do email suporte@slms.pt',
+      '✉️ Novos pedidos devem ser criados através do portal ou email: suporte@slms.pt'
+    ]
+  },
+  {
+    id: 'contact',
+    patterns: [
+      'contacto', 'contato', 'suporte', 'falar com atendente', 'telefone',
+      'email', 'contact', 'support'
+    ],
+    responses: [
+      `📞 Pode contactar-nos:
+
+📧 Email: suporte@slms.pt
+☎️ Telefone: +351 234 370 200
+⏰ Horário: Seg-Sex 9h-18h`
+    ]
+  },
+  {
+    id: 'thanks',
+    patterns: [
+      'obrigado', 'obrigada', 'thanks', 'thank you', 'valeu', 'agradeço'
+    ],
+    responses: [
+      '😊 De nada! Estou sempre aqui para ajudar.',
+      '🙂 Por nada! Se precisar de mais alguma coisa, é só perguntar.',
+      '✨ Fico feliz em ajudar! Volte sempre que precisar.'
+    ],
+    priority: 1
+  },
+  {
+    id: 'goodbye',
+    patterns: [
+      'tchau', 'adeus', 'até logo', 'bye', 'goodbye', 'até mais'
+    ],
+    responses: [
+      '👋 Até logo! Tenha um ótimo dia!',
+      '🙂 Adeus! Volte sempre que precisar.',
+      '✨ Até breve! Boa sorte com suas encomendas!'
+    ],
+    priority: 1
+  },
+  // Driver-specific intents
+  {
+    id: 'driver_manifest',
+    patterns: [
+      'manifesto', 'manifest', 'carga', 'entregas', 'rota', 'route',
+      'minhas entregas', 'pedidos para entregar', 'o que tenho que entregar'
+    ],
+    responses: [
+      '🚚 Pode consultar o seu manifesto de carga na página principal do motorista.',
+      '📋 O manifesto mostra todas as suas entregas programadas para hoje.',
+      '🗺️ Veja o manifesto de carga para visualizar sua rota e entregas.'
+    ],
+    actions: ['show_manifest'],
+    roles: ['Driver']
+  },
+  {
+    id: 'driver_deliveries',
+    patterns: [
+      'quantas entregas', 'quantos pedidos', 'quantidade', 'número de entregas',
+      'how many deliveries', 'count', 'total'
+    ],
+    responses: [
+      '📦 Vou verificar quantas entregas você tem pendentes...',
+      '🔍 Consultando suas entregas agendadas...'
+    ],
+    actions: ['count_deliveries'],
+    roles: ['Driver']
+  },
+  {
+    id: 'driver_confirm_delivery',
+    patterns: [
+      'confirmar entrega', 'entreguei', 'delivery confirmed', 'confirmar',
+      'marcar como entregue', 'concluir entrega'
+    ],
+    responses: [
+      '✅ Para confirmar uma entrega, escaneie o QR code do pedido ou forneça o ID de rastreamento.',
+      '📱 Use o scanner QR na página principal para confirmar entregas rapidamente.'
+    ],
+    roles: ['Driver']
+  },
+  {
+    id: 'driver_anomaly',
+    patterns: [
+      'problema', 'anomalia', 'reportar', 'issue', 'dano', 'avaria',
+      'não consigo entregar', 'cliente ausente', 'endereço errado'
+    ],
+    responses: [
+      '⚠️ Para reportar uma anomalia, use a opção no manifesto de carga ao lado de cada entrega.',
+      '📝 Pode registrar problemas de entrega diretamente no manifesto, incluindo fotos e descrição.'
+    ],
+    roles: ['Driver']
+  },
+  // Warehouse-specific intents
+  {
+    id: 'warehouse_orders',
+    patterns: [
+      'quantos pedidos', 'número de pedidos', 'quantidade', 'orders',
+      'how many orders', 'count orders', 'pedidos pendentes', 'processar pedido'
+    ],
+    responses: [
+      '📦 Vou verificar quantos pedidos estão no sistema...',
+      '🔍 Consultando o status dos pedidos...'
+    ],
+    actions: ['count_orders'],
+    roles: ['Warehouse']
+  },
+  {
+    id: 'warehouse_pending',
+    patterns: [
+      'pendentes', 'pending', 'aguardando', 'waiting',
+      'não processados', 'para processar'
+    ],
+    responses: [
+      '📋 Vou verificar os pedidos pendentes de processamento...',
+      '⏳ Consultando pedidos que aguardam processamento...'
+    ],
+    actions: ['count_pending_orders'],
+    roles: ['Warehouse']
+  },
+  {
+    id: 'warehouse_process',
+    patterns: [
+      'processar pedido', 'processar', 'process order', 'despachar',
+      'preparar envio', 'shipping'
+    ],
+    responses: [
+      '📦 Para processar um pedido, selecione-o na lista e clique em "Processar".',
+      '📍 Você pode processar pedidos diretamente no painel de gestão acima.'
+    ],
+    roles: ['Warehouse']
+  },
+  {
+    id: 'warehouse_carriers',
+    patterns: [
+      'transportadora', 'carrier', 'transportadoras disponíveis',
+      'escolher transportadora', 'qual transportadora'
+    ],
+    responses: [
+      '🚚 Ao processar um pedido, o sistema sugere automaticamente a melhor transportadora com base em custo, pontualidade e taxa de sucesso.',
+      '📊 As transportadoras são ranqueadas por desempenho. Você pode escolher manualmente se preferir.'
+    ],
+    roles: ['Warehouse', 'Logistics Manager']
+  },
+  {
+    id: 'warehouse_status',
+    patterns: [
+      'status', 'estado', 'situação', 'state',
+      'em trânsito', 'entregue', 'delivered'
+    ],
+    responses: [
+      '📊 Pode filtrar pedidos por status (Todos, Pendentes, Em Trânsito, Entregues, Falhados) usando o menu suspenso no painel.',
+      '🔍 Use os filtros no topo do painel para ver pedidos em diferentes estados.'
+    ],
+    roles: ['Warehouse', 'Logistics Manager', 'Customer Service Representative']
+  }
+];
+
+export const fallbackResponses = [
+  '🤔 Desculpe, não entendi bem. Pode reformular a pergunta?',
+  '❓ Não tenho certeza sobre isso. Pode tentar perguntar de outra forma?',
+  '💭 Hmm, não compreendi. Tente perguntar sobre rastreamento, histórico ou ajuda.',
+  `😅 Ainda estou aprendendo! Posso ajudar com:
+  
+• 📦 Rastreamento de encomendas
+• 📋 Histórico de pedidos
+• 🚚 Informações sobre entregas
+
+Ou digite "ajuda" para ver todas as opções.`
+];
+
+export const welcomeMessage = `👋 **Bem-vindo ao Assistente SLMS!**
+
+Posso ajudar com suas encomendas. O que deseja saber?
+
+**Perguntas comuns:**
+• 📦 "Onde está minha encomenda?"
+• 📋 "Ver meu histórico de pedidos"
+• 🚚 "Quando minha entrega chega?"
+• ❓ "Ajuda"`;
+
+// Generate role-specific welcome messages
+export function getWelcomeMessage(role?: string, deliveryCount?: number, pendingCount?: number): string {
+  if (role === 'Driver') {
+    const countText = typeof deliveryCount === 'number' 
+      ? `\n\n📦 **Você tem ${deliveryCount} ${deliveryCount === 1 ? 'entrega pendente' : 'entregas pendentes'}.**`
+      : '';
+    
+    return `👋 **Bem-vindo ao Assistente SLMS, Motorista!**${countText}
+
+Posso ajudar com:
+
+**Suas entregas:**
+• 🚚 "Quantas entregas tenho?"
+• 📋 "Ver manifesto de carga"
+• ✅ "Confirmar entrega"
+• ⚠️ "Reportar problema"
+• ❓ "Ajuda"`;
+  }
+  
+  if (role === 'Customer Service Representative') {
+    return `👋 **Bem-vindo ao Assistente SLMS!**
+
+Posso ajudar com:
+
+**Atendimento:**
+• 📦 Rastrear encomendas de clientes
+• 📋 Consultar status de pedidos
+• 🚚 Informações sobre entregas
+• ❓ "Ajuda"`;
+  }
+  
+  if (role === 'Logistics Manager') {
+    return `👋 **Bem-vindo ao Assistente SLMS, Gestor!**
+
+Posso ajudar com:
+
+**Gestão:**
+• 📊 Informações sobre operações
+• 📦 Rastreamento de encomendas
+• 🚚 Status de transportadoras
+• ❓ "Ajuda"`;
+  }
+  
+  if (role === 'Warehouse') {
+    const countText = typeof pendingCount === 'number'
+      ? `\n\n📦 **Há ${pendingCount} ${pendingCount === 1 ? 'pedido pendente' : 'pedidos pendentes'} para processar.**`
+      : '';
+    
+    return `👋 **Bem-vindo ao Assistente SLMS, Armazém!**${countText}
+
+Posso ajudar com:
+
+**Gestão de Pedidos:**
+• 📦 "Quantos pedidos pendentes?"
+• 📋 "Como processar pedido?"
+• 🚚 "Escolher transportadora"
+• 📊 "Filtrar por status"
+• ❓ "Ajuda"`;
+  }
+  
+  // Default message for customers or unknown roles
+  return welcomeMessage;
+}
+
+// Utility function to extract tracking ID (UUID) from message
+export function extractTrackingId(userMessage: string): string | null {
+  console.log('[DEBUG] extractTrackingId called with:', userMessage);
+  const match = userMessage.match(UUID_PATTERN);
+  const result = match ? match[0] : null;
+  console.log('[DEBUG] extractTrackingId result:', result);
+  return result;
+}
+
+// Utility function to match user input to intents
+export function matchIntent(userMessage: string, userRole?: string): Intent | null {
+  const normalizedMessage = userMessage.toLowerCase().trim();
+  
+  // PRIORITY 1: Check if message contains a tracking ID (UUID)
+  const trackingId = extractTrackingId(userMessage);
+  if (trackingId) {
+    // Return a special intent for tracking ID detection
+    return {
+      id: 'tracking_id_detected',
+      patterns: [],
+      responses: [`🔍 **Tracking ID detectado!**\n\nID: \`${trackingId}\`\n\n📦 Vou buscar informações sobre esta encomenda...`],
+      actions: ['fetch_order_details'],
+      priority: 100
+    };
+  }
+  
+  // PRIORITY 2: Match against defined intents
+  // Filter intents by user role if role is specified
+  let availableIntents = [...intents];
+  if (userRole) {
+    availableIntents = intents.filter(intent => 
+      !intent.roles || intent.roles.length === 0 || intent.roles.includes(userRole)
+    );
+  }
+  
+  // Sort intents by priority (higher priority first)
+  const sortedIntents = availableIntents.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  
+  for (const intent of sortedIntents) {
+    for (const pattern of intent.patterns) {
+      if (normalizedMessage.includes(pattern.toLowerCase())) {
+        return intent;
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Utility function to get a random response from an intent
+export function getRandomResponse(responses: string[]): string {
+  return responses[Math.floor(Math.random() * responses.length)];
+}

@@ -1,7 +1,6 @@
 import TrackingPortal from "./components/PageTrackingPortal";
-import LogisticsManager from "./components/PageLogisticsManager";
+import LogisticsManager from "./components/LogisticsManager";
 import Driver from "./components/Driver";
-import DriverProofOfDelivery from "./components/DriverProofOfDelivery";
 import DriverCargoManifest from "./components/DriverCargoManifest";
 import ConfirmDelivery from "./components/ConfirmDelivery";
 import Customer from "./components/PageCustomer";
@@ -10,6 +9,7 @@ import Login from "./components/PageLogin";
 import Profile from "./components/PageProfile";
 import Warehouse from "./components/PageWarehouse";
 import ProcessOrder from "./components/PageProcessOrder";
+import CreateShipment from "./components/CreateShipment";
 import CustomerServiceRep from "./components/PageCustomerServiceRep";
 import AuthTest from "./components/AuthTest";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -32,14 +32,6 @@ function App() {
             element={
               <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
                 <Driver />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path={Paths.PATH_DRIVER_PROOF_OF_DELIVERY}
-            element={
-              <ProtectedRoute requiredRole={APP_ROLES.DRIVER}>
-                <DriverProofOfDelivery />
               </ProtectedRoute>
             }
           />
@@ -104,6 +96,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole={APP_ROLES.WAREHOUSE_STAFF}>
                 <ProcessOrder />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/warehouse/create-shipment"
+            element={
+              <ProtectedRoute requiredRole={APP_ROLES.WAREHOUSE_STAFF}>
+                <CreateShipment />
               </ProtectedRoute>
             }
           />

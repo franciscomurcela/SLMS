@@ -64,6 +64,7 @@ public class OrderController {
                     o.costumer_id::text as "customerId",
                     TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) as "customerName",
                     o.carrier_id::text as "carrierId",
+                    o.shipment_id::text as "shipmentId",
                     o.origin_address as "originAddress",
                     o.destination_address as "destinationAddress",
                     o.weight as "weight",

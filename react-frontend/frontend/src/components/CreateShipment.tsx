@@ -19,6 +19,7 @@ interface Order {
   weight: number;
   status: string;
   orderDate: string;
+  shipmentId?: string;
 }
 
 interface Carrier {
@@ -74,9 +75,9 @@ function CreateShipment() {
         if (!ordersResp.ok) throw new Error(`Orders fetch failed: ${ordersResp.status}`);
         const ordersData = await ordersResp.json();
         
-        // Filter only Pending orders
+        // Filter only Pending orders without shipment assignment
         const pendingOrders = (Array.isArray(ordersData) ? ordersData : [])
-          .filter((order: Order) => order.status === "Pending");
+          .filter((order: Order) => order.status === "Pending" && !order.shipmentId);
         
         // Fetch carriers
         const carriersResp = await fetch(API_ENDPOINTS.CARRIERS, {

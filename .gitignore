@@ -55,3 +55,7 @@ observability/tempo-data/
 observability/loki-wal/
 observability/loki-data/
 observability/grafana-data/
+
+*.tfstate
+*.tfstate.*
+backup-state-*.json
